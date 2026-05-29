@@ -1,0 +1,24 @@
+{
+  "name": "testing-cpsv-ap",
+  "version": "1.0.0",
+  "description": "Lab de test du modèle sémantique CPSV-AP (PIT Wallonie)",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/server.ts",
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.12.12",
+    "prisma": "^5.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

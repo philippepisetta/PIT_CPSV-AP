@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Wizard from "@/components/encode/Wizard";
-import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge } from "lucide-react";
+import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge, Route, Edit3, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // List of the 10 real Walloon services for absolute reliability and zero API fail risks
@@ -177,13 +177,141 @@ interface Beneficiary {
   journeys: BeneficiaryJourneyInstance[];
 }
 
-const journeyTemplates = [
-  { name: "Transformation Numérique (Industrie 4.0)", provider: "AdN / WE", objective: "Lignes de production connectées et automatisation" },
-  { name: "Accompagnement Économique & Export", provider: "WE / AWEX", objective: "Levée de fonds R&D et développement international" },
-  { name: "Résilience Cybersécurité", provider: "AKT / AdN", objective: "Audit de vulnérabilité et formation cyber" },
-  { name: "Transition Énergétique & Décarbonation", provider: "Cluster Tweed", objective: "Plan carbone et décarbonation industrielle" },
-  { name: "Recherche & Collaboration S3", provider: "SPW EER", objective: "Consortiums de recherche clinique et validation TRL" },
-  { name: "Données Territoriales", provider: "Agence du Numérique", objective: "Stratégie de données territoriales ouvertes et souveraines" }
+interface JourneyTemplate {
+  id: string;
+  name: string;
+  provider: string;
+  objective: string;
+  businessEvent: "Starting Business" | "Financing Business" | "Operating Business" | "Expanding Business" | "Closing Business"; 
+  euStrategy: "Décennie Numérique" | "Pacte Vert (Green Deal)" | "Souveraineté & Cyber-résilience" | "Recherche & Collaboration S3";
+  localS3: "IA & Algorithmes" | "Industrie 4.0" | "Cybersécurité" | "Transition Énergétique" | "Recherche & Collaboration S3" | "Accompagnement Économique & Export";
+  filiere: "Agroalimentaire" | "Sciences de la Vie" | "Industrie Manufacturière" | "Énergies Propres" | "Technologies du Futur" | "Construction durable";
+  valueChainSegment: "Recherche & Développement" | "Approvisionnement & Conception" | "Production & Industrialisation" | "Logistique & Distribution" | "Marketing & Export" | "Économie Circulaire & Fin de vie";
+  steps: {
+    amorcage: string[];
+    diagnostic: string[];
+    coaching: string[];
+    planification: string[];
+    implementation: string[];
+    investissement: string[];
+  };
+}
+
+const initialJourneyTemplates: JourneyTemplate[] = [
+  {
+    id: "t-1",
+    name: "Transformation Numérique (Industrie 4.0)",
+    provider: "AdN / WE",
+    objective: "Lignes de production connectées et automatisation",
+    businessEvent: "Operating Business",
+    euStrategy: "Décennie Numérique",
+    localS3: "Industrie 4.0",
+    filiere: "Industrie Manufacturière",
+    valueChainSegment: "Production & Industrialisation",
+    steps: {
+      amorcage: ["Mise en relation partenaires IA & industrie"],
+      diagnostic: ["Diagnostic de maturité numérique PME"],
+      coaching: ["Parcours cybersécurité PME"],
+      planification: ["Accompagnement stratégie données territoriales"],
+      implementation: ["Accompagnement transformation digitale industrie 4.0"],
+      investissement: ["Recherche de financement innovation"]
+    }
+  },
+  {
+    id: "t-2",
+    name: "Résilience Cybersécurité",
+    provider: "AKT / AdN",
+    objective: "Audit de vulnérabilité et formation cyber",
+    businessEvent: "Operating Business",
+    euStrategy: "Souveraineté & Cyber-résilience",
+    localS3: "Cybersécurité",
+    filiere: "Technologies du Futur",
+    valueChainSegment: "Production & Industrialisation",
+    steps: {
+      amorcage: [],
+      diagnostic: ["Diagnostic de maturité numérique PME"],
+      coaching: ["Parcours cybersécurité PME"],
+      planification: [],
+      implementation: [],
+      investissement: []
+    }
+  },
+  {
+    id: "t-3",
+    name: "Accompagnement Économique & Export",
+    provider: "WE / AWEX",
+    objective: "Levée de fonds R&D et développement international",
+    businessEvent: "Expanding Business",
+    euStrategy: "Décennie Numérique",
+    localS3: "Accompagnement Économique & Export",
+    filiere: "Industrie Manufacturière",
+    valueChainSegment: "Marketing & Export",
+    steps: {
+      amorcage: [],
+      diagnostic: [],
+      coaching: ["Accompagnement export international digital"],
+      planification: [],
+      implementation: [],
+      investissement: ["Recherche de financement innovation"]
+    }
+  },
+  {
+    id: "t-4",
+    name: "Transition Énergétique & Décarbonation",
+    provider: "Cluster Tweed",
+    objective: "Plan carbone et décarbonation industrielle",
+    businessEvent: "Operating Business",
+    euStrategy: "Pacte Vert (Green Deal)",
+    localS3: "Transition Énergétique",
+    filiere: "Énergies Propres",
+    valueChainSegment: "Économie Circulaire & Fin de vie",
+    steps: {
+      amorcage: [],
+      diagnostic: ["Diagnostic de maturité numérique PME"],
+      coaching: [],
+      planification: ["Programme transition énergétique industrielle"],
+      implementation: ["Accompagnement transformation digitale industrie 4.0"],
+      investissement: []
+    }
+  },
+  {
+    id: "t-5",
+    name: "Recherche & Collaboration S3",
+    provider: "SPW EER",
+    objective: "Consortiums de recherche clinique et validation TRL",
+    businessEvent: "Operating Business",
+    euStrategy: "Recherche & Collaboration S3",
+    localS3: "Recherche & Collaboration S3",
+    filiere: "Sciences de la Vie",
+    valueChainSegment: "Recherche & Développement",
+    steps: {
+      amorcage: ["Détection de consortiums innovation S3"],
+      diagnostic: ["Diagnostic de maturité numérique PME"],
+      coaching: [],
+      planification: [],
+      implementation: ["Programme expérimentation IA industrielle"],
+      investissement: []
+    }
+  },
+  {
+    id: "t-6",
+    name: "Données Territoriales",
+    provider: "Agence du Numérique",
+    objective: "Stratégie de données territoriales ouvertes et souveraines",
+    businessEvent: "Operating Business",
+    euStrategy: "Souveraineté & Cyber-résilience",
+    localS3: "IA & Algorithmes",
+    filiere: "Technologies du Futur",
+    valueChainSegment: "Approvisionnement & Conception",
+    steps: {
+      amorcage: ["Détection de consortiums innovation S3"],
+      diagnostic: [],
+      coaching: [],
+      planification: ["Accompagnement stratégie données territoriales"],
+      implementation: [],
+      investissement: []
+    }
+  }
 ];
 
 const initialBeneficiaries: Beneficiary[] = [
@@ -506,7 +634,7 @@ const calculateEffectiveness = (journey: BeneficiaryJourneyInstance) => {
 };
 
 export default function ServicesContainer() {
-  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics" | "beneficiaries">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics" | "beneficiaries" | "journeys">("list");
   const [servicesList, setServicesList] = useState(walloonServices);
   const [selectedTheme, setSelectedTheme] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<any | null>(null);
@@ -517,6 +645,127 @@ export default function ServicesContainer() {
   const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>("ben-1");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string>("j-1");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Journey Catalog States
+  const [journeyTemplates, setJourneyTemplates] = useState<JourneyTemplate[]>(initialJourneyTemplates);
+  const [editingTemplate, setEditingTemplate] = useState<JourneyTemplate | null>(null);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [beFilter, setBeFilter] = useState("All");
+  const [euStrategyFilter, setEuStrategyFilter] = useState("All");
+  const [localS3Filter, setLocalS3Filter] = useState("All");
+  const [filiereFilter, setFiliereFilter] = useState("All");
+  const [valueChainFilter, setValueChainFilter] = useState("All");
+
+  // Form States for Template
+  const [formName, setFormName] = useState("");
+  const [formProvider, setFormProvider] = useState("");
+  const [formObjective, setFormObjective] = useState("");
+  const [formBE, setFormBE] = useState<JourneyTemplate["businessEvent"]>("Operating Business");
+  const [formEU, setFormEU] = useState<JourneyTemplate["euStrategy"]>("Décennie Numérique");
+  const [formS3, setFormS3] = useState<JourneyTemplate["localS3"]>("Industrie 4.0");
+  const [formFiliere, setFormFiliere] = useState<JourneyTemplate["filiere"]>("Industrie Manufacturière");
+  const [formValueChainSegment, setFormValueChainSegment] = useState<JourneyTemplate["valueChainSegment"]>("Production & Industrialisation");
+  const [formSteps, setFormSteps] = useState<JourneyTemplate["steps"]>({
+    amorcage: [],
+    diagnostic: [],
+    coaching: [],
+    planification: [],
+    implementation: [],
+    investissement: []
+  });
+
+  const handleStartCreateTemplate = () => {
+    setFormName("");
+    setFormProvider("");
+    setFormObjective("");
+    setFormBE("Operating Business");
+    setFormEU("Décennie Numérique");
+    setFormS3("Industrie 4.0");
+    setFormFiliere("Industrie Manufacturière");
+    setFormValueChainSegment("Production & Industrialisation");
+    setFormSteps({
+      amorcage: [],
+      diagnostic: [],
+      coaching: [],
+      planification: [],
+      implementation: [],
+      investissement: []
+    });
+    setEditingTemplate(null);
+    setIsCreatingTemplate(true);
+  };
+
+  const handleStartEditTemplate = (t: JourneyTemplate) => {
+    setFormName(t.name);
+    setFormProvider(t.provider);
+    setFormObjective(t.objective);
+    setFormBE(t.businessEvent);
+    setFormEU(t.euStrategy);
+    setFormS3(t.localS3);
+    setFormFiliere(t.filiere || "Industrie Manufacturière");
+    setFormValueChainSegment(t.valueChainSegment || "Production & Industrialisation");
+    setFormSteps({ ...t.steps });
+    setEditingTemplate(t);
+    setIsCreatingTemplate(false);
+  };
+
+  const handleSaveTemplate = () => {
+    if (!formName || !formProvider || !formObjective) {
+      alert("⚠️ Veuillez remplir tous les champs obligatoires (Nom, Fournisseur, Objectif).");
+      return;
+    }
+
+    if (editingTemplate) {
+      setJourneyTemplates(prev => prev.map(t => t.id === editingTemplate.id ? {
+        ...t,
+        name: formName,
+        provider: formProvider,
+        objective: formObjective,
+        businessEvent: formBE,
+        euStrategy: formEU,
+        localS3: formS3,
+        filiere: formFiliere,
+        valueChainSegment: formValueChainSegment,
+        steps: formSteps
+      } : t));
+    } else {
+      const newT: JourneyTemplate = {
+        id: `t-${Date.now()}`,
+        name: formName,
+        provider: formProvider,
+        objective: formObjective,
+        businessEvent: formBE,
+        euStrategy: formEU,
+        localS3: formS3,
+        filiere: formFiliere,
+        valueChainSegment: formValueChainSegment,
+        steps: formSteps
+      };
+      setJourneyTemplates(prev => [...prev, newT]);
+    }
+
+    setEditingTemplate(null);
+    setIsCreatingTemplate(false);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (confirm("❌ Êtes-vous sûr de vouloir supprimer ce modèle de parcours ?")) {
+      setJourneyTemplates(prev => prev.filter(t => t.id !== id));
+    }
+  };
+
+  const handleToggleServiceInStep = (phaseKey: keyof JourneyTemplate["steps"], serviceName: string) => {
+    setFormSteps(prev => {
+      const current = prev[phaseKey];
+      const updated = current.includes(serviceName)
+        ? current.filter(n => n !== serviceName)
+        : [...current, serviceName];
+      return {
+        ...prev,
+        [phaseKey]: updated
+      };
+    });
+  };
 
   // Simulator States
   const [simPhase, setSimPhase] = useState<string>("amorcage");
@@ -697,20 +946,25 @@ export default function ServicesContainer() {
         objective: template.objective,
         effectivenessScore: 0,
         effectivenessStatus: "Insuffisant",
-        effectivenessExplanation: "Ce parcours vient d'être initié. Proposez des services pour commencer à combler les étapes.",
+        effectivenessExplanation: "Ce parcours vient d'être initié. Réalisez les services recommandés.",
         metrics: [
           { label: "Maturité départ", before: "0%", after: "10%", unit: "", isPositive: true },
           { label: "Avancement R&D", before: "0", after: "0", unit: "", isPositive: true }
         ],
         steps: {
-          amorcage: { proposed: [], realized: [] },
-          diagnostic: { proposed: [], realized: [] },
-          coaching: { proposed: [], realized: [] },
-          planification: { proposed: [], realized: [] },
-          implementation: { proposed: [], realized: [] },
-          investissement: { proposed: [], realized: [] }
+          amorcage: { proposed: [...(template.steps?.amorcage || [])], realized: [] },
+          diagnostic: { proposed: [...(template.steps?.diagnostic || [])], realized: [] },
+          coaching: { proposed: [...(template.steps?.coaching || [])], realized: [] },
+          planification: { proposed: [...(template.steps?.planification || [])], realized: [] },
+          implementation: { proposed: [...(template.steps?.implementation || [])], realized: [] },
+          investissement: { proposed: [...(template.steps?.investissement || [])], realized: [] }
         }
       };
+      
+      const { score, status, explanation } = calculateEffectiveness(newJourneyInstance);
+      newJourneyInstance.effectivenessScore = score;
+      newJourneyInstance.effectivenessStatus = status;
+      newJourneyInstance.effectivenessExplanation = explanation;
       
       // Auto switch to this new journey
       setSelectedJourneyId(newJourneyInstance.id);
@@ -889,6 +1143,18 @@ export default function ServicesContainer() {
           >
             <Users className="w-3.5 h-3.5" />
             Suivi Bénéficiaires
+          </button>
+          <button
+            onClick={() => setActiveTab("journeys")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200",
+              activeTab === "journeys"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900"
+            )}
+          >
+            <Route className="w-3.5 h-3.5" />
+            Gestion des Parcours
           </button>
         </div>
       </div>
@@ -1923,6 +2189,495 @@ export default function ServicesContainer() {
                 </div>
               </div>
             </div>
+          </div>
+        );
+      })()}
+
+      {/* 5. JOURNEY MANAGEMENT CATALOGUE */}
+      {activeTab === "journeys" && (() => {
+        // Filter templates based on beFilter, euStrategyFilter, localS3Filter, filiereFilter, and valueChainFilter
+        const filteredTemplates = journeyTemplates.filter(t => {
+          const matchBE = beFilter === "All" || t.businessEvent === beFilter;
+          const matchEU = euStrategyFilter === "All" || t.euStrategy === euStrategyFilter;
+          const matchS3 = localS3Filter === "All" || t.localS3 === localS3Filter;
+          const matchFiliere = filiereFilter === "All" || t.filiere === filiereFilter;
+          const matchValueChain = valueChainFilter === "All" || t.valueChainSegment === valueChainFilter;
+          return matchBE && matchEU && matchS3 && matchFiliere && matchValueChain;
+        });
+
+        return (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Header description */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-600 dark:text-purple-450 flex items-center gap-1.5">
+                  <Route className="w-5 h-5 text-purple-500" />
+                  <span>Catalogue de Méthodes & Gestion des Parcours</span>
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Définissez des parcours types (méthodes d'accompagnement) et associez-leur des services du catalogue régional (CPSV-AP). Ces modèles servent de gabarits lors de l'inscription des bénéficiaires.
+                </p>
+              </div>
+              {!isCreatingTemplate && !editingTemplate && (
+                <button
+                  onClick={handleStartCreateTemplate}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nouveau Parcours
+                </button>
+              )}
+            </div>
+
+            {/* Editing or Creating Mode */}
+            { (isCreatingTemplate || editingTemplate) ? (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md space-y-6">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-500">
+                    {editingTemplate ? "Modifier le Modèle de Parcours" : "Créer un Modèle de Parcours"}
+                  </h4>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Renseignez les métadonnées et associez des services du catalogue aux étapes clés.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Left Column: Metadata */}
+                  <div className="md:col-span-1 space-y-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800/80">
+                    <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 uppercase tracking-wider block border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
+                      Informations Générales
+                    </span>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Nom du Parcours *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ex: Transition Énergétique PME"
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Chef de file / Fournisseur *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ex: Cluster Tweed / WE"
+                        value={formProvider}
+                        onChange={(e) => setFormProvider(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Objectif Stratégique *
+                      </label>
+                      <textarea
+                        placeholder="ex: Réduire l'empreinte carbone et optimiser l'énergie"
+                        value={formObjective}
+                        onChange={(e) => setFormObjective(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Taxonomies d'Alignement
+                      </span>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                          Classification Européenne (CPSV-AP BE)
+                        </label>
+                        <select
+                          value={formBE}
+                          onChange={(e) => setFormBE(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                        >
+                          <option value="Starting Business">Starting Business (Création)</option>
+                          <option value="Financing Business">Financing Business (Financement)</option>
+                          <option value="Operating Business">Operating Business (Exploitation & Innovation)</option>
+                          <option value="Expanding Business">Expanding Business (Internationalisation)</option>
+                          <option value="Closing Business">Closing Business (Cessation)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                          Priorité de la Stratégie Européenne
+                        </label>
+                        <select
+                          value={formEU}
+                          onChange={(e) => setFormEU(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                        >
+                          <option value="Décennie Numérique">Décennie Numérique (IA / Cloud / Big Data)</option>
+                          <option value="Pacte Vert (Green Deal)">Pacte Vert (Green Deal - Décarbonation)</option>
+                          <option value="Souveraineté & Cyber-résilience">Souveraineté & Cyber-résilience</option>
+                          <option value="Recherche & Collaboration S3">Recherche & Collaboration S3</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                          Thématique S3 Région Wallonne
+                        </label>
+                        <select
+                          value={formS3}
+                          onChange={(e) => setFormS3(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                        >
+                          <option value="IA & Algorithmes">IA & Algorithmes</option>
+                          <option value="Industrie 4.0">Industrie 4.0 & IoT</option>
+                          <option value="Cybersécurité">Cybersécurité</option>
+                          <option value="Transition Énergétique">Transition Énergétique</option>
+                          <option value="Recherche & Collaboration S3">Recherche & Collaboration S3</option>
+                          <option value="Accompagnement Économique & Export">Accompagnement Économique & Export</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                          Filière Industrielle S3 Wallonie
+                        </label>
+                        <select
+                          value={formFiliere}
+                          onChange={(e) => setFormFiliere(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                        >
+                          <option value="Agroalimentaire">Agroalimentaire</option>
+                          <option value="Sciences de la Vie">Sciences de la Vie</option>
+                          <option value="Industrie Manufacturière">Industrie Manufacturière</option>
+                          <option value="Énergies Propres">Énergies Propres</option>
+                          <option value="Technologies du Futur">Technologies du Futur</option>
+                          <option value="Construction durable">Construction durable</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                          Segment de Chaîne de Valeurs S3
+                        </label>
+                        <select
+                          value={formValueChainSegment}
+                          onChange={(e) => setFormValueChainSegment(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                        >
+                          <option value="Recherche & Développement">Recherche & Développement</option>
+                          <option value="Approvisionnement & Conception">Approvisionnement & Conception</option>
+                          <option value="Production & Industrialisation">Production & Industrialisation</option>
+                          <option value="Logistique & Distribution">Logistique & Distribution</option>
+                          <option value="Marketing & Export">Marketing & Export</option>
+                          <option value="Économie Circulaire & Fin de vie">Économie Circulaire & Fin de vie</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Steps mapping selection */}
+                  <div className="md:col-span-2 space-y-4">
+                    <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 uppercase tracking-wider block border-b border-gray-100 dark:border-gray-700 pb-2 mb-2 pl-1">
+                      Association des Services aux 6 Étapes du Parcours
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1 select-none">
+                      {([
+                        { id: "amorcage", label: "1. Amorçage" },
+                        { id: "diagnostic", label: "2. Diagnostic" },
+                        { id: "coaching", label: "3. Coaching" },
+                        { id: "planification", label: "4. Planification" },
+                        { id: "implementation", label: "5. Mise en œuvre" },
+                        { id: "investissement", label: "6. Investissement" }
+                      ] as const).map((phase) => {
+                        const activeServices = formSteps[phase.id] || [];
+
+                        return (
+                          <div key={phase.id} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-150 dark:border-gray-800 flex flex-col justify-between">
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
+                              {phase.label} ({activeServices.length} associés)
+                            </span>
+
+                            <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 border border-gray-200/60 dark:border-gray-800 p-2 rounded-lg bg-white dark:bg-gray-950">
+                              {servicesList.map((service) => {
+                                const checked = activeServices.includes(service.name);
+                                return (
+                                  <label
+                                    key={service.id}
+                                    className={cn(
+                                      "flex items-start gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-[10px] border",
+                                      checked
+                                        ? "border-purple-500/30 bg-purple-500/5 text-purple-700 dark:text-purple-300"
+                                        : "border-transparent text-gray-600 dark:text-gray-400"
+                                    )}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => handleToggleServiceInStep(phase.id, service.name)}
+                                      className="mt-0.5 accent-purple-600 w-3 h-3 shrink-0"
+                                    />
+                                    <div className="leading-tight">
+                                      <div className="font-semibold">{service.name}</div>
+                                      <div className="text-[8px] text-gray-400">{service.organisationId}</div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setEditingTemplate(null);
+                      setIsCreatingTemplate(false);
+                    }}
+                    className="px-4 py-2 bg-gray-100 dark:bg-gray-850 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300 text-xs font-semibold rounded-lg transition cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleSaveTemplate}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer"
+                  >
+                    Enregistrer le Parcours
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Journey List View
+              <div className="space-y-6">
+                {/* Taxonomy Filter Panel */}
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-sm space-y-4">
+                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">
+                    Filtres Multicritères (Alignements Sémantiques & Stratégiques)
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {/* Filter 1: BE */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Classification Européenne (CPSV-AP BE)
+                      </label>
+                      <select
+                        value={beFilter}
+                        onChange={(e) => setBeFilter(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="All">Toutes les fonctions (All)</option>
+                        <option value="Starting Business">Starting Business (Création)</option>
+                        <option value="Financing Business">Financing Business (Financement)</option>
+                        <option value="Operating Business">Operating Business (Exploitation & Innovation)</option>
+                        <option value="Expanding Business">Expanding Business (Internationalisation)</option>
+                        <option value="Closing Business">Closing Business (Cessation)</option>
+                      </select>
+                    </div>
+
+                    {/* Filter 2: EU Strategy */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Priorité Stratégique Européenne
+                      </label>
+                      <select
+                        value={euStrategyFilter}
+                        onChange={(e) => setEuStrategyFilter(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="All">Toutes les priorités EU Strategy</option>
+                        <option value="Décennie Numérique">Décennie Numérique (AI & Cloud)</option>
+                        <option value="Pacte Vert (Green Deal)">Pacte Vert (Green Deal)</option>
+                        <option value="Souveraineté & Cyber-résilience">Souveraineté & Cyber-résilience</option>
+                        <option value="Recherche & Collaboration S3">Recherche & Collaboration S3</option>
+                      </select>
+                    </div>
+
+                    {/* Filter 3: RW S3 */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Thématique Locale S3 Wallonie
+                      </label>
+                      <select
+                        value={localS3Filter}
+                        onChange={(e) => setLocalS3Filter(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="All">Toutes les thématiques S3</option>
+                        <option value="IA & Algorithmes">IA & Algorithmes</option>
+                        <option value="Industrie 4.0">Industrie 4.0</option>
+                        <option value="Cybersécurité">Cybersécurité</option>
+                        <option value="Transition Énergétique">Transition Énergétique</option>
+                        <option value="Recherche & Collaboration S3">Recherche & Collaboration S3</option>
+                        <option value="Accompagnement Économique & Export">Accompagnement Économique & Export</option>
+                      </select>
+                    </div>
+
+                    {/* Filter 4: Filière S3 */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Filière Industrielle S3
+                      </label>
+                      <select
+                        value={filiereFilter}
+                        onChange={(e) => setFiliereFilter(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="All">Toutes les filières (All)</option>
+                        <option value="Agroalimentaire">Agroalimentaire</option>
+                        <option value="Sciences de la Vie">Sciences de la Vie</option>
+                        <option value="Industrie Manufacturière">Industrie Manufacturière</option>
+                        <option value="Énergies Propres">Énergies Propres</option>
+                        <option value="Technologies du Futur">Technologies du Futur</option>
+                        <option value="Construction durable">Construction durable</option>
+                      </select>
+                    </div>
+
+                    {/* Filter 5: Chaîne de Valeurs */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Chaîne de Valeurs
+                      </label>
+                      <select
+                        value={valueChainFilter}
+                        onChange={(e) => setValueChainFilter(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="All">Tous les segments (All)</option>
+                        <option value="Recherche & Développement">Recherche & Développement</option>
+                        <option value="Approvisionnement & Conception">Approvisionnement & Conception</option>
+                        <option value="Production & Industrialisation">Production & Industrialisation</option>
+                        <option value="Logistique & Distribution">Logistique & Distribution</option>
+                        <option value="Marketing & Export">Marketing & Export</option>
+                        <option value="Économie Circulaire & Fin de vie">Économie Circulaire & Fin de vie</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Templates Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredTemplates.length > 0 ? (
+                    filteredTemplates.map((template) => {
+                      const totalServicesCount = Object.values(template.steps).reduce((sum, list) => sum + list.length, 0);
+
+                      return (
+                        <div
+                          key={template.id}
+                          className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800/80 shadow-md p-5 flex flex-col justify-between hover:shadow-lg transition duration-205 space-y-4"
+                        >
+                          {/* Top part */}
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className="text-xs font-bold text-gray-950 dark:text-gray-100 leading-tight">
+                                {template.name}
+                              </h4>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => handleStartEditTemplate(template)}
+                                  title="Modifier ce parcours type"
+                                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-purple-500 rounded transition cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTemplate(template.id)}
+                                  title="Supprimer ce parcours type"
+                                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-rose-500 rounded transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-gray-450 dark:text-gray-400">
+                              Chef de file : <strong className="text-gray-700 dark:text-gray-300">{template.provider}</strong>
+                            </p>
+
+                            <p className="text-[10px] text-gray-450 dark:text-gray-400 leading-relaxed bg-gray-50/50 dark:bg-gray-900/40 p-2 rounded-lg border border-gray-100 dark:border-gray-800 italic">
+                              "{template.objective}"
+                            </p>
+
+                            {/* Taxonomy Badges */}
+                            <div className="flex flex-wrap gap-1.5 pt-1.5">
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-400">
+                                {template.businessEvent}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20 dark:text-purple-400">
+                                {template.euStrategy}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-teal-500/10 text-teal-600 border border-teal-500/20 dark:text-teal-400">
+                                {template.localS3}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-450">
+                                {template.filiere}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 dark:text-indigo-400">
+                                {template.valueChainSegment}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Services mapping details */}
+                          <div className="border-t border-gray-50 dark:border-gray-700/60 pt-3 space-y-2">
+                            <span className="text-[8px] font-extrabold text-gray-455 uppercase tracking-wider block">
+                              Mappage des Recommandations ({totalServicesCount} services)
+                            </span>
+
+                            <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                              {([
+                                { id: "amorcage", label: "Amorçage" },
+                                { id: "diagnostic", label: "Diagnostic" },
+                                { id: "coaching", label: "Coaching" },
+                                { id: "planification", label: "Planification" },
+                                { id: "implementation", label: "Mise en œuvre" },
+                                { id: "investissement", label: "Investissement" }
+                              ] as const).map((p) => {
+                                const svcList = template.steps[p.id] || [];
+                                const count = svcList.length;
+                                return (
+                                  <div
+                                    key={p.id}
+                                    title={count > 0 ? svcList.join(", ") : "Aucun service recommandé"}
+                                    className={cn(
+                                      "flex items-center justify-between p-1 rounded border",
+                                      count > 0
+                                        ? "bg-purple-500/5 border-purple-500/10 text-purple-700 dark:text-purple-300 font-semibold"
+                                        : "bg-gray-50 dark:bg-gray-900 border-transparent text-gray-300 dark:text-gray-700"
+                                    )}
+                                  >
+                                    <span className="truncate pr-1">{p.label}</span>
+                                    <span className={cn("px-1 py-0.2 rounded text-[7px]", count > 0 ? "bg-purple-500/10 text-purple-650 font-bold border border-purple-500/20" : "bg-gray-100 dark:bg-gray-800")}>
+                                      {count}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-12 py-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+                      <Compass className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200">Aucun modèle de parcours trouvé</h4>
+                      <p className="text-[10px] text-gray-400 mt-1">Ajustez vos filtres taxonomiques ou créez un parcours type personnalisé.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}

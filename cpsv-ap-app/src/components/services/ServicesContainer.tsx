@@ -2430,7 +2430,7 @@ export default function ServicesContainer() {
             </div> {/* Ends Grid grid-cols-12 */}
 
             {/* Comparative Gaps & Doublons Grid (Full Screen Width) */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
+            <div className="bg-white dark:bg-gray-800 p-6 -mx-6 px-6 md:px-8 border-y border-gray-200 dark:border-gray-700 shadow-md space-y-5">
                   {/* Section Header */}
                   <div className="flex items-start gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex-1">
@@ -2457,7 +2457,8 @@ export default function ServicesContainer() {
                   </div>
 
                   {/* Phase Cards Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                  <div className="overflow-x-auto pb-4 scrollbar-thin">
+                    <div className="grid grid-cols-6 gap-3 min-w-[1200px] lg:min-w-[1400px]">
                     {([
                       { id: "amorcage",      num: "1", label: "Amorçage",      desc: "Sensibilisation & mise en relation" },
                       { id: "diagnostic",    num: "2", label: "Diagnostic",    desc: "Évaluation maturité & TRL" },
@@ -2671,6 +2672,7 @@ export default function ServicesContainer() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
 
@@ -2851,9 +2853,6 @@ export default function ServicesContainer() {
                         >
                           Inscrire au Parcours
                         </button>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               </div>

@@ -1393,7 +1393,7 @@ export default function ServicesContainer() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="flex overflow-x-auto xl:grid xl:grid-cols-6 gap-4 pb-4 scrollbar-thin">
                     {([
                       { id: "amorcage", label: "1. Amorçage", desc: "Sensibilisation et mise en relation" },
                       { id: "diagnostic", label: "2. Diagnostic", desc: "Évaluation de maturité et TRL" },
@@ -1409,7 +1409,7 @@ export default function ServicesContainer() {
                         <div
                           key={phase.id}
                           className={cn(
-                            "p-4 rounded-xl border flex flex-col justify-between min-h-[220px] transition-all duration-300",
+                            "flex-1 min-w-[240px] xl:min-w-0 p-4 rounded-xl border flex flex-col justify-between min-h-[220px] transition-all duration-300",
                             diag.status === "gap"
                               ? "bg-rose-500/5 border-rose-500/20 dark:bg-rose-950/10"
                               : diag.status === "overlap"

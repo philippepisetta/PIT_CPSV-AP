@@ -530,57 +530,118 @@ export default function ServicesContainer() {
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-800/80 shadow-md space-y-4">
             <div>
               <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-blue-500 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 animate-bounce" />
-                Graphe de Dépendances Sémantiques & Parcours Usager
+                <Layers className="w-4 h-4 animate-pulse" />
+                Analyse des Parcours Régionaux : Gaps & Doublons
               </h3>
               <p className="text-xs text-gray-400 mt-1">
-                Visualisez la chaîne de valeur du territoire (les prérequis logiques connectant les dispositifs d'AdN, WE, Mecatech, AWEX).
+                Visualisation en temps réel de l'offre de services publics répartie sur les 6 étapes clés de votre parcours d'entreprise. Identifiez instantanément les doublons opérationnels (plusieurs dispositifs sur le même créneau) et les ruptures de parcours (zones blanches).
               </p>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center min-h-[180px] relative overflow-hidden">
-              {/* Dynamic SVG Service Pipeline */}
-              <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 max-w-4xl relative z-10">
-                
-                {/* Node 1: Diagnostic (svc-1) */}
-                <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-primary-500 shadow text-center relative group hover:scale-105 transition">
-                  <span className="text-[8px] font-bold uppercase text-primary-500">Étape 1 • diagnostic</span>
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 mt-1">Diagnostic de maturité</h4>
-                  <p className="text-[9px] text-gray-400 mt-1">Agence du Numérique</p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 pt-2">
+              {[
+                { id: "amorcage", label: "1. Amorçage", description: "Sensibilisation et mise en relation" },
+                { id: "diagnostic", label: "2. Diagnostic", description: "Évaluation de maturité et TRL" },
+                { id: "coaching", label: "3. Coaching", description: "Conseil court et cybersécurité" },
+                { id: "planification", label: "4. Planification", description: "Roadmap et stratégie de données" },
+                { id: "implementation", label: "5. Mise en œuvre", description: "Accompagnement, labs et prototypes" },
+                { id: "investissement", label: "6. Investissement", description: "Subsides et capital risque" },
+              ].map((phase) => {
+                // Function to dynamically assign services list to their logical journey steps
+                const getServicePhase = (svc: any) => {
+                  const idNum = String(svc.id).replace("svc-", "");
+                  if (idNum === "8" || idNum === "9") return "amorcage";
+                  if (idNum === "1") return "diagnostic";
+                  if (idNum === "6" || idNum === "5") return "coaching";
+                  if (idNum === "10") return "planification";
+                  if (idNum === "2" || idNum === "3" || idNum === "7") return "implementation";
+                  if (idNum === "4") return "investissement";
+                  
+                  // Dynamic fallback for newly encoded services from the DB
+                  const name = (svc.name || "").toLowerCase();
+                  if (name.includes("financ") || name.includes("subside") || name.includes("invest")) return "investissement";
+                  if (name.includes("diagnost") || name.includes("evalu") || name.includes("audit")) return "diagnostic";
+                  if (name.includes("coach") || name.includes("cyber") || name.includes("sensib")) return "coaching";
+                  if (name.includes("plan") || name.includes("strateg")) return "planification";
+                  if (name.includes("implem") || name.includes("prototyp") || name.includes("ia") || name.includes("transition")) return "implementation";
+                  return "amorcage";
+                };
 
-                {/* Arrow 1 */}
-                <div className="hidden md:flex flex-col items-center text-primary-500 animate-pulse">
-                  <ArrowRight className="w-5 h-5" />
-                  <span className="text-[8px] font-bold uppercase mt-1">Prereq</span>
-                </div>
+                // Filter servicesList (which includes dynamic DB services) belonging to this phase
+                const phaseServices = servicesList.filter((s: any) => getServicePhase(s) === phase.id);
+                const hasServices = phaseServices.length > 0;
+                const isOverlap = phaseServices.length > 1;
 
-                {/* Node 2: Accompagnement (svc-2) */}
-                <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-blue-500 shadow text-center relative group hover:scale-105 transition">
-                  <span className="text-[8px] font-bold uppercase text-blue-500">Étape 2 • exp / fi</span>
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 mt-1">Accompagnement Industrie 4.0</h4>
-                  <p className="text-[9px] text-gray-400 mt-1">Wallonie Entreprendre</p>
-                </div>
+                return (
+                  <div 
+                    key={phase.id} 
+                    className={cn(
+                      "p-3 rounded-xl border flex flex-col h-full justify-between transition-all duration-300",
+                      isOverlap 
+                        ? "bg-amber-500/5 border-amber-500/20 dark:bg-amber-950/10" 
+                        : hasServices 
+                          ? "bg-gray-50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800" 
+                          : "bg-red-500/5 border-red-500/20 dark:bg-red-950/10"
+                    )}
+                  >
+                    <div>
+                      {/* Phase Header */}
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] font-extrabold uppercase text-gray-500 dark:text-gray-400 tracking-wider">
+                          {phase.label}
+                        </span>
+                        {isOverlap && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            Doublons ({phaseServices.length})
+                          </span>
+                        )}
+                        {!hasServices && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                            Vide
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-gray-400 mt-0.5">{phase.description}</p>
+                    </div>
 
-                {/* Arrow 2 */}
-                <div className="hidden md:flex flex-col items-center text-blue-500 animate-pulse">
-                  <ArrowRight className="w-5 h-5" />
-                  <span className="text-[8px] font-bold uppercase mt-1">Prereq</span>
-                </div>
+                    {/* Services list in this phase */}
+                    <div className="space-y-2 mt-4 flex-1">
+                      {hasServices ? (
+                        phaseServices.map((svc: any) => (
+                          <div 
+                            key={svc.id} 
+                            onClick={() => setSelectedService(svc)}
+                            className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm hover:shadow transition duration-200 cursor-pointer text-left"
+                          >
+                            <h4 className="text-[10px] font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">
+                              {svc.name}
+                            </h4>
+                            <div className="flex justify-between items-center mt-1.5">
+                              <span className="text-[8px] text-gray-400 font-medium truncate max-w-[80px]">
+                                {svc.organisationId}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary text-[7px] font-bold border border-primary/20">
+                                {svc.themes && svc.themes[0] ? svc.themes[0] : "S3"}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-red-200/50 dark:border-red-900/30 rounded-lg h-full">
+                          <ShieldAlert className="w-5 h-5 text-red-500/60 mb-1" />
+                          <span className="text-[8px] font-bold text-red-500 uppercase tracking-wider">Zone Blanche</span>
+                          <span className="text-[8px] text-gray-400 mt-0.5">Rupture de parcours</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-                {/* Node 3: Prototype IA (svc-3) */}
-                <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-purple-500 shadow text-center relative group hover:scale-105 transition">
-                  <span className="text-[8px] font-bold uppercase text-purple-500">Étape 3 • exp</span>
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 mt-1">Expérimentation IA</h4>
-                  <p className="text-[9px] text-gray-400 mt-1">EDIH Wallonia</p>
-                </div>
-
-              </div>
-
-              <div className="mt-8 p-3 bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400 text-[10px] font-medium flex items-center gap-2 max-w-lg text-center">
-                <Info className="w-4 h-4" />
-                <span>Ce parcours type illustre la circularité de la chaîne de valeur du PIT Wallonie modélisée selon les relations <strong>cv:prerequisite</strong> du graphe.</span>
-              </div>
+            <div className="p-3 bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400 text-[10px] font-medium flex items-center gap-2 max-w-4xl mx-auto text-center justify-center mt-2">
+              <Info className="w-4 h-4" />
+              <span>Cette vue analytique utilise les métadonnées de parcours cibles pour classifier dynamiquement l'offre territoriale wallonne (AdN, WE, AWEX, Mecatech) et révéler la couverture globale des besoins des PME.</span>
             </div>
           </div>
         </div>

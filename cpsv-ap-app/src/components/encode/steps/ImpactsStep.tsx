@@ -189,7 +189,7 @@ export default function ImpactsStep() {
               {/* Filled polygon for actual values */}
               <polygon
                 points={polyPoints}
-                className="fill-primary-500/20 stroke-primary-500"
+                className="fill-none stroke-primary-500"
                 strokeWidth="2.5"
               />
 

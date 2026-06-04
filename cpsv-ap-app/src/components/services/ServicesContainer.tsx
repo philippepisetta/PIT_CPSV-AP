@@ -453,7 +453,7 @@ export default function ServicesContainer() {
                   {/* Aggregated values: Carbon: 45%, Sovereignty: 84%, Resilience: 90%, Competitiveness: 94%, Employment (Jobs): 81% */}
                   <polygon
                     points="120,79.5 191.8,96.7 173.2,166.4 67.3,166.4 49.3,96.7"
-                    className="fill-primary-500/15 stroke-primary-500"
+                    className="fill-none stroke-primary-500"
                     strokeWidth="2.5"
                   />
 

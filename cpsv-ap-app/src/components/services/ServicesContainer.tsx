@@ -1935,29 +1935,33 @@ export default function ServicesContainer() {
                         >
                           {/* Card Header — couleur de fond selon statut */}
                           <div className={cn(
-                            "px-3 pt-3 pb-2",
-                            diag.status === "gap"       ? "bg-rose-50 dark:bg-rose-950/20"
-                            : diag.status === "overlap"   ? "bg-amber-50 dark:bg-amber-950/20"
-                            : diag.status === "opportunity"? "bg-blue-50 dark:bg-blue-950/20"
-                            : diag.status === "match"     ? "bg-emerald-50 dark:bg-emerald-950/20"
+                            "px-3 pt-3 pb-3 space-y-1.5",
+                            diag.status === "gap"        ? "bg-rose-50 dark:bg-rose-950/20"
+                            : diag.status === "overlap"  ? "bg-amber-50 dark:bg-amber-950/20"
+                            : diag.status === "opportunity" ? "bg-blue-50 dark:bg-blue-950/20"
+                            : diag.status === "match"    ? "bg-emerald-50 dark:bg-emerald-950/20"
                             : "bg-gray-50 dark:bg-gray-900/50"
                           )}>
-                            {/* Numéro + Badge statut sur la même ligne, bien séparés */}
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[10px] font-black text-gray-600 dark:text-gray-300 shadow-sm">
+                            {/* Ligne 1 : numéro ① + nom de la phase — pas de badge ici */}
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[10px] font-black text-gray-500 dark:text-gray-300 shadow-sm shrink-0">
                                 {phase.num}
                               </span>
-                              <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold border whitespace-nowrap", diag.bg)}>
-                                {diag.label}
-                              </span>
+                              <p className="text-[11px] font-extrabold text-gray-800 dark:text-gray-100 leading-tight">
+                                {phase.label}
+                              </p>
                             </div>
-                            {/* Label de la phase sur sa propre ligne */}
-                            <p className="text-[11px] font-bold text-gray-800 dark:text-gray-100 leading-tight">
-                              {phase.label}
-                            </p>
-                            <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
+                            {/* Ligne 2 : description courte */}
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-snug pl-7">
                               {phase.desc}
                             </p>
+                            {/* Ligne 3 : badge statut — pleine largeur, aucune compétition horizontale */}
+                            <span className={cn(
+                              "flex items-center justify-center gap-1 w-full px-2 py-1 rounded-md text-[9px] font-bold border",
+                              diag.bg
+                            )}>
+                              {diag.label}
+                            </span>
                           </div>
 
                           {/* Card Body */}

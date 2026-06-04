@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Wizard from "@/components/encode/Wizard";
-import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode } from "lucide-react";
+import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // List of the 10 real Walloon services for absolute reliability and zero API fail risks
@@ -141,12 +141,447 @@ const walloonServices = [
   }
 ];
 
+type EffectivenessType = "Succès Majeur" | "En bonne voie" | "Mitigé" | "Insuffisant";
+
+interface Beneficiary {
+  id: string;
+  name: string;
+  size: string;
+  sector: string;
+  location: string;
+  journeyName: string;
+  effectivenessScore: number;
+  effectivenessStatus: EffectivenessType;
+  effectivenessExplanation: string;
+  maturityInitial: number;
+  maturityCurrent: number;
+  metrics: {
+    label: string;
+    before: string | number;
+    after: string | number;
+    unit: string;
+    isPositive: boolean;
+  }[];
+  steps: {
+    amorcage: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    diagnostic: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    coaching: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    planification: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    implementation: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    investissement: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+  };
+}
+
+const initialBeneficiaries: Beneficiary[] = [
+  {
+    id: "ben-1",
+    name: "MecaWall S.A.",
+    size: "PME (120 emp.)",
+    sector: "Manufacturing",
+    location: "Namur",
+    journeyName: "Accélération Industrie 4.0",
+    effectivenessScore: 85,
+    effectivenessStatus: "En bonne voie" as const,
+    effectivenessExplanation: "La PME a réussi l'intégration de capteurs connectés sur ses lignes et prépare sa recherche de financement. Le diagnostic cyber reste une priorité non traitée.",
+    maturityInitial: 25,
+    maturityCurrent: 65,
+    metrics: [
+      { label: "Productivité brute", before: "100%", after: "115%", unit: "", isPositive: true },
+      { label: "Déchets de découpe", before: "18%", after: "14%", unit: "%", isPositive: true },
+      { label: "Consommation d'énergie", before: "100%", after: "88%", unit: "%", isPositive: true }
+    ],
+    steps: {
+      amorcage: {
+        proposed: ["Mise en relation partenaires IA & industrie"],
+        realized: [{ serviceName: "Mise en relation partenaires IA & industrie", status: "completed" as const, org: "Pôle Mecatech", resultText: "Partenaire trouvé pour le tri optique" }]
+      },
+      diagnostic: {
+        proposed: ["Diagnostic de maturité numérique PME"],
+        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "Agence du Numérique", resultText: "Maturité numérique de départ évaluée" }]
+      },
+      coaching: {
+        proposed: ["Parcours cybersécurité PME"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      planification: {
+        proposed: ["Accompagnement stratégie données territoriales"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      implementation: {
+        proposed: ["Accompagnement transformation digitale industrie 4.0"],
+        realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "active" as const, org: "Wallonie Entreprendre", resultText: "Lignes de montage en cours de digitalisation" }]
+      },
+      investissement: {
+        proposed: ["Recherche de financement innovation"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      }
+    }
+  },
+  {
+    id: "ben-2",
+    name: "BioTech Liège Corp",
+    size: "Startup (18 emp.)",
+    sector: "BioTech",
+    location: "Liège",
+    journeyName: "Recherche & Collaboration S3",
+    effectivenessScore: 78,
+    effectivenessStatus: "En bonne voie" as const,
+    effectivenessExplanation: "Le consortium d'innovation S3 a été validé et le financement R&D de 250k€ a été sécurisé auprès de WE. Reste à lancer l'expérimentation IA avec l'EDIH.",
+    maturityInitial: 15,
+    maturityCurrent: 70,
+    metrics: [
+      { label: "Brevets R&D déposés", before: 0, after: 1, unit: "", isPositive: true },
+      { label: "Chercheurs recrutés", before: 0, after: 3, unit: "", isPositive: true },
+      { label: "Budget R&D sécurisé", before: "50k", after: "300k", unit: "€", isPositive: true }
+    ],
+    steps: {
+      amorcage: {
+        proposed: ["Détection de consortiums innovation S3"],
+        realized: [{ serviceName: "Détection de consortiums innovation S3", status: "completed" as const, org: "SPW EER", resultText: "Consortium validé avec l'ULiège" }]
+      },
+      diagnostic: {
+        proposed: ["Diagnostic de maturité numérique PME"],
+        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Maturité TRL 3 évaluée" }]
+      },
+      coaching: {
+        proposed: [] as string[],
+        realized: [{ serviceName: "Parcours cybersécurité PME", status: "completed" as const, org: "AKT / AdN", resultText: "Sécurisation des données cliniques" }]
+      },
+      planification: {
+        proposed: ["Accompagnement stratégie données territoriales"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      implementation: {
+        proposed: ["Programme expérimentation IA industrielle"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      investissement: {
+        proposed: ["Recherche de financement innovation"],
+        realized: [{ serviceName: "Recherche de financement innovation", status: "completed" as const, org: "Wallonie Entreprendre", resultText: "Aide à la R&D obtenue" }]
+      }
+    }
+  },
+  {
+    id: "ben-3",
+    name: "CyberGuard PME",
+    size: "TPE (4 emp.)",
+    sector: "Retail",
+    location: "Charleroi",
+    journeyName: "Sécurité & Résilience",
+    effectivenessScore: 92,
+    effectivenessStatus: "Succès Majeur" as const,
+    effectivenessExplanation: "Audit complet cybersécurité effectué et plan d'action résolu. Les employés ont été formés, le risque de rançongiciel a été neutralisé à 100%.",
+    maturityInitial: 10,
+    maturityCurrent: 85,
+    metrics: [
+      { label: "Intrusions / Failles bloquées", before: "10%", after: "100%", unit: "", isPositive: true },
+      { label: "Équipe formée au Phishing", before: "0%", after: "100%", unit: "", isPositive: true },
+      { label: "Indisponibilité IT (jours/an)", before: 4.5, after: 0.1, unit: " j", isPositive: true }
+    ],
+    steps: {
+      amorcage: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      diagnostic: {
+        proposed: ["Diagnostic de maturité numérique PME"],
+        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Maturité cyber évaluée" }]
+      },
+      coaching: {
+        proposed: ["Parcours cybersécurité PME"],
+        realized: [
+          { serviceName: "Parcours cybersécurité PME", status: "completed" as const, org: "AKT / AdN", resultText: "Audit de vulnérabilité & pare-feu" },
+          { serviceName: "Formation Cyber express", status: "completed" as const, org: "AdN", resultText: "Sensibilisation phishing effectuée" }
+        ]
+      },
+      planification: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      implementation: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      investissement: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      }
+    }
+  },
+  {
+    id: "ben-4",
+    name: "EcoWeave S.A.",
+    size: "PME (45 emp.)",
+    sector: "Textile",
+    location: "Mons",
+    journeyName: "Transition Énergétique",
+    effectivenessScore: 95,
+    effectivenessStatus: "Succès Majeur" as const,
+    effectivenessExplanation: "Transition énergétique remarquable avec réduction majeure des émissions carbones directes (-25%) et économies d'énergies substantielles sur l'outil industriel.",
+    maturityInitial: 20,
+    maturityCurrent: 75,
+    metrics: [
+      { label: "Émissions de CO2 directes", before: "100%", after: "75%", unit: "", isPositive: true },
+      { label: "Économies d'énergie", before: "0 €", after: "18 500 €", unit: "/an", isPositive: true },
+      { label: "Matériaux recyclés", before: "5%", after: "40%", unit: "", isPositive: true }
+    ],
+    steps: {
+      amorcage: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      diagnostic: {
+        proposed: ["Diagnostic de maturité numérique PME"],
+        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Audit énergétique préliminaire" }]
+      },
+      coaching: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      planification: {
+        proposed: ["Programme transition énergétique industrielle"],
+        realized: [{ serviceName: "Programme transition énergétique industrielle", status: "completed" as const, org: "Cluster Tweed", resultText: "Plan carbone validé par un expert" }]
+      },
+      implementation: {
+        proposed: ["Accompagnement transformation digitale industrie 4.0"],
+        realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "completed" as const, org: "Wallonie Entreprendre", resultText: "Optimisation de l'outil industriel" }]
+      },
+      investissement: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      }
+    }
+  },
+  {
+    id: "ben-5",
+    name: "SmartCity Namur",
+    size: "Régie (12 emp.)",
+    sector: "Smart City",
+    location: "Namur",
+    journeyName: "Données Territoriales",
+    effectivenessScore: 52,
+    effectivenessStatus: "Mitigé" as const,
+    effectivenessExplanation: "La stratégie de données territoriales a été rédigée avec succès, mais le consortium S3 n'a pas pu être mis en place, créant un blocage pour la phase d'amorçage.",
+    maturityInitial: 30,
+    maturityCurrent: 55,
+    metrics: [
+      { label: "Catalogues OpenData", before: 0, after: 24, unit: "", isPositive: true },
+      { label: "Communes partenaires", before: 1, after: 5, unit: "", isPositive: true },
+      { label: "Requêtes API citoyennes", before: "0", after: "15k", unit: "/mois", isPositive: true }
+    ],
+    steps: {
+      amorcage: {
+        proposed: ["Détection de consortiums innovation S3"],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      diagnostic: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      coaching: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      planification: {
+        proposed: ["Accompagnement stratégie données territoriales"],
+        realized: [{ serviceName: "Accompagnement stratégie données territoriales", status: "completed" as const, org: "Agence du Numérique", resultText: "Schéma directeur OpenData approuvé" }]
+      },
+      implementation: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      },
+      investissement: {
+        proposed: [] as string[],
+        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      }
+    }
+  }
+];
+
+const calculateEffectiveness = (beneficiary: Beneficiary) => {
+  let totalProposed = 0;
+  let matches = 0;
+  let overlaps = 0;
+  let gaps = 0;
+  
+  const phases = ["amorcage", "diagnostic", "coaching", "planification", "implementation", "investissement"] as const;
+  
+  phases.forEach(phaseId => {
+    const step = beneficiary.steps[phaseId];
+    if (step.proposed.length > 0) {
+      totalProposed += step.proposed.length;
+      step.proposed.forEach(propSvc => {
+        const found = step.realized.find(r => r.serviceName.toLowerCase() === propSvc.toLowerCase());
+        if (found && (found.status === "completed" || found.status === "active")) {
+          matches++;
+        } else {
+          gaps++;
+        }
+      });
+    }
+    
+    const completedCount = step.realized.filter(r => r.status === "completed").length;
+    if (completedCount > 1) {
+      overlaps += (completedCount - 1);
+    }
+  });
+
+  let score = 50;
+  if (totalProposed > 0) {
+    score = Math.round((matches / totalProposed) * 100);
+  } else if (matches > 0) {
+    score = 100;
+  }
+  
+  score = Math.max(0, Math.min(100, score - (overlaps * 10)));
+  
+  let status: "Succès Majeur" | "En bonne voie" | "Mitigé" | "Insuffisant" = "Mitigé";
+  if (score >= 90) status = "Succès Majeur";
+  else if (score >= 70) status = "En bonne voie";
+  else if (score >= 40) status = "Mitigé";
+  else status = "Insuffisant";
+
+  let explanation = "";
+  if (status === "Succès Majeur") {
+    explanation = "Excellent alignement ! La PME a suivi l'essentiel du parcours recommandé sans ruptures majeures. Les gains d'impact mesurés confirment le ROI très positif.";
+  } else if (status === "En bonne voie") {
+    explanation = "Bonne progression générale. La plupart des services critiques recommandés sont complétés ou en cours d'exécution. Quelques gaps mineurs restent à combler.";
+  } else if (status === "Mitigé") {
+    explanation = "Plusieurs écarts constatés. Des étapes clés recommandées n'ont pas été réalisées (gaps) ou des services ont été entamés hors planification initiale.";
+  } else {
+    explanation = "Parcours très fragmenté. Forte dérive par rapport aux recommandations initiales avec plusieurs zones blanches critiques non résolues.";
+  }
+
+  return { score, status, explanation };
+};
+
 export default function ServicesContainer() {
-  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics" | "beneficiaries">("list");
   const [servicesList, setServicesList] = useState(walloonServices);
   const [selectedTheme, setSelectedTheme] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<any | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Beneficiaries State
+  const [beneficiaries, setBeneficiaries] = useState(initialBeneficiaries);
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>("ben-1");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Simulator States
+  const [simPhase, setSimPhase] = useState<string>("amorcage");
+  const [simService, setSimService] = useState<string>("");
+  const [simStatus, setSimStatus] = useState<"completed" | "active">("completed");
+  const [simResult, setSimResult] = useState<string>("");
+
+  const handleAddProposed = (phaseId: string, serviceName: string) => {
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      
+      const phaseKey = phaseId as keyof typeof b.steps;
+      const currentProposed = b.steps[phaseKey].proposed;
+      if (currentProposed.includes(serviceName)) return b; // avoid duplicates
+      
+      const updatedSteps = {
+        ...b.steps,
+        [phaseKey]: {
+          ...b.steps[phaseKey],
+          proposed: [...currentProposed, serviceName]
+        }
+      };
+      
+      const updatedBeneficiary = { ...b, steps: updatedSteps };
+      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
+      
+      return {
+        ...updatedBeneficiary,
+        effectivenessScore: score,
+        effectivenessStatus: status,
+        effectivenessExplanation: explanation
+      };
+    }));
+  };
+
+  const handleAddRealized = (phaseId: string, serviceName: string, status: "completed" | "active", resultText: string) => {
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      
+      const matchedSvc = servicesList.find(s => s.name === serviceName);
+      const orgName = matchedSvc ? matchedSvc.organisationId : "Partenaire";
+      
+      const phaseKey = phaseId as keyof typeof b.steps;
+      const currentRealized = b.steps[phaseKey].realized;
+      const updatedSteps = {
+        ...b.steps,
+        [phaseKey]: {
+          ...b.steps[phaseKey],
+          realized: [
+            ...currentRealized,
+            { serviceName, status, org: orgName, resultText: resultText || "Réalisation enregistrée" }
+          ]
+        }
+      };
+      
+      const updatedBeneficiary = { ...b, steps: updatedSteps };
+      const { score, status: effStatus, explanation } = calculateEffectiveness(updatedBeneficiary);
+      
+      return {
+        ...updatedBeneficiary,
+        effectivenessScore: score,
+        effectivenessStatus: effStatus,
+        effectivenessExplanation: explanation
+      };
+    }));
+  };
+
+  const handleRemoveProposed = (phaseId: string, serviceName: string) => {
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      
+      const phaseKey = phaseId as keyof typeof b.steps;
+      const updatedSteps = {
+        ...b.steps,
+        [phaseKey]: {
+          ...b.steps[phaseKey],
+          proposed: b.steps[phaseKey].proposed.filter(p => p !== serviceName)
+        }
+      };
+      
+      const updatedBeneficiary = { ...b, steps: updatedSteps };
+      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
+      
+      return {
+        ...updatedBeneficiary,
+        effectivenessScore: score,
+        effectivenessStatus: status,
+        effectivenessExplanation: explanation
+      };
+    }));
+  };
+
+  const handleRemoveRealized = (phaseId: string, serviceIndex: number) => {
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      
+      const phaseKey = phaseId as keyof typeof b.steps;
+      const updatedSteps = {
+        ...b.steps,
+        [phaseKey]: {
+          ...b.steps[phaseKey],
+          realized: b.steps[phaseKey].realized.filter((_, idx) => idx !== serviceIndex)
+        }
+      };
+      
+      const updatedBeneficiary = { ...b, steps: updatedSteps };
+      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
+      
+      return {
+        ...updatedBeneficiary,
+        effectivenessScore: score,
+        effectivenessStatus: status,
+        effectivenessExplanation: explanation
+      };
+    }));
+  };
 
   // Dynamic DB fetching and merging with fallback seeds
   useEffect(() => {
@@ -282,6 +717,18 @@ export default function ServicesContainer() {
           >
             <Plus className="w-3.5 h-3.5" />
             Nouvel Encodage
+          </button>
+          <button
+            onClick={() => setActiveTab("beneficiaries")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200",
+              activeTab === "beneficiaries"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900"
+            )}
+          >
+            <Users className="w-3.5 h-3.5" />
+            Suivi Bénéficiaires
           </button>
         </div>
       </div>
@@ -656,6 +1103,573 @@ export default function ServicesContainer() {
           }} />
         </div>
       )}
+
+      {/* 4. BENEFICIARIES VIEW */}
+      {activeTab === "beneficiaries" && (() => {
+        const getPhaseDiagnostic = (phaseId: string, step: typeof initialBeneficiaries[0]["steps"][keyof typeof initialBeneficiaries[0]["steps"]]) => {
+          const hasProposed = step.proposed.length > 0;
+          const completed = step.realized.filter(r => r.status === "completed");
+          const active = step.realized.filter(r => r.status === "active");
+          const hasRealized = completed.length > 0 || active.length > 0;
+
+          if (!hasProposed && !hasRealized) {
+            return {
+              status: "neutral",
+              label: "Non concerné",
+              bg: "bg-gray-150 dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800",
+              desc: "Cette étape n'a pas été recommandée pour cette entreprise."
+            };
+          }
+          if (hasProposed && !hasRealized) {
+            return {
+              status: "gap",
+              label: "Rupture (Gap)",
+              bg: "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20",
+              desc: "Étape recommandée mais non entamée (zone blanche)."
+            };
+          }
+          if (!hasProposed && hasRealized) {
+            return {
+              status: "opportunity",
+              label: "Hors-parcours",
+              bg: "bg-blue-500/10 text-blue-600 dark:text-blue-450 border-blue-500/20",
+              desc: "Service réalisé de manière autonome."
+            };
+          }
+          if (step.realized.filter(r => r.status === "completed").length > 1) {
+            return {
+              status: "overlap",
+              label: "Doublon",
+              bg: "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20",
+              desc: "Plusieurs services suivis pour un même objectif."
+            };
+          }
+          return {
+            status: "match",
+            label: "Aligné",
+            bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20",
+            desc: "Le parcours recommandé a été respecté avec succès."
+          };
+        };
+
+        const b = beneficiaries.find(x => x.id === selectedBeneficiaryId) || beneficiaries[0];
+
+        const handleLocalAddProposed = () => {
+          if (!simService) return;
+          handleAddProposed(simPhase, simService);
+        };
+
+        const handleLocalAddRealized = () => {
+          if (!simService) return;
+          handleAddRealized(simPhase, simService, simStatus, simResult);
+          setSimResult("");
+        };
+
+        return (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Main dashboard description */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                  Suivi des Bénéficiaires & Diagnostics de Parcours
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Comparez les recommandations formulées (Proposé) aux actions réellement entreprises (Réalisé) par chaque PME wallonne, identifiez les zones blanches (gaps) et les redondances (doublons), et évaluez si le parcours a porté ses fruits.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 whitespace-nowrap shrink-0">
+                <Users className="w-4 h-4" />
+                <span>{beneficiaries.length} Bénéficiaires Actifs</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Side: Master List of companies */}
+              <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                    <Search className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Rechercher une PME..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-gray-700 dark:text-gray-100"
+                  />
+                </div>
+
+                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                  {beneficiaries
+                    .filter(item => 
+                      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.sector.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.location.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((item) => {
+                      const isActive = item.id === selectedBeneficiaryId;
+                      const completion = Object.values(item.steps).reduce((acc, step) => {
+                        if (step.proposed.length > 0) {
+                          const matched = step.proposed.some(p => step.realized.some(r => r.serviceName.toLowerCase() === p.toLowerCase() && (r.status === "completed" || r.status === "active")));
+                          if (matched) return acc + 1;
+                        }
+                        return acc;
+                      }, 0);
+                      const totalProposedPhases = Object.values(item.steps).filter(step => step.proposed.length > 0).length;
+                      const pct = totalProposedPhases > 0 ? Math.round((completion / totalProposedPhases) * 100) : 100;
+
+                      let badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20";
+                      if (item.effectivenessStatus === "Succès Majeur") {
+                        badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20";
+                      } else if (item.effectivenessStatus === "En bonne voie") {
+                        badgeColor = "bg-teal-500/10 text-teal-600 dark:text-teal-450 border-teal-500/20";
+                      } else if (item.effectivenessStatus === "Mitigé") {
+                        badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20";
+                      }
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setSelectedBeneficiaryId(item.id)}
+                          className={cn(
+                            "w-full text-left p-3 rounded-xl border transition-all duration-200 flex flex-col gap-2 cursor-pointer",
+                            isActive
+                              ? "bg-teal-500/5 dark:bg-teal-950/15 border-teal-500/30 text-teal-700 dark:text-teal-300 shadow-sm"
+                              : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800/80 hover:bg-gray-50/50 dark:hover:bg-gray-900/30"
+                          )}
+                        >
+                          <div className="flex justify-between items-start w-full">
+                            <div className="min-w-0 pr-1">
+                              <span className="text-[9px] text-gray-400 font-bold uppercase block tracking-wider truncate">{item.sector}</span>
+                              <span className="text-xs font-extrabold text-gray-800 dark:text-gray-100 truncate block">{item.name}</span>
+                            </div>
+                            <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-bold border shrink-0", badgeColor)}>
+                              {item.effectivenessStatus}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 text-[9px] text-gray-400">
+                            <MapPin className="w-3 h-3 text-teal-500" />
+                            <span className="truncate">{item.location} • {item.size}</span>
+                          </div>
+
+                          <div className="space-y-1 mt-1 w-full">
+                            <div className="flex justify-between text-[9px] font-bold">
+                              <span className="text-gray-400">Avancement</span>
+                              <span className="text-teal-600 dark:text-teal-400">{pct}%</span>
+                            </div>
+                            <div className="w-full h-1 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
+                              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Right Side: Detailed Dashboard for selected company */}
+              <div className="col-span-12 lg:col-span-8 xl:col-span-9 space-y-6">
+                {/* Detailed Header Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-50 dark:border-gray-700/60 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Building2 className="w-5 h-5 text-teal-600" />
+                        <h2 className="text-lg font-black text-gray-800 dark:text-gray-100">{b.name}</h2>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-400">
+                          {b.size}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Secteur d'activité : <strong className="text-gray-600 dark:text-gray-300">{b.sector}</strong> • Localisation : <strong className="text-gray-600 dark:text-gray-300">{b.location}</strong>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-left sm:text-right">
+                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Objectif Territorial</span>
+                        <span className="text-xs font-black text-teal-600 dark:text-teal-400">{b.journeyName}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // Reset local beneficiary data to seeds
+                          const orig = initialBeneficiaries.find(o => o.id === b.id);
+                          if (orig) {
+                            setBeneficiaries(prev => prev.map(item => item.id === b.id ? JSON.parse(JSON.stringify(orig)) : item));
+                          }
+                        }}
+                        title="Restaurer l'état initial de simulation"
+                        className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-750 text-gray-400 dark:text-gray-500 transition cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bilan d'impact panel ("A porté ses fruits ?") */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    {/* Left: Effectiveness score gauge */}
+                    <div className="md:col-span-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-150 dark:border-gray-800/80 flex flex-col items-center justify-between text-center min-h-[140px]">
+                      <div className="w-full">
+                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                          Efficacité du Parcours
+                        </span>
+                        <div className="flex items-baseline justify-center gap-1 mt-2">
+                          <span className="text-3xl font-black text-teal-600 dark:text-teal-400">{b.effectivenessScore}</span>
+                          <span className="text-sm font-bold text-gray-400">/ 100</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full mt-3 space-y-1">
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              b.effectivenessScore >= 90
+                                ? "bg-emerald-500"
+                                : b.effectivenessScore >= 70
+                                  ? "bg-teal-500"
+                                  : b.effectivenessScore >= 40
+                                    ? "bg-amber-500"
+                                    : "bg-rose-500"
+                            )}
+                            style={{ width: `${b.effectivenessScore}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-extrabold block text-gray-500 dark:text-gray-450 pt-1">
+                          Jauge d'atteinte des objectifs S3
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: Explanation & metrics */}
+                    <div className="md:col-span-8 flex flex-col justify-between space-y-4">
+                      <div className="bg-teal-500/5 dark:bg-teal-950/5 p-3.5 rounded-xl border border-teal-500/10 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                        <div className="flex items-center gap-1.5 font-bold text-teal-700 dark:text-teal-400 mb-1">
+                          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+                          <span>Bilan d'impact territorial</span>
+                        </div>
+                        {b.effectivenessExplanation}
+                      </div>
+
+                      {/* Comparateur Avant vs Après */}
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">
+                          Mesures & Retours d'Impact (Avant vs Après)
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {b.metrics.map((metric, mIdx) => (
+                            <div key={mIdx} className="bg-white dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                              <span className="text-[9px] text-gray-400 font-bold block truncate">{metric.label}</span>
+                              <div className="flex items-center justify-between mt-1">
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="text-[10px] text-gray-400 line-through truncate">{metric.before}</span>
+                                  <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
+                                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-450 truncate">
+                                    {metric.after}{metric.unit}
+                                  </span>
+                                </div>
+                                <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20 shrink-0">
+                                  {metric.isPositive ? "▲ OK" : "▼"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comparative Gaps & Doublons Grid */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                      Analyse du Parcours : Gaps & Doublons
+                    </h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Cartographie complète des 6 phases pour {b.name}. Repérez les services recommandés non initiés (gaps) et les chevauchements redondants (doublons).
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {([
+                      { id: "amorcage", label: "1. Amorçage", desc: "Sensibilisation et mise en relation" },
+                      { id: "diagnostic", label: "2. Diagnostic", desc: "Évaluation de maturité et TRL" },
+                      { id: "coaching", label: "3. Coaching", desc: "Conseils et cybersécurité" },
+                      { id: "planification", label: "4. Planification", desc: "Roadmap et stratégie" },
+                      { id: "implementation", label: "5. Mise en œuvre", desc: "Accompagnement, labs, prototype" },
+                      { id: "investissement", label: "6. Investissement", desc: "Financements et subsides" }
+                    ] as const).map((phase) => {
+                      const stepData = b.steps[phase.id];
+                      const diag = getPhaseDiagnostic(phase.id, stepData);
+
+                      return (
+                        <div
+                          key={phase.id}
+                          className={cn(
+                            "p-4 rounded-xl border flex flex-col justify-between min-h-[220px] transition-all duration-300",
+                            diag.status === "gap"
+                              ? "bg-rose-500/5 border-rose-500/20 dark:bg-rose-950/10"
+                              : diag.status === "overlap"
+                                ? "bg-amber-500/5 border-amber-500/20 dark:bg-amber-955/10"
+                                : diag.status === "opportunity"
+                                  ? "bg-blue-500/5 border-blue-500/20 dark:bg-blue-955/10"
+                                  : diag.status === "match"
+                                    ? "bg-emerald-500/5 border-emerald-500/20 dark:bg-emerald-955/10"
+                                    : "bg-gray-50 dark:bg-gray-900/50 border-gray-150 dark:border-gray-800"
+                          )}
+                        >
+                          <div className="space-y-3">
+                            {/* Phase Header */}
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <span className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider">
+                                  {phase.label}
+                                </span>
+                                <p className="text-[9px] text-gray-450 dark:text-gray-400 leading-tight">{phase.desc}</p>
+                              </div>
+                              <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-extrabold border select-none whitespace-nowrap", diag.bg)}>
+                                  {diag.label}
+                                </span>
+                            </div>
+
+                            {/* Proposed List */}
+                            <div className="space-y-1">
+                              <span className="text-[8px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                                Proposé (Recommandé)
+                              </span>
+                              {stepData.proposed.length > 0 ? (
+                                <div className="space-y-1">
+                                  {stepData.proposed.map((pSvc, idx) => (
+                                    <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 px-2 py-1 rounded-md border border-gray-150 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300">
+                                      <span className="truncate pr-2 font-medium" title={pSvc}>{pSvc}</span>
+                                      <button
+                                        onClick={() => handleRemoveProposed(phase.id, pSvc)}
+                                        title="Supprimer la recommandation"
+                                        className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[9px] text-gray-400 italic block pl-1">Aucune recommandation</span>
+                              )}
+                            </div>
+
+                            {/* Realized List */}
+                            <div className="space-y-1">
+                              <span className="text-[8px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+                                Réalisé (Actions)
+                              </span>
+                              {stepData.realized.length > 0 ? (
+                                <div className="space-y-1">
+                                  {stepData.realized.map((rSvc, idx) => {
+                                    const isCompleted = rSvc.status === "completed";
+
+                                    return (
+                                      <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-150 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300">
+                                        <div className="flex-1 min-w-0 pr-1">
+                                          <div className="flex items-center gap-1.5">
+                                              <span className={cn(
+                                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                                isCompleted ? "bg-emerald-500" : "bg-teal-500 animate-pulse"
+                                              )} />
+                                            <span className="truncate font-bold text-gray-800 dark:text-gray-200 leading-tight block" title={rSvc.serviceName}>
+                                                {rSvc.serviceName}
+                                              </span>
+                                          </div>
+                                          <div className="flex justify-between items-center text-[8px] text-gray-400 mt-1">
+                                            <span className="truncate">{rSvc.org}</span>
+                                            <span className={cn("px-1 py-0.2 rounded font-semibold", isCompleted ? "bg-emerald-500/10 text-emerald-600" : "bg-teal-500/10 text-teal-500")}>
+                                                {isCompleted ? "Fait" : "En cours"}
+                                              </span>
+                                          </div>
+                                          <p className="text-[8px] text-gray-400 italic mt-0.5 line-clamp-1 border-t border-gray-50 dark:border-gray-800 pt-0.5">
+                                            {rSvc.resultText}
+                                          </p>
+                                        </div>
+                                        <button
+                                          onClick={() => handleRemoveRealized(phase.id, idx)}
+                                          title="Retirer l'action réalisée"
+                                          className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition shrink-0 self-start mt-0.5 cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-rose-500/80 pl-1">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="text-[9px] font-bold">Aucun service suivi</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Phase description/diagnosis text */}
+                          <p className="text-[8.5px] text-gray-450 dark:text-gray-400 border-t border-gray-100 dark:border-gray-850 pt-2 mt-4 leading-tight italic">
+                            {diag.desc}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Interactive Simulator Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-5 h-5 text-teal-650 dark:text-teal-400" />
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                      Cockpit de Simulation de Parcours
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Utilisez ce panneau pour ajouter des recommandations ou simuler des actions pour {b.name}. Les calculs d'efficacité, les statuts de gaps et de doublons se mettront à jour en temps réel.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    {/* simulator col 1: propose service */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
+                      <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
+                        <Check className="w-4 h-4 text-teal-500" />
+                        <span>1. Proposer une Recommandation</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                            Étape du Parcours
+                          </label>
+                          <select
+                            value={simPhase}
+                            onChange={(e) => setSimPhase(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                          >
+                            <option value="amorcage">1. Amorçage</option>
+                            <option value="diagnostic">2. Diagnostic</option>
+                            <option value="coaching">3. Coaching</option>
+                            <option value="planification">4. Planification</option>
+                            <option value="implementation">5. Mise en œuvre</option>
+                            <option value="investissement">6. Investissement</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                            Service du Catalogue S3
+                          </label>
+                          <select
+                            value={simService}
+                            onChange={(e) => setSimService(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                          >
+                            {servicesList.map(s => (
+                              <option key={s.id} value={s.name}>{s.name} ({s.organisationId})</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          onClick={handleLocalAddProposed}
+                          className="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                        >
+                          Ajouter aux Recommandations
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* simulator col 2: record realized */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
+                      <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
+                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                        <span>2. Déclarer une Action Réalisée</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                              Étape du Parcours
+                            </label>
+                            <select
+                              value={simPhase}
+                              onChange={(e) => setSimPhase(e.target.value)}
+                              className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                            >
+                              <option value="amorcage">1. Amorçage</option>
+                              <option value="diagnostic">2. Diagnostic</option>
+                              <option value="coaching">3. Coaching</option>
+                              <option value="planification">4. Planification</option>
+                              <option value="implementation">5. Mise en œuvre</option>
+                              <option value="investissement">6. Investissement</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                              Statut de l'Action
+                            </label>
+                            <select
+                              value={simStatus}
+                              onChange={(e) => setSimStatus(e.target.value as any)}
+                              className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                            >
+                              <option value="completed">Complété (Fait)</option>
+                              <option value="active">En cours</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                            Service du Catalogue S3
+                          </label>
+                          <select
+                            value={simService}
+                            onChange={(e) => setSimService(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                          >
+                            {servicesList.map(s => (
+                              <option key={s.id} value={s.name}>{s.name} ({s.organisationId})</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                            Résultat & Livrable Mesuré
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="ex: Plan de transition carbone rédigé"
+                            value={simResult}
+                            onChange={(e) => setSimResult(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleLocalAddRealized}
+                          className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                        >
+                          Enregistrer la Réalisation
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Detail Slide-Over Panel */}
       <AnimatePresence>

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Wizard from "@/components/encode/Wizard";
 import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge, Route, Edit3, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import CraftEcosystem from "@/components/craft/CraftEcosystem";
 
 // List of the 10 real Walloon services for absolute reliability and zero API fail risks
 const walloonServices = [
@@ -634,7 +635,7 @@ const calculateEffectiveness = (journey: BeneficiaryJourneyInstance) => {
 };
 
 export default function ServicesContainer() {
-  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics" | "beneficiaries" | "journeys">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "encode" | "analytics" | "beneficiaries" | "journeys" | "craft">("list");
   const [servicesList, setServicesList] = useState(walloonServices);
   const [selectedTheme, setSelectedTheme] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<any | null>(null);
@@ -1155,6 +1156,18 @@ export default function ServicesContainer() {
           >
             <Route className="w-3.5 h-3.5" />
             Gestion des Parcours
+          </button>
+          <button
+            onClick={() => setActiveTab("craft")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200",
+              activeTab === "craft"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900"
+            )}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            Écosystème & Observatoire (CRAFT)
           </button>
         </div>
       </div>
@@ -2681,6 +2694,11 @@ export default function ServicesContainer() {
           </div>
         );
       })()}
+
+      {/* 6. CRAFT ECOSYSTEM & OBSERVATORY */}
+      {activeTab === "craft" && (
+        <CraftEcosystem />
+      )}
 
       {/* Detail Slide-Over Panel */}
       <AnimatePresence>

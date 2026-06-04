@@ -142,7 +142,50 @@ const walloonServices = [
   }
 ];
 
+// Service cost/duration/benefit reference data (used by recommendation engine)
+const serviceCostData: Record<string, { minEur: number; maxEur: number; durationDays: number; benefitScore: number; personDays: number }> = {
+  "svc-1":  { minEur: 500,   maxEur: 2000,  durationDays: 15,  benefitScore: 82, personDays: 5 },
+  "svc-2":  { minEur: 8000,  maxEur: 20000, durationDays: 90,  benefitScore: 95, personDays: 25 },
+  "svc-3":  { minEur: 5000,  maxEur: 15000, durationDays: 60,  benefitScore: 91, personDays: 18 },
+  "svc-4":  { minEur: 1000,  maxEur: 3000,  durationDays: 20,  benefitScore: 88, personDays: 8 },
+  "svc-5":  { minEur: 2000,  maxEur: 6000,  durationDays: 30,  benefitScore: 84, personDays: 10 },
+  "svc-6":  { minEur: 1500,  maxEur: 4000,  durationDays: 25,  benefitScore: 87, personDays: 7 },
+  "svc-7":  { minEur: 5000,  maxEur: 18000, durationDays: 75,  benefitScore: 93, personDays: 20 },
+  "svc-8":  { minEur: 800,   maxEur: 2500,  durationDays: 12,  benefitScore: 79, personDays: 4 },
+  "svc-9":  { minEur: 600,   maxEur: 1800,  durationDays: 10,  benefitScore: 76, personDays: 3 },
+  "svc-10": { minEur: 3000,  maxEur: 10000, durationDays: 45,  benefitScore: 85, personDays: 15 },
+};
+
 type EffectivenessType = "Succès Majeur" | "En bonne voie" | "Mitigé" | "Insuffisant";
+
+interface RealizedService {
+  serviceName: string;
+  status: "completed" | "active";
+  org: string;
+  resultText: string;
+  date?: string;
+  costEur?: number;
+  durationDays?: number;
+  benefitScore?: number;
+  resourcesPersonDays?: number;
+}
+
+interface SimulatedService {
+  serviceName: string;
+  org: string;
+  phaseId: string;
+  estimatedCostEur: number;
+  estimatedDurationDays: number;
+  estimatedBenefitScore: number;
+  estimatedResourcesPersonDays: number;
+  rationale: string;
+}
+
+interface JourneyStep {
+  proposed: string[];
+  realized: RealizedService[];
+  simulated?: SimulatedService[];
+}
 
 interface BeneficiaryJourneyInstance {
   id: string;
@@ -160,12 +203,12 @@ interface BeneficiaryJourneyInstance {
     isPositive: boolean;
   }[];
   steps: {
-    amorcage: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
-    diagnostic: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
-    coaching: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
-    planification: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
-    implementation: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
-    investissement: { proposed: string[]; realized: { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]; };
+    amorcage: JourneyStep;
+    diagnostic: JourneyStep;
+    coaching: JourneyStep;
+    planification: JourneyStep;
+    implementation: JourneyStep;
+    investissement: JourneyStep;
   };
 }
 
@@ -339,27 +382,33 @@ const initialBeneficiaries: Beneficiary[] = [
         steps: {
           amorcage: {
             proposed: ["Mise en relation partenaires IA & industrie"],
-            realized: [{ serviceName: "Mise en relation partenaires IA & industrie", status: "completed", org: "Pôle Mecatech", resultText: "Partenaire trouvé pour le tri optique" }]
+            realized: [{ serviceName: "Mise en relation partenaires IA & industrie", status: "completed", org: "Pôle Mecatech", resultText: "Partenaire trouvé pour le tri optique", date: "2024-03-15", costEur: 1200, durationDays: 10, benefitScore: 78, resourcesPersonDays: 3 }],
+            simulated: []
           },
           diagnostic: {
             proposed: ["Diagnostic de maturité numérique PME"],
-            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "Agence du Numérique", resultText: "Maturité numérique de départ évaluée" }]
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "Agence du Numérique", resultText: "Maturité numérique de départ évaluée", date: "2024-04-10", costEur: 1500, durationDays: 15, benefitScore: 82, resourcesPersonDays: 5 }],
+            simulated: []
           },
           coaching: {
             proposed: ["Parcours cybersécurité PME"],
-            realized: []
+            realized: [],
+            simulated: []
           },
           planification: {
             proposed: ["Accompagnement stratégie données territoriales"],
-            realized: []
+            realized: [],
+            simulated: []
           },
           implementation: {
             proposed: ["Accompagnement transformation digitale industrie 4.0"],
-            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "active", org: "Wallonie Entreprendre", resultText: "Lignes de montage en cours de digitalisation" }]
+            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "active", org: "Wallonie Entreprendre", resultText: "Lignes de montage en cours de digitalisation", date: "2024-05-20", costEur: 12000, durationDays: 60, benefitScore: 90, resourcesPersonDays: 25 }],
+            simulated: []
           },
           investissement: {
             proposed: ["Recherche de financement innovation"],
-            realized: []
+            realized: [],
+            simulated: []
           }
         }
       },
@@ -376,18 +425,20 @@ const initialBeneficiaries: Beneficiary[] = [
           { label: "Employés formés", before: "0%", after: "0%", unit: "%", isPositive: true }
         ],
         steps: {
-          amorcage: { proposed: [], realized: [] },
+          amorcage: { proposed: [], realized: [], simulated: [] },
           diagnostic: {
             proposed: ["Diagnostic de maturité numérique PME"],
-            realized: []
+            realized: [],
+            simulated: []
           },
           coaching: {
             proposed: ["Parcours cybersécurité PME"],
-            realized: []
+            realized: [],
+            simulated: []
           },
-          planification: { proposed: [], realized: [] },
-          implementation: { proposed: [], realized: [] },
-          investissement: { proposed: [], realized: [] }
+          planification: { proposed: [], realized: [], simulated: [] },
+          implementation: { proposed: [], realized: [], simulated: [] },
+          investissement: { proposed: [], realized: [], simulated: [] }
         }
       }
     ]
@@ -414,19 +465,22 @@ const initialBeneficiaries: Beneficiary[] = [
         steps: {
           amorcage: {
             proposed: ["Détection de consortiums innovation S3"],
-            realized: [{ serviceName: "Détection de consortiums innovation S3", status: "completed", org: "SPW EER", resultText: "Consortium validé avec l'ULiège" }]
+            realized: [{ serviceName: "Détection de consortiums innovation S3", status: "completed", org: "SPW EER", resultText: "Consortium validé avec l'ULiège", date: "2024-01-20", costEur: 1800, durationDays: 12, benefitScore: 80, resourcesPersonDays: 4 }],
+            simulated: []
           },
           diagnostic: {
             proposed: ["Diagnostic de maturité numérique PME"],
-            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité TRL 3 évaluée" }]
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité TRL 3 évaluée", date: "2024-02-15", costEur: 1500, durationDays: 15, benefitScore: 82, resourcesPersonDays: 5 }],
+            simulated: []
           },
-          coaching: { proposed: [], realized: [] },
-          planification: { proposed: [], realized: [] },
+          coaching: { proposed: [], realized: [], simulated: [] },
+          planification: { proposed: [], realized: [], simulated: [] },
           implementation: {
             proposed: ["Programme expérimentation IA industrielle"],
-            realized: []
+            realized: [],
+            simulated: []
           },
-          investissement: { proposed: [], realized: [] }
+          investissement: { proposed: [], realized: [], simulated: [] }
         }
       },
       {
@@ -442,17 +496,19 @@ const initialBeneficiaries: Beneficiary[] = [
           { label: "Chiffre d'affaires export", before: "0%", after: "+25%", unit: "", isPositive: true }
         ],
         steps: {
-          amorcage: { proposed: [], realized: [] },
-          diagnostic: { proposed: [], realized: [] },
+          amorcage: { proposed: [], realized: [], simulated: [] },
+          diagnostic: { proposed: [], realized: [], simulated: [] },
           coaching: {
             proposed: ["Accompagnement export international digital"],
-            realized: []
+            realized: [{ serviceName: "Accompagnement export international digital", status: "completed", org: "AWEX", resultText: "Stratégie e-commerce mise en place", date: "2024-03-01", costEur: 4500, durationDays: 30, benefitScore: 86, resourcesPersonDays: 10 }],
+            simulated: []
           },
-          planification: { proposed: [], realized: [] },
-          implementation: { proposed: [], realized: [] },
+          planification: { proposed: [], realized: [], simulated: [] },
+          implementation: { proposed: [], realized: [], simulated: [] },
           investissement: {
             proposed: ["Recherche de financement innovation"],
-            realized: [{ serviceName: "Recherche de financement innovation", status: "completed", org: "Wallonie Entreprendre", resultText: "Aide à la R&D de 250k€ obtenue" }]
+            realized: [{ serviceName: "Recherche de financement innovation", status: "completed", org: "Wallonie Entreprendre", resultText: "Aide WE 450k€ obtenue", date: "2024-04-15", costEur: 2000, durationDays: 20, benefitScore: 95, resourcesPersonDays: 8 }],
+            simulated: []
           }
         }
       }
@@ -475,25 +531,27 @@ const initialBeneficiaries: Beneficiary[] = [
         effectivenessExplanation: "Audit complet cybersécurité effectué et plan d'action résolu. Les employés ont été formés, le risque de rançongiciel a été neutralisé à 100%.",
         metrics: [
           { label: "Intrusions / Failles bloquées", before: "10%", after: "100%", unit: "", isPositive: true },
-          { label: "Équipe formée au Phishing", before: "0%", after: "100%", unit: "", isPositive: true },
+          { label: "Équipe formée au Phishing", before: "0%", after: "100%", unit: "%", isPositive: true },
           { label: "Indisponibilité IT (jours/an)", before: 4.5, after: 0.1, unit: " j", isPositive: true }
         ],
         steps: {
-          amorcage: { proposed: [], realized: [] },
+          amorcage: { proposed: [], realized: [], simulated: [] },
           diagnostic: {
             proposed: ["Diagnostic de maturité numérique PME"],
-            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité cyber évaluée" }]
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité cyber évaluée", date: "2024-01-10", costEur: 800, durationDays: 5, benefitScore: 85, resourcesPersonDays: 3 }],
+            simulated: []
           },
           coaching: {
             proposed: ["Parcours cybersécurité PME"],
             realized: [
-              { serviceName: "Parcours cybersécurité PME", status: "completed", org: "AKT / AdN", resultText: "Audit de vulnérabilité & pare-feu" },
-              { serviceName: "Formation Cyber express", status: "completed", org: "AdN", resultText: "Sensibilisation phishing effectuée" }
-            ]
+              { serviceName: "Parcours cybersécurité PME", status: "completed", org: "AKT / AdN", resultText: "Audit de vulnérabilité & pare-feu", date: "2024-02-05", costEur: 2500, durationDays: 20, benefitScore: 92, resourcesPersonDays: 7 },
+              { serviceName: "Formation Cyber express", status: "completed", org: "AdN", resultText: "Sensibilisation phishing effectuée", date: "2024-02-20", costEur: 500, durationDays: 2, benefitScore: 95, resourcesPersonDays: 2 }
+            ],
+            simulated: []
           },
-          planification: { proposed: [], realized: [] },
-          implementation: { proposed: [], realized: [] },
-          investissement: { proposed: [], realized: [] }
+          planification: { proposed: [], realized: [], simulated: [] },
+          implementation: { proposed: [], realized: [], simulated: [] },
+          investissement: { proposed: [], realized: [], simulated: [] }
         }
       }
     ]
@@ -519,21 +577,24 @@ const initialBeneficiaries: Beneficiary[] = [
           { label: "Matériaux recyclés", before: "5%", after: "40%", unit: "", isPositive: true }
         ],
         steps: {
-          amorcage: { proposed: [], realized: [] },
+          amorcage: { proposed: [], realized: [], simulated: [] },
           diagnostic: {
             proposed: ["Diagnostic de maturité numérique PME"],
-            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Audit énergétique préliminaire" }]
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "Cluster Tweed", resultText: "Plan de réduction carbone établi", date: "2024-02-28", costEur: 1500, durationDays: 15, benefitScore: 88, resourcesPersonDays: 5 }],
+            simulated: []
           },
-          coaching: { proposed: [], realized: [] },
+          coaching: { proposed: [], realized: [], simulated: [] },
           planification: {
             proposed: ["Programme transition énergétique industrielle"],
-            realized: [{ serviceName: "Programme transition énergétique industrielle", status: "completed", org: "Cluster Tweed", resultText: "Plan carbone validé par un expert" }]
+            realized: [{ serviceName: "Programme transition énergétique industrielle", status: "completed", org: "Cluster Tweed", resultText: "Plan carbone validé par un expert", date: "2024-03-15", costEur: 9000, durationDays: 75, benefitScore: 93, resourcesPersonDays: 20 }],
+            simulated: []
           },
           implementation: {
             proposed: ["Accompagnement transformation digitale industrie 4.0"],
-            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "completed", org: "Wallonie Entreprendre", resultText: "Optimisation de l'outil industriel" }]
+            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "completed", org: "Wallonie Entreprendre", resultText: "Optimisation de l'outil industriel", date: "2024-06-01", costEur: 11000, durationDays: 55, benefitScore: 91, resourcesPersonDays: 25 }],
+            simulated: []
           },
-          investissement: { proposed: [], realized: [] }
+          investissement: { proposed: [], realized: [], simulated: [] }
         }
       }
     ]
@@ -561,16 +622,18 @@ const initialBeneficiaries: Beneficiary[] = [
         steps: {
           amorcage: {
             proposed: ["Détection de consortiums innovation S3"],
-            realized: []
+            realized: [],
+            simulated: []
           },
-          diagnostic: { proposed: [], realized: [] },
-          coaching: { proposed: [], realized: [] },
+          diagnostic: { proposed: [], realized: [], simulated: [] },
+          coaching: { proposed: [], realized: [], simulated: [] },
           planification: {
             proposed: ["Accompagnement stratégie données territoriales"],
-            realized: [{ serviceName: "Accompagnement stratégie données territoriales", status: "completed", org: "Agence du Numérique", resultText: "Schéma directeur OpenData approuvé" }]
+            realized: [{ serviceName: "Accompagnement stratégie données territoriales", status: "completed", org: "Agence du Numérique", resultText: "Schéma directeur OpenData approuvé", date: "2024-03-10", costEur: 6000, durationDays: 45, benefitScore: 85, resourcesPersonDays: 15 }],
+            simulated: []
           },
-          implementation: { proposed: [], realized: [] },
-          investissement: { proposed: [], realized: [] }
+          implementation: { proposed: [], realized: [], simulated: [] },
+          investissement: { proposed: [], realized: [], simulated: [] }
         }
       }
     ]
@@ -632,6 +695,183 @@ const calculateEffectiveness = (journey: BeneficiaryJourneyInstance) => {
   }
 
   return { score, status, explanation };
+};
+
+const calculateSimulatedEffectiveness = (steps: BeneficiaryJourneyInstance["steps"]) => {
+  let totalProposed = 0;
+  let matches = 0;
+  let overlaps = 0;
+  let gaps = 0;
+  
+  const phases = ["amorcage", "diagnostic", "coaching", "planification", "implementation", "investissement"] as const;
+  
+  phases.forEach(phaseId => {
+    const step = steps[phaseId];
+    if (step.proposed.length > 0) {
+      totalProposed += step.proposed.length;
+      step.proposed.forEach(propSvc => {
+        const foundRealized = step.realized.find(r => r.serviceName.toLowerCase() === propSvc.toLowerCase());
+        const foundSimulated = step.simulated?.find(s => s.serviceName.toLowerCase() === propSvc.toLowerCase());
+        if ((foundRealized && (foundRealized.status === "completed" || foundRealized.status === "active")) || foundSimulated) {
+          matches++;
+        } else {
+          gaps++;
+        }
+      });
+    }
+    
+    const completedCount = step.realized.filter(r => r.status === "completed").length;
+    const simulatedCount = step.simulated?.length || 0;
+    if (completedCount + simulatedCount > 1) {
+      overlaps += (completedCount + simulatedCount - 1);
+    }
+  });
+
+  let score = 50;
+  if (totalProposed > 0) {
+    score = Math.round((matches / totalProposed) * 100);
+  } else if (matches > 0) {
+    score = 100;
+  }
+  
+  score = Math.max(0, Math.min(100, score - (overlaps * 10)));
+  
+  let status: EffectivenessType = "Mitigé";
+  if (score >= 90) status = "Succès Majeur";
+  else if (score >= 70) status = "En bonne voie";
+  else if (score >= 40) status = "Mitigé";
+  else status = "Insuffisant";
+
+  let explanation = "";
+  if (status === "Succès Majeur") {
+    explanation = "Excellent alignement simulé ! Le parcours recommandé est comblé sans ruptures majeures. Les gains d'impact mesurés confirment le ROI très positif.";
+  } else if (status === "En bonne voie") {
+    explanation = "Bonne progression simulée. La plupart des services recommandés sont complétés, en cours ou simulés. Quelques gaps mineurs restent à combler.";
+  } else if (status === "Mitigé") {
+    explanation = "Plusieurs écarts subsistent même après simulation. Des étapes recommandées n'ont pas pu être couvertes faute de budget ou de temps.";
+  } else {
+    explanation = "Parcours très fragmenté. Forte dérive par rapport aux recommandations avec plusieurs zones blanches critiques non résolues.";
+  }
+
+  return { score, status, explanation };
+};
+
+const runSimulation = (
+  journey: BeneficiaryJourneyInstance,
+  simBudgetMax: number,
+  simDurationMax: number,
+  simPriority: "competitiveness" | "jobs" | "resilience" | "carbon" | "sovereignty",
+  servicesList: any[]
+) => {
+  const simulatedSteps: BeneficiaryJourneyInstance["steps"] = JSON.parse(JSON.stringify(journey.steps));
+  
+  const phases = ["amorcage", "diagnostic", "coaching", "planification", "implementation", "investissement"] as const;
+  phases.forEach(p => {
+    simulatedSteps[p].simulated = [];
+  });
+  
+  let realizedCost = 0;
+  let realizedDuration = 0;
+  let realizedPersonDays = 0;
+  
+  phases.forEach(phaseId => {
+    const step = journey.steps[phaseId];
+    step.realized.forEach(r => {
+      realizedCost += r.costEur || 0;
+      realizedDuration += r.durationDays || 0;
+      realizedPersonDays += r.resourcesPersonDays || 0;
+    });
+  });
+
+  const gaps: Array<{ phaseId: typeof phases[number]; proposedName: string }> = [];
+  phases.forEach(phaseId => {
+    const step = journey.steps[phaseId];
+    if (step.proposed.length > 0 && step.realized.length === 0) {
+      step.proposed.forEach(propSvc => {
+        gaps.push({ phaseId, proposedName: propSvc });
+      });
+    }
+  });
+
+  interface Candidate {
+    phaseId: typeof phases[number];
+    serviceName: string;
+    org: string;
+    costEur: number;
+    durationDays: number;
+    benefitScore: number;
+    personDays: number;
+    adjustedScore: number;
+    impacts: any;
+  }
+  
+  const candidates: Candidate[] = [];
+  gaps.forEach(gap => {
+    const matchedSvc = servicesList.find(s => s.name.toLowerCase() === gap.proposedName.toLowerCase());
+    if (matchedSvc) {
+      const costData = serviceCostData[matchedSvc.id] || { minEur: 1000, maxEur: 3000, durationDays: 20, benefitScore: 80, personDays: 5 };
+      const avgCost = (costData.minEur + costData.maxEur) / 2;
+      const specificImpact = matchedSvc.impacts && matchedSvc.impacts[simPriority] !== undefined ? matchedSvc.impacts[simPriority] : 50;
+      const adjustedScore = (costData.benefitScore * 0.4) + (specificImpact * 0.6);
+      
+      candidates.push({
+        phaseId: gap.phaseId,
+        serviceName: matchedSvc.name,
+        org: matchedSvc.organisationId,
+        costEur: avgCost,
+        durationDays: costData.durationDays,
+        benefitScore: costData.benefitScore,
+        personDays: costData.personDays,
+        adjustedScore: adjustedScore,
+        impacts: matchedSvc.impacts || {}
+      });
+    }
+  });
+
+  candidates.sort((a, b) => {
+    const roiA = a.adjustedScore / (a.costEur / 1000 + a.durationDays / 30 + 0.1);
+    const roiB = b.adjustedScore / (b.costEur / 1000 + b.durationDays / 30 + 0.1);
+    return roiB - roiA;
+  });
+
+  let currentCost = realizedCost;
+  let currentDuration = realizedDuration;
+  let currentPersonDays = realizedPersonDays;
+  
+  const addedSimulated: SimulatedService[] = [];
+
+  candidates.forEach(cand => {
+    if (currentCost + cand.costEur <= simBudgetMax && currentDuration + cand.durationDays <= simDurationMax) {
+      const simSvc: SimulatedService = {
+        serviceName: cand.serviceName,
+        org: cand.org,
+        phaseId: cand.phaseId,
+        estimatedCostEur: cand.costEur,
+        estimatedDurationDays: cand.durationDays,
+        estimatedBenefitScore: cand.benefitScore,
+        estimatedResourcesPersonDays: cand.personDays,
+        rationale: `Recommandé pour combler la phase ${cand.phaseId} car il présente un excellent score d'impact ${simPriority} de ${cand.impacts[simPriority] || 50}% pour un coût et une durée optimaux.`
+      };
+      
+      if (!simulatedSteps[cand.phaseId].simulated) {
+        simulatedSteps[cand.phaseId].simulated = [];
+      }
+      simulatedSteps[cand.phaseId].simulated!.push(simSvc);
+      
+      currentCost += cand.costEur;
+      currentDuration += cand.durationDays;
+      currentPersonDays += cand.personDays;
+      addedSimulated.push(simSvc);
+    }
+  });
+
+  return {
+    simulatedSteps,
+    totalCost: currentCost,
+    totalDuration: currentDuration,
+    totalPersonDays: currentPersonDays,
+    addedSimulated
+  };
 };
 
 export default function ServicesContainer() {
@@ -775,6 +1015,12 @@ export default function ServicesContainer() {
   const [simResult, setSimResult] = useState<string>("");
   const [simNewJourneyName, setSimNewJourneyName] = useState<string>("Transformation Numérique (Industrie 4.0)");
 
+  // As-Is / Simulation mode
+  const [benefViewMode, setBenefViewMode] = useState<"asis" | "simulation">("asis");
+  const [simBudgetMax, setSimBudgetMax] = useState<number>(25000);
+  const [simDurationMax, setSimDurationMax] = useState<number>(120);
+  const [simPriority, setSimPriority] = useState<"competitiveness" | "jobs" | "resilience" | "carbon" | "sovereignty">("competitiveness");
+
   useEffect(() => {
     // Automatically pre-populate simulator service selector
     if (servicesList.length > 0 && !simService) {
@@ -834,6 +1080,12 @@ export default function ServicesContainer() {
       const matchedSvc = servicesList.find(s => s.name === serviceName);
       const orgName = matchedSvc ? matchedSvc.organisationId : "Partenaire";
       
+      const costData = matchedSvc ? serviceCostData[matchedSvc.id] : null;
+      const costEur = costData ? (costData.minEur + costData.maxEur) / 2 : 1000;
+      const durationDays = costData ? costData.durationDays : 15;
+      const benefitScore = costData ? costData.benefitScore : 80;
+      const resourcesPersonDays = costData ? costData.personDays : 5;
+
       const updatedJourneys = b.journeys.map(j => {
         if (j.id !== selectedJourneyId) return j;
         
@@ -845,7 +1097,17 @@ export default function ServicesContainer() {
             ...j.steps[phaseKey],
             realized: [
               ...currentRealized,
-              { serviceName, status, org: orgName, resultText: resultText || "Réalisation enregistrée" }
+              { 
+                serviceName, 
+                status, 
+                org: orgName, 
+                resultText: resultText || "Réalisation enregistrée",
+                costEur,
+                durationDays,
+                benefitScore,
+                resourcesPersonDays,
+                date: new Date().toISOString().split('T')[0]
+              }
             ]
           }
         };
@@ -1546,7 +1808,7 @@ export default function ServicesContainer() {
 
       {/* 4. BENEFICIARIES VIEW */}
       {activeTab === "beneficiaries" && (() => {
-        const getPhaseDiagnostic = (phaseId: string, step: BeneficiaryJourneyInstance["steps"][keyof BeneficiaryJourneyInstance["steps"]]) => {
+        const getPhaseDiagnostic = (phaseId: string, step: any) => {
           const hasProposed = step.proposed.length > 0;
           const completed = step.realized.filter((r: any) => r.status === "completed");
           const active = step.realized.filter((r: any) => r.status === "active");
@@ -1564,7 +1826,7 @@ export default function ServicesContainer() {
             return {
               status: "gap",
               label: "Rupture (Gap)",
-              bg: "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20",
+              bg: "bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20",
               desc: "Étape recommandée mais non entamée (zone blanche)."
             };
           }
@@ -1580,20 +1842,58 @@ export default function ServicesContainer() {
             return {
               status: "overlap",
               label: "Doublon",
-              bg: "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20",
+              bg: "bg-amber-500/10 text-amber-600 dark:text-amber-455 border-amber-500/20",
               desc: "Plusieurs services suivis pour un même objectif."
             };
           }
           return {
             status: "match",
             label: "Aligné",
-            bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20",
+            bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 border-emerald-500/20",
             desc: "Le parcours recommandé a été respecté avec succès."
           };
         };
 
         const b = beneficiaries.find(x => x.id === selectedBeneficiaryId) || beneficiaries[0];
         const selectedJourney = b.journeys.find(j => j.id === selectedJourneyId) || b.journeys[0];
+
+        // 1. Calculate As-Is (Realized) metrics
+        let realCost = 0;
+        let realDuration = 0;
+        let realPersonDays = 0;
+        let realActiveCount = 0;
+        let realCompletedCount = 0;
+        const phasesList = ["amorcage", "diagnostic", "coaching", "planification", "implementation", "investissement"] as const;
+        
+        phasesList.forEach(phaseId => {
+          const step = selectedJourney.steps[phaseId];
+          step.realized.forEach(r => {
+            realCost += r.costEur || 0;
+            realDuration += r.durationDays || 0;
+            realPersonDays += r.resourcesPersonDays || 0;
+            if (r.status === "active") realActiveCount++;
+            if (r.status === "completed") realCompletedCount++;
+          });
+        });
+        
+        const realEff = calculateEffectiveness(selectedJourney);
+
+        // 2. Calculate Simulation metrics
+        const simResultData = runSimulation(selectedJourney, simBudgetMax, simDurationMax, simPriority, servicesList);
+        const simSteps = simResultData.simulatedSteps;
+        const simCost = simResultData.totalCost;
+        const simDuration = simResultData.totalDuration;
+        const simPersonDays = simResultData.totalPersonDays;
+        const simEff = calculateSimulatedEffectiveness(simSteps);
+        const addedSimulated = simResultData.addedSimulated;
+
+        // 3. Compute Delta values
+        const deltaCost = simCost - realCost;
+        const deltaDuration = simDuration - realDuration;
+        const deltaPersonDays = simPersonDays - realPersonDays;
+        const deltaScore = simEff.score - realEff.score;
+        
+        const simRoi = deltaCost > 0 ? (deltaScore / (deltaCost / 1000)).toFixed(1) : "0.0";
 
         const handleLocalAddProposed = () => {
           if (!simService) return;
@@ -1606,6 +1906,71 @@ export default function ServicesContainer() {
           setSimResult("");
         };
 
+        const getPhaseSimulatedDiagnostic = (phaseId: string, step: any) => {
+          const hasProposed = step.proposed.length > 0;
+          const completed = step.realized.filter((r: any) => r.status === "completed");
+          const active = step.realized.filter((r: any) => r.status === "active");
+          const hasRealized = completed.length > 0 || active.length > 0;
+          const hasSimulated = step.simulated && step.simulated.length > 0;
+
+          if (!hasProposed && !hasRealized && !hasSimulated) {
+            return {
+              status: "neutral",
+              label: "Non concerné",
+              bg: "bg-gray-150 dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800",
+              desc: "Cette étape n'a pas été recommandée pour cette entreprise."
+            };
+          }
+          if (hasProposed && !hasRealized && !hasSimulated) {
+            return {
+              status: "gap",
+              label: "Non couvert",
+              bg: "bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20",
+              desc: "Étape recommandée mais hors critères de simulation."
+            };
+          }
+          if (hasProposed && !hasRealized && hasSimulated) {
+            return {
+              status: "simulated",
+              label: "✨ Simulation",
+              bg: "bg-amber-500/10 text-amber-600 dark:text-amber-455 border-amber-500/20",
+              desc: "Étape comblée par recommandation automatique."
+            };
+          }
+          if (!hasProposed && (hasRealized || hasSimulated)) {
+            return {
+              status: "opportunity",
+              label: "Hors-parcours",
+              bg: "bg-blue-500/10 text-blue-600 dark:text-blue-455 border-blue-500/20",
+              desc: "Service réalisé ou simulé hors recommandation."
+            };
+          }
+          const completedCount = step.realized.filter((r: any) => r.status === "completed").length;
+          const simulatedCount = step.simulated?.length || 0;
+          if (completedCount + simulatedCount > 1) {
+            return {
+              status: "overlap",
+              label: "Doublon",
+              bg: "bg-amber-500/10 text-amber-600 dark:text-amber-455 border-amber-500/20",
+              desc: "Plusieurs services suivis pour un même objectif."
+            };
+          }
+          return {
+            status: "match",
+            label: "Aligné",
+            bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 border-emerald-500/20",
+            desc: "Le parcours recommandé a été respecté avec succès."
+          };
+        };
+
+        const getPhaseDiagnosticForMode = (phaseId: string, stepRealized: any[], stepProposed: string[], stepSimulated?: any[]) => {
+          if (benefViewMode === "asis") {
+            return getPhaseDiagnostic(phaseId, { proposed: stepProposed, realized: stepRealized });
+          } else {
+            return getPhaseSimulatedDiagnostic(phaseId, { proposed: stepProposed, realized: stepRealized, simulated: stepSimulated });
+          }
+        };
+
         return (
           <div className="space-y-6 animate-fadeIn">
             {/* Main dashboard description */}
@@ -1615,7 +1980,7 @@ export default function ServicesContainer() {
                   Suivi des Bénéficiaires & Diagnostics de Parcours
                 </h3>
                 <p className="text-xs text-gray-400">
-                  Comparez les recommandations formulées (Proposé) aux actions réellement entreprises (Réalisé) par chaque PME wallonne, identifiez les zones blanches (gaps) et les redondances (doublons), et évaluez si le parcours a porté ses fruits.
+                  Visualisez les parcours réels d'innovation ("As-Is") ou simulez des accompagnements potentiels sous contraintes de budget, de temps et de ressources pour optimiser la trajectoire des PME wallonnes.
                 </p>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 whitespace-nowrap shrink-0">
@@ -1640,7 +2005,7 @@ export default function ServicesContainer() {
                   />
                 </div>
 
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                   {beneficiaries
                     .filter(item => 
                       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1661,13 +2026,13 @@ export default function ServicesContainer() {
                       const pct = totalProposedPhases > 0 ? Math.round((completion / totalProposedPhases) * 100) : 100;
 
                       const effStatus = primaryJourney ? primaryJourney.effectivenessStatus : "Insuffisant";
-                      let badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20";
+                      let badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20";
                       if (effStatus === "Succès Majeur") {
-                        badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20";
+                        badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 border-emerald-500/20";
                       } else if (effStatus === "En bonne voie") {
-                        badgeColor = "bg-teal-500/10 text-teal-600 dark:text-teal-450 border-teal-500/20";
+                        badgeColor = "bg-teal-500/10 text-teal-600 dark:text-teal-455 border-teal-500/20";
                       } else if (effStatus === "Mitigé") {
-                        badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20";
+                        badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-455 border-amber-500/20";
                       }
 
                       return (
@@ -1718,9 +2083,9 @@ export default function ServicesContainer() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-50 dark:border-gray-700/60 pb-4">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Building2 className="w-5 h-5 text-teal-600" />
+                        <Building2 className="w-5 h-5 text-teal-650 dark:text-teal-400 animate-pulse" />
                         <h2 className="text-lg font-black text-gray-800 dark:text-gray-100">{b.name}</h2>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-400">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-450">
                           {b.size}
                         </span>
                       </div>
@@ -1736,14 +2101,16 @@ export default function ServicesContainer() {
                       </div>
                       <button
                         onClick={() => {
-                          // Reset local beneficiary data to seeds
                           const orig = initialBeneficiaries.find(o => o.id === b.id);
                           if (orig) {
                             setBeneficiaries(prev => prev.map(item => item.id === b.id ? JSON.parse(JSON.stringify(orig)) : item));
                           }
+                          setSimBudgetMax(25000);
+                          setSimDurationMax(120);
+                          setSimPriority("competitiveness");
                         }}
                         title="Restaurer l'état initial de simulation"
-                        className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-750 text-gray-400 dark:text-gray-500 transition cursor-pointer"
+                        className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-200 dark:border-gray-750 text-gray-400 dark:text-gray-500 transition cursor-pointer"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
@@ -1751,7 +2118,7 @@ export default function ServicesContainer() {
                   </div>
 
                   {/* Journey Switcher Tabs */}
-                  <div className="border-b border-gray-100 dark:border-gray-700 pb-4">
+                  <div className="border-b border-gray-100 dark:border-gray-750 pb-4">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
                       Parcours Actifs du Bénéficiaire (Cliquez pour basculer)
                     </span>
@@ -1759,9 +2126,9 @@ export default function ServicesContainer() {
                       {b.journeys.map((j) => {
                         const isSelected = j.id === selectedJourneyId;
                         let jBadgeColor = "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-450";
-                        if (j.effectivenessStatus === "Succès Majeur") jBadgeColor = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-450";
-                        else if (j.effectivenessStatus === "En bonne voie") jBadgeColor = "bg-teal-500/10 text-teal-600 border-teal-500/20 dark:text-teal-450";
-                        else if (j.effectivenessStatus === "Mitigé") jBadgeColor = "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-450";
+                        if (j.effectivenessStatus === "Succès Majeur") jBadgeColor = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-455";
+                        else if (j.effectivenessStatus === "En bonne voie") jBadgeColor = "bg-teal-500/10 text-teal-600 border-teal-500/20 dark:text-teal-455";
+                        else if (j.effectivenessStatus === "Mitigé") jBadgeColor = "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-455";
 
                         return (
                           <div
@@ -1769,14 +2136,14 @@ export default function ServicesContainer() {
                             className={cn(
                               "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 cursor-pointer text-xs",
                               isSelected
-                                ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                                ? "bg-teal-650 text-white border-teal-650 shadow-sm"
                                 : "bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800"
                             )}
                             onClick={() => setSelectedJourneyId(j.id)}
                           >
                             <div className="flex flex-col text-left">
                               <span className="font-bold leading-tight">{j.name}</span>
-                              <span className={cn("text-[9px] mt-0.5 font-medium", isSelected ? "text-teal-100" : "text-gray-450 dark:text-gray-400")}>
+                              <span className={cn("text-[9px] mt-0.5 font-medium", isSelected ? "text-teal-100" : "text-gray-400 dark:text-gray-500")}>
                                 {j.provider} • Efficacité: {j.effectivenessScore}%
                               </span>
                             </div>
@@ -1804,80 +2171,261 @@ export default function ServicesContainer() {
                     </div>
                   </div>
 
-                  {/* Bilan d'impact panel ("A porté ses fruits ?") */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    {/* Left: Effectiveness score gauge */}
-                    <div className="md:col-span-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-150 dark:border-gray-800/80 flex flex-col items-center justify-between text-center min-h-[140px]">
-                      <div className="w-full">
-                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
-                          Efficacité du Parcours
-                        </span>
-                        <div className="flex items-baseline justify-center gap-1 mt-2">
-                          <span className="text-3xl font-black text-teal-600 dark:text-teal-400">{selectedJourney ? selectedJourney.effectivenessScore : 0}</span>
-                          <span className="text-sm font-bold text-gray-400">/ 100</span>
-                        </div>
-                      </div>
+                  {/* Mode Toggle Bar */}
+                  <div className="flex bg-gray-50 dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-800/80 max-w-sm shadow-inner">
+                    <button
+                      onClick={() => setBenefViewMode("asis")}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition duration-200",
+                        benefViewMode === "asis"
+                          ? "bg-white dark:bg-gray-800 text-teal-650 dark:text-teal-400 shadow-sm border border-gray-100 dark:border-gray-700"
+                          : "text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                      )}
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      Vue As-Is (Réel)
+                    </button>
+                    <button
+                      onClick={() => setBenefViewMode("simulation")}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition duration-200",
+                        benefViewMode === "simulation"
+                          ? "bg-teal-650 dark:bg-teal-650 text-white shadow-sm"
+                          : "text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                      )}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-300" />
+                      Mode Simulation
+                    </button>
+                  </div>
 
-                      <div className="w-full mt-3 space-y-1">
-                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-500",
-                              (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 90
-                                ? "bg-emerald-500"
-                                : (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 70
-                                  ? "bg-teal-500"
-                                  : (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 40
-                                    ? "bg-amber-500"
-                                    : "bg-rose-500"
-                            )}
-                            style={{ width: `${selectedJourney ? selectedJourney.effectivenessScore : 0}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-extrabold block text-gray-500 dark:text-gray-450 pt-1">
-                          Jauge d'atteinte des objectifs S3
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Right: Explanation & metrics */}
-                    <div className="md:col-span-8 flex flex-col justify-between space-y-4">
-                      <div className="bg-teal-500/5 dark:bg-teal-950/5 p-3.5 rounded-xl border border-teal-500/10 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                        <div className="flex items-center gap-1.5 font-bold text-teal-700 dark:text-teal-400 mb-1">
-                          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-                          <span>Bilan d'impact territorial</span>
-                        </div>
-                        {selectedJourney ? selectedJourney.effectivenessExplanation : ""}
-                      </div>
-
-                      {/* Comparateur Avant vs Après */}
-                      <div className="space-y-2">
-                        <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">
-                          Mesures & Retours d'Impact (Avant vs Après)
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          {selectedJourney ? selectedJourney.metrics.map((metric: any, mIdx: number) => (
-                            <div key={mIdx} className="bg-white dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm flex flex-col justify-between">
-                              <span className="text-[9px] text-gray-400 font-bold block truncate">{metric.label}</span>
-                              <div className="flex items-center justify-between mt-1">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <span className="text-[10px] text-gray-400 line-through truncate">{metric.before}</span>
-                                  <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
-                                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-450 truncate">
-                                    {metric.after}{metric.unit}
-                                  </span>
-                                </div>
-                                <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20 shrink-0">
-                                  {metric.isPositive ? "▲ OK" : "▼"}
-                                </span>
-                              </div>
+                  {/* Bilan d'impact panel / Comparative Indicators Panel */}
+                  <div className="border-t border-gray-100 dark:border-gray-750 pt-5">
+                    {benefViewMode === "asis" ? (
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* Left: Effectiveness score gauge */}
+                        <div className="md:col-span-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-150 dark:border-gray-800/80 flex flex-col items-center justify-between text-center min-h-[140px]">
+                          <div className="w-full">
+                            <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                              Efficacité du Parcours Réel
+                            </span>
+                            <div className="flex items-baseline justify-center gap-1 mt-2">
+                              <span className="text-3xl font-black text-teal-600 dark:text-teal-400">{realEff.score}</span>
+                              <span className="text-sm font-bold text-gray-400">/ 100</span>
                             </div>
-                          )) : null}
+                          </div>
+
+                          <div className="w-full mt-3 space-y-1">
+                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  realEff.score >= 90
+                                    ? "bg-emerald-500"
+                                    : realEff.score >= 70
+                                      ? "bg-teal-500"
+                                      : realEff.score >= 40
+                                        ? "bg-amber-500"
+                                        : "bg-rose-500"
+                                )}
+                                style={{ width: `${realEff.score}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-extrabold block text-gray-500 dark:text-gray-450 pt-1">
+                              Atteinte des objectifs S3
+                            </span>
+                          </div>
                         </div>
+
+                        {/* Right: Explanation & metrics */}
+                        <div className="md:col-span-8 flex flex-col justify-between space-y-4">
+                          <div className="bg-teal-500/5 dark:bg-teal-950/5 p-3.5 rounded-xl border border-teal-500/10 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                            <div className="flex items-center gap-1.5 font-bold text-teal-700 dark:text-teal-400 mb-1">
+                              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+                              <span>Bilan d'impact territorial</span>
+                            </div>
+                            {realEff.explanation}
+                          </div>
+
+                          {/* Comparateur Avant vs Après */}
+                          <div className="space-y-2">
+                            <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">
+                              Mesures & Retours d'Impact (Avant vs Après)
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {selectedJourney.metrics.map((metric: any, mIdx: number) => (
+                                <div key={mIdx} className="bg-white dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                                  <span className="text-[9px] text-gray-400 font-bold block truncate">{metric.label}</span>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <span className="text-[10px] text-gray-400 line-through truncate">{metric.before}</span>
+                                      <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
+                                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-450 truncate">
+                                        {metric.after}{metric.unit}
+                                      </span>
+                                    </div>
+                                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20 shrink-0">
+                                      {metric.isPositive ? "▲ OK" : "▼"}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      // Simulation Dashboard Metrics
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {/* Cost Comparison */}
+                          <div className="bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/20 dark:to-gray-900 p-4 rounded-xl border border-teal-100 dark:border-teal-900/40 shadow-sm">
+                            <span className="text-[9px] font-extrabold text-teal-650 dark:text-teal-400 uppercase tracking-wider block">Coût total (Réel → Simulé)</span>
+                            <h4 className="text-sm font-black text-gray-800 dark:text-zinc-150 mt-1">
+                              {realCost.toLocaleString()} € → <span className="text-teal-650 dark:text-teal-400">{simCost.toLocaleString()} €</span>
+                            </h4>
+                            <span className="text-[9px] font-semibold text-gray-400 block mt-1">
+                              Additionnel: +{deltaCost.toLocaleString()} €
+                            </span>
+                          </div>
+
+                          {/* Duration Comparison */}
+                          <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-900 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40 shadow-sm">
+                            <span className="text-[9px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Durée totale (Réel → Simulé)</span>
+                            <h4 className="text-sm font-black text-gray-800 dark:text-zinc-150 mt-1">
+                              {realDuration} j → <span className="text-blue-600 dark:text-blue-400">{simDuration} j</span>
+                            </h4>
+                            <span className="text-[9px] font-semibold text-gray-400 block mt-1">
+                              Temps requis: +{deltaDuration} jours
+                            </span>
+                          </div>
+
+                          {/* Resources Comparison */}
+                          <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-gray-900 p-4 rounded-xl border border-purple-100 dark:border-purple-900/40 shadow-sm">
+                            <span className="text-[9px] font-extrabold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">Ressources (Réel → Simulé)</span>
+                            <h4 className="text-sm font-black text-gray-800 dark:text-zinc-150 mt-1">
+                              {realPersonDays} j-h → <span className="text-purple-600 dark:text-purple-400">{simPersonDays} j-h</span>
+                            </h4>
+                            <span className="text-[9px] font-semibold text-gray-400 block mt-1">
+                              Effort additionnel: +{deltaPersonDays} j-h
+                            </span>
+                          </div>
+
+                          {/* Score Comparison */}
+                          <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4 rounded-xl border border-amber-100 dark:border-amber-900/40 shadow-sm">
+                            <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Score Efficacité (Réel → Simulé)</span>
+                            <h4 className="text-sm font-black text-gray-800 dark:text-zinc-150 mt-1">
+                              {realEff.score}% → <span className="text-amber-500 font-extrabold">{simEff.score}%</span>
+                            </h4>
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-450 block mt-1">
+                              Gain: +{deltaScore}% ({simEff.status})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Performance indicators */}
+                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-150 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Performance ROI de la Simulation</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Calcule le gain de maturité du parcours par tranche de 1 000 € investis dans les services publics.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="text-2xl font-black text-teal-650 dark:text-teal-400 block">{simRoi}x</span>
+                              <span className="text-[8px] font-semibold text-gray-400">Score / 1k € simulés</span>
+                            </div>
+                            <span className="bg-teal-500/10 text-teal-650 dark:text-teal-400 border border-teal-500/20 text-[9px] font-bold px-2 py-1 rounded-lg">
+                              {Number(simRoi) > 2 ? "Rentabilité Élevée" : "Rentabilité Modérée"}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-amber-500/5 p-3 rounded-lg border border-amber-500/10 text-[11px] text-gray-600 dark:text-zinc-350 leading-relaxed">
+                          <strong>Bilan de la Simulation :</strong> {simEff.explanation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Simulation controls panel */}
+                {benefViewMode === "simulation" && (
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                        Moteur de Simulation & Critères de Recommandation S3
+                      </h3>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      Définissez vos contraintes de budget, de temps et votre priorité d'impact. L'algorithme client calcule instantanément la meilleure combinaison de services sémantiques pour combler les gaps constatés.
+                    </p>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                      {/* Budget max Slider */}
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                        <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                          <span>Budget Max (Cumulé)</span>
+                          <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simBudgetMax.toLocaleString()} €</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={realCost}
+                          max={realCost + 40000}
+                          step={1000}
+                          value={simBudgetMax}
+                          onChange={(e) => setSimBudgetMax(Number(e.target.value))}
+                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                        />
+                        <div className="flex justify-between text-[8px] text-gray-400">
+                          <span>Actuel ({realCost.toLocaleString()} €)</span>
+                          <span>Max ({ (realCost + 40000).toLocaleString() } €)</span>
+                        </div>
+                      </div>
+
+                      {/* Duration max Slider */}
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                        <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                          <span>Durée Max (Cumulée)</span>
+                          <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simDurationMax} jours</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={realDuration}
+                          max={realDuration + 180}
+                          step={5}
+                          value={simDurationMax}
+                          onChange={(e) => setSimDurationMax(Number(e.target.value))}
+                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                        />
+                        <div className="flex justify-between text-[8px] text-gray-400">
+                          <span>Actuel ({realDuration} j)</span>
+                          <span>Max ({realDuration + 180} j)</span>
+                        </div>
+                      </div>
+
+                      {/* Priority selector */}
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                          Priorité Strategique S3
+                        </label>
+                        <select
+                          value={simPriority}
+                          onChange={(e) => setSimPriority(e.target.value as any)}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                        >
+                          <option value="competitiveness">📈 Compétitivité industrielle</option>
+                          <option value="jobs">👥 Création & Maintien d'emplois</option>
+                          <option value="resilience">🛡️ Cyber-résilience & Sécurité</option>
+                          <option value="carbon">🌱 Décarbonation & Climat</option>
+                          <option value="sovereignty">🔐 Souveraineté & Interopérabilité</option>
+                        </select>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Comparative Gaps & Doublons Grid */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
@@ -1892,13 +2440,15 @@ export default function ServicesContainer() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-455 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />Gap
                       </span>
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />Doublon
-                      </span>
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                      {benefViewMode === "simulation" && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-455 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />Simulé
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-455 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />Match
                       </span>
                     </div>
@@ -1915,7 +2465,9 @@ export default function ServicesContainer() {
                       { id: "investissement",num: "6", label: "Investissement", desc: "Financements & subsides" }
                     ] as const).map((phase) => {
                       const stepData = selectedJourney ? selectedJourney.steps[phase.id] : { proposed: [], realized: [] };
-                      const diag = getPhaseDiagnostic(phase.id, stepData);
+                      const stepDataSimulated = benefViewMode === "simulation" ? simSteps[phase.id].simulated || [] : [];
+                      
+                      const diag = getPhaseDiagnosticForMode(phase.id, stepData.realized, stepData.proposed, stepDataSimulated);
 
                       return (
                         <div
@@ -1923,26 +2475,29 @@ export default function ServicesContainer() {
                           className={cn(
                             "flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
                             diag.status === "gap"
-                              ? "border-rose-300 dark:border-rose-800"
+                              ? "border-rose-300 dark:border-rose-800 bg-rose-500/5"
                               : diag.status === "overlap"
-                                ? "border-amber-300 dark:border-amber-800"
-                                : diag.status === "opportunity"
-                                  ? "border-blue-300 dark:border-blue-800"
-                                  : diag.status === "match"
-                                    ? "border-emerald-300 dark:border-emerald-800"
-                                    : "border-gray-200 dark:border-gray-700"
+                                ? "border-amber-300 dark:border-amber-800 bg-amber-500/5"
+                                : diag.status === "simulated"
+                                  ? "border-amber-400 dark:border-amber-700 bg-amber-500/10 shadow-md shadow-amber-500/5"
+                                  : diag.status === "opportunity"
+                                    ? "border-blue-300 dark:border-blue-800 bg-blue-500/5"
+                                    : diag.status === "match"
+                                      ? "border-emerald-300 dark:border-emerald-800 bg-emerald-500/5"
+                                      : "border-gray-200 dark:border-gray-700"
                           )}
                         >
                           {/* Card Header — couleur de fond selon statut */}
                           <div className={cn(
-                            "px-3 pt-3 pb-3 space-y-1.5",
+                            "px-3 pt-3 pb-3 space-y-1.5 border-b border-gray-100 dark:border-gray-750",
                             diag.status === "gap"        ? "bg-rose-50 dark:bg-rose-950/20"
                             : diag.status === "overlap"  ? "bg-amber-50 dark:bg-amber-950/20"
+                            : diag.status === "simulated"? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40"
                             : diag.status === "opportunity" ? "bg-blue-50 dark:bg-blue-950/20"
                             : diag.status === "match"    ? "bg-emerald-50 dark:bg-emerald-950/20"
                             : "bg-gray-50 dark:bg-gray-900/50"
                           )}>
-                            {/* Ligne 1 : numéro ① + nom de la phase — pas de badge ici */}
+                            {/* Ligne 1 : numéro ① + nom de la phase */}
                             <div className="flex items-center gap-2">
                               <span className="w-5 h-5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[10px] font-black text-gray-500 dark:text-gray-300 shadow-sm shrink-0">
                                 {phase.num}
@@ -1955,10 +2510,16 @@ export default function ServicesContainer() {
                             <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-snug pl-7">
                               {phase.desc}
                             </p>
-                            {/* Ligne 3 : badge statut — pleine largeur, aucune compétition horizontale */}
+                            {/* Ligne 3 : badge statut */}
                             <span className={cn(
                               "flex items-center justify-center gap-1 w-full px-2 py-1 rounded-md text-[9px] font-bold border",
-                              diag.bg
+                              diag.status === "simulated" 
+                                ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-350"
+                                : diag.status === "gap"
+                                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200"
+                                  : diag.status === "match"
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200"
+                                    : diag.bg
                             )}>
                               {diag.label}
                             </span>
@@ -1969,7 +2530,7 @@ export default function ServicesContainer() {
                             {/* Section Proposé */}
                             <div>
                               <div className="flex items-center gap-1.5 mb-1.5">
-                                <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-blue-450 shrink-0" />
                                 <span className="text-[9px] font-extrabold text-blue-500 dark:text-blue-400 uppercase tracking-wider">
                                   Proposé
                                 </span>
@@ -1977,8 +2538,8 @@ export default function ServicesContainer() {
                               {stepData.proposed.length > 0 ? (
                                 <div className="space-y-1">
                                   {stepData.proposed.map((pSvc: string, idx: number) => (
-                                    <div key={idx} className="flex items-center justify-between gap-1 bg-blue-50 dark:bg-blue-950/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900">
-                                      <span className="text-[10px] text-gray-700 dark:text-gray-300 font-medium truncate" title={pSvc}>{pSvc}</span>
+                                    <div key={idx} className="flex items-center justify-between gap-1 bg-blue-50/50 dark:bg-blue-950/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900">
+                                      <span className="text-[9px] text-gray-700 dark:text-gray-300 font-medium truncate" title={pSvc}>{pSvc}</span>
                                       <button
                                         onClick={() => handleRemoveProposed(phase.id, pSvc)}
                                         title="Supprimer"
@@ -2003,33 +2564,55 @@ export default function ServicesContainer() {
                                 </span>
                               </div>
                               {stepData.realized.length > 0 ? (
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                   {stepData.realized.map((rSvc: any, idx: number) => {
                                     const isCompleted = rSvc.status === "completed";
                                     return (
-                                      <div key={idx} className="flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900">
-                                        <span className={cn(
-                                          "w-1.5 h-1.5 rounded-full shrink-0 mt-1",
-                                          isCompleted ? "bg-emerald-500" : "bg-teal-400 animate-pulse"
-                                        )} />
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 truncate leading-tight" title={rSvc.serviceName}>
-                                            {rSvc.serviceName}
-                                          </p>
-                                          <div className="flex items-center justify-between mt-0.5 gap-1">
-                                            <span className="text-[8px] text-gray-400 truncate">{rSvc.org}</span>
-                                            <span className={cn("text-[8px] font-bold px-1 rounded shrink-0", isCompleted ? "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30" : "text-teal-600 bg-teal-100 dark:bg-teal-900/30")}>
-                                              {isCompleted ? "✓ Fait" : "⟳ En cours"}
-                                            </span>
+                                      <div key={idx} className="flex flex-col gap-1 bg-emerald-50 dark:bg-emerald-950/15 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900/60 shadow-sm">
+                                        <div className="flex items-start gap-1 justify-between">
+                                          <div className="flex items-start gap-1 min-w-0">
+                                            <span className={cn(
+                                              "w-1.5 h-1.5 rounded-full shrink-0 mt-1",
+                                              isCompleted ? "bg-emerald-500" : "bg-teal-400 animate-pulse"
+                                            )} />
+                                            <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 truncate leading-tight" title={rSvc.serviceName}>
+                                              {rSvc.serviceName}
+                                            </p>
                                           </div>
+                                          <button
+                                            onClick={() => handleRemoveRealized(phase.id, idx)}
+                                            title="Retirer"
+                                            className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition shrink-0 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
                                         </div>
-                                        <button
-                                          onClick={() => handleRemoveRealized(phase.id, idx)}
-                                          title="Retirer"
-                                          className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition shrink-0 cursor-pointer"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
+                                        
+                                        <div className="flex justify-between items-center gap-1 text-[8px] text-gray-400 mt-0.5">
+                                          <span className="truncate max-w-[80px] font-semibold">{rSvc.org}</span>
+                                          <span className={cn("px-1 rounded text-[7px] font-bold shrink-0", isCompleted ? "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30" : "text-teal-600 bg-teal-100 dark:bg-teal-900/30")}>
+                                            {isCompleted ? "✓ Fait" : "⟳ En cours"}
+                                          </span>
+                                        </div>
+
+                                        {/* Cost and Duration Badges */}
+                                        <div className="flex flex-wrap gap-1 pt-1.5 mt-1 border-t border-emerald-100 dark:border-emerald-900/40">
+                                          {rSvc.costEur !== undefined && (
+                                            <span className="bg-emerald-100/40 dark:bg-emerald-900/25 px-1 py-0.2 rounded text-[7.5px] text-emerald-700 dark:text-emerald-400 font-bold">
+                                              💶 {rSvc.costEur.toLocaleString()} €
+                                            </span>
+                                          )}
+                                          {rSvc.durationDays !== undefined && (
+                                            <span className="bg-emerald-100/40 dark:bg-emerald-900/25 px-1 py-0.2 rounded text-[7.5px] text-emerald-700 dark:text-emerald-400 font-bold">
+                                              ⏱️ {rSvc.durationDays} j
+                                            </span>
+                                          )}
+                                          {rSvc.resourcesPersonDays !== undefined && (
+                                            <span className="bg-emerald-100/40 dark:bg-emerald-900/25 px-1 py-0.2 rounded text-[7.5px] text-emerald-700 dark:text-emerald-400 font-bold">
+                                              👥 {rSvc.resourcesPersonDays} j-h
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                     );
                                   })}
@@ -2042,7 +2625,43 @@ export default function ServicesContainer() {
                               )}
                             </div>
 
-                            {/* Diagnostic */}
+                            {/* Section Simulation (Only visible in simulation mode) */}
+                            {benefViewMode === "simulation" && stepDataSimulated && stepDataSimulated.length > 0 && (
+                              <div className="border-t border-gray-100 dark:border-gray-750 pt-2.5 space-y-2 mt-1">
+                                <div className="flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />
+                                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                    Simulé
+                                  </span>
+                                </div>
+                                {stepDataSimulated.map((sSvc: any, idx: number) => (
+                                  <div key={idx} className="flex flex-col gap-1.5 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 p-2.5 rounded-lg border border-amber-300 dark:border-amber-800 shadow-xs text-left">
+                                    <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 leading-tight" title={sSvc.serviceName}>
+                                      {sSvc.serviceName}
+                                    </p>
+                                    <span className="text-[8px] text-gray-400 font-medium">{sSvc.org}</span>
+                                    
+                                    <div className="flex flex-wrap gap-1 pt-1.5 border-t border-amber-200/50 dark:border-amber-850/50">
+                                      <span className="bg-amber-100/50 dark:bg-amber-900/40 px-1 py-0.2 rounded text-[7.5px] text-amber-700 dark:text-amber-400 font-bold">
+                                        💶 {sSvc.estimatedCostEur.toLocaleString()} €
+                                      </span>
+                                      <span className="bg-amber-100/50 dark:bg-amber-900/40 px-1 py-0.2 rounded text-[7.5px] text-amber-700 dark:text-amber-400 font-bold">
+                                        ⏱️ {sSvc.estimatedDurationDays} j
+                                      </span>
+                                      <span className="bg-amber-100/50 dark:bg-amber-900/40 px-1 py-0.2 rounded text-[7.5px] text-amber-700 dark:text-amber-400 font-bold">
+                                        👥 {sSvc.estimatedResourcesPersonDays} j-h
+                                      </span>
+                                    </div>
+                                    
+                                    <p className="text-[8.5px] text-gray-450 dark:text-gray-400 leading-snug italic mt-1 bg-white/50 dark:bg-gray-900/50 p-1.5 rounded">
+                                      {sSvc.rationale}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Diagnostic Desc */}
                             <p className="text-[8.5px] text-gray-400 italic border-t border-gray-100 dark:border-gray-700 pt-2 mt-auto leading-snug">
                               {diag.desc}
                             </p>
@@ -2053,20 +2672,20 @@ export default function ServicesContainer() {
                   </div>
                 </div>
 
-                {/* Interactive Simulator Card */}
+                {/* Trajectory editor administration cockpit */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
                   <div className="flex items-center gap-2">
                     <Gauge className="w-5 h-5 text-teal-650 dark:text-teal-400" />
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                      Cockpit de Simulation de Parcours
+                      Cockpit d'Administration du Parcours Réel
                     </h3>
                   </div>
                   <p className="text-xs text-gray-400">
-                    Utilisez ce panneau pour ajouter des recommandations ou simuler des actions pour {b.name}. Les calculs d'efficacité, les statuts de gaps et de doublons se mettront à jour en temps réel.
+                    Modifiez le parcours réel de l'entreprise ou ajoutez des recommandations de base. Vos simulations se synchroniseront instantanément pour refléter les nouveaux points de départ réels.
                   </p>
 
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 pt-2">
-                    {/* simulator col 1: propose service */}
+                    {/* Simulator col 1: propose service */}
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
                       <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
                         <Check className="w-4 h-4 text-teal-500" />
@@ -2109,14 +2728,14 @@ export default function ServicesContainer() {
 
                         <button
                           onClick={handleLocalAddProposed}
-                          className="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                          className="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer border-0"
                         >
                           Ajouter aux Recommandations
                         </button>
                       </div>
                     </div>
 
-                    {/* simulator col 2: record realized */}
+                    {/* Simulator col 2: record realized */}
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
                       <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
                         <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -2188,14 +2807,14 @@ export default function ServicesContainer() {
 
                         <button
                           onClick={handleLocalAddRealized}
-                          className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                          className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer border-0"
                         >
                           Enregistrer la Réalisation
                         </button>
                       </div>
                     </div>
 
-                    {/* simulator col 3: enroll new journey */}
+                    {/* Simulator col 3: enroll new journey */}
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-150 dark:border-gray-800 space-y-4">
                       <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
                         <Sparkles className="w-4 h-4 text-purple-500 animate-pulse" />
@@ -2220,13 +2839,13 @@ export default function ServicesContainer() {
                           </select>
                         </div>
 
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight italic bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                        <div className="text-[10px] text-gray-550 dark:text-gray-400 leading-tight italic bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
                           <strong>Objectif :</strong> {journeyTemplates.find(t => t.name === simNewJourneyName)?.objective}
                         </div>
 
                         <button
                           onClick={() => handleEnrollJourney(simNewJourneyName)}
-                          className="w-full py-1.5 bg-purple-650 hover:bg-purple-755 text-white bg-purple-600 hover:bg-purple-700 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                          className="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer border-0"
                         >
                           Inscrire au Parcours
                         </button>

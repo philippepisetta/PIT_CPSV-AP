@@ -488,7 +488,7 @@ export default function ServicesContainer() {
 
               <div className="space-y-2 pt-2">
                 {[
-                  { theme: "IA & Algorithmes", services: ["svc-1", "svc-3", "svc-9"], color: "bg-primary" },
+                  { theme: "IA & Algorithmes", services: ["svc-1", "svc-3", "svc-9"], color: "bg-teal-500" },
                   { theme: "Industrie 4.0 & IoT", services: ["svc-2", "svc-3", "svc-9"], color: "bg-blue-500" },
                   { theme: "Cybersécurité", services: ["svc-5", "svc-6"], color: "bg-red-500" },
                   { theme: "Transition Énergétique", services: ["svc-7"], color: "bg-green-500" },

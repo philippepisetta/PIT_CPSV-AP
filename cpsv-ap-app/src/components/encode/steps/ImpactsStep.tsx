@@ -189,7 +189,8 @@ export default function ImpactsStep() {
               {/* Filled polygon for actual values */}
               <polygon
                 points={polyPoints}
-                className="fill-none stroke-primary-500"
+                fill="none"
+                stroke="#0f766e"
                 strokeWidth="2.5"
               />
 
@@ -200,7 +201,8 @@ export default function ImpactsStep() {
                   cx={p.x}
                   cy={p.y}
                   r="4"
-                  className="fill-white dark:fill-gray-900 stroke-primary-500"
+                  className="fill-white dark:fill-gray-900"
+                  stroke="#0f766e"
                   strokeWidth="2"
                 />
               ))}

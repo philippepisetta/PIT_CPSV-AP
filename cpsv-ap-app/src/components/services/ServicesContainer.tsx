@@ -453,16 +453,17 @@ export default function ServicesContainer() {
                   {/* Aggregated values: Carbon: 45%, Sovereignty: 84%, Resilience: 90%, Competitiveness: 94%, Employment (Jobs): 81% */}
                   <polygon
                     points="120,79.5 191.8,96.7 173.2,166.4 67.3,166.4 49.3,96.7"
-                    className="fill-none stroke-primary-500"
+                    fill="none"
+                    stroke="#0f766e"
                     strokeWidth="2.5"
                   />
 
                   {/* Node dots */}
-                  <circle cx="120" cy="79.5" r="4.5" className="fill-white dark:fill-gray-900 stroke-primary-500" strokeWidth="2.5" />
-                  <circle cx="191.8" cy="96.7" r="4.5" className="fill-white dark:fill-gray-900 stroke-primary-500" strokeWidth="2.5" />
-                  <circle cx="173.2" cy="166.4" r="4.5" className="fill-white dark:fill-gray-900 stroke-primary-500" strokeWidth="2.5" />
-                  <circle cx="67.3" cy="166.4" r="4.5" className="fill-white dark:fill-gray-900 stroke-primary-500" strokeWidth="2.5" />
-                  <circle cx="49.3" cy="96.7" r="4.5" className="fill-white dark:fill-gray-900 stroke-primary-500" strokeWidth="2.5" />
+                  <circle cx="120" cy="79.5" r="4.5" className="fill-white dark:fill-gray-900" stroke="#0f766e" strokeWidth="2.5" />
+                  <circle cx="191.8" cy="96.7" r="4.5" className="fill-white dark:fill-gray-900" stroke="#0f766e" strokeWidth="2.5" />
+                  <circle cx="173.2" cy="166.4" r="4.5" className="fill-white dark:fill-gray-900" stroke="#0f766e" strokeWidth="2.5" />
+                  <circle cx="67.3" cy="166.4" r="4.5" className="fill-white dark:fill-gray-900" stroke="#0f766e" strokeWidth="2.5" />
+                  <circle cx="49.3" cy="96.7" r="4.5" className="fill-white dark:fill-gray-900" stroke="#0f766e" strokeWidth="2.5" />
 
                   {/* Axis Labels */}
                   <text x="120" y="20" textAnchor="middle" className="text-[9px] font-extrabold fill-gray-500 dark:fill-gray-400">Carbon (45%)</text>

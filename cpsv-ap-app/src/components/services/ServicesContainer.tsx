@@ -143,18 +143,14 @@ const walloonServices = [
 
 type EffectivenessType = "Succès Majeur" | "En bonne voie" | "Mitigé" | "Insuffisant";
 
-interface Beneficiary {
+interface BeneficiaryJourneyInstance {
   id: string;
   name: string;
-  size: string;
-  sector: string;
-  location: string;
-  journeyName: string;
+  provider: string;
+  objective: string;
   effectivenessScore: number;
   effectivenessStatus: EffectivenessType;
   effectivenessExplanation: string;
-  maturityInitial: number;
-  maturityCurrent: number;
   metrics: {
     label: string;
     before: string | number;
@@ -172,6 +168,24 @@ interface Beneficiary {
   };
 }
 
+interface Beneficiary {
+  id: string;
+  name: string;
+  size: string;
+  sector: string;
+  location: string;
+  journeys: BeneficiaryJourneyInstance[];
+}
+
+const journeyTemplates = [
+  { name: "Transformation Numérique (Industrie 4.0)", provider: "AdN / WE", objective: "Lignes de production connectées et automatisation" },
+  { name: "Accompagnement Économique & Export", provider: "WE / AWEX", objective: "Levée de fonds R&D et développement international" },
+  { name: "Résilience Cybersécurité", provider: "AKT / AdN", objective: "Audit de vulnérabilité et formation cyber" },
+  { name: "Transition Énergétique & Décarbonation", provider: "Cluster Tweed", objective: "Plan carbone et décarbonation industrielle" },
+  { name: "Recherche & Collaboration S3", provider: "SPW EER", objective: "Consortiums de recherche clinique et validation TRL" },
+  { name: "Données Territoriales", provider: "Agence du Numérique", objective: "Stratégie de données territoriales ouvertes et souveraines" }
+];
+
 const initialBeneficiaries: Beneficiary[] = [
   {
     id: "ben-1",
@@ -179,43 +193,75 @@ const initialBeneficiaries: Beneficiary[] = [
     size: "PME (120 emp.)",
     sector: "Manufacturing",
     location: "Namur",
-    journeyName: "Accélération Industrie 4.0",
-    effectivenessScore: 85,
-    effectivenessStatus: "En bonne voie" as const,
-    effectivenessExplanation: "La PME a réussi l'intégration de capteurs connectés sur ses lignes et prépare sa recherche de financement. Le diagnostic cyber reste une priorité non traitée.",
-    maturityInitial: 25,
-    maturityCurrent: 65,
-    metrics: [
-      { label: "Productivité brute", before: "100%", after: "115%", unit: "", isPositive: true },
-      { label: "Déchets de découpe", before: "18%", after: "14%", unit: "%", isPositive: true },
-      { label: "Consommation d'énergie", before: "100%", after: "88%", unit: "%", isPositive: true }
-    ],
-    steps: {
-      amorcage: {
-        proposed: ["Mise en relation partenaires IA & industrie"],
-        realized: [{ serviceName: "Mise en relation partenaires IA & industrie", status: "completed" as const, org: "Pôle Mecatech", resultText: "Partenaire trouvé pour le tri optique" }]
+    journeys: [
+      {
+        id: "j-1",
+        name: "Transformation Numérique (Industrie 4.0)",
+        provider: "Agence du Numérique / WE",
+        objective: "Lignes de production connectées et automatisation",
+        effectivenessScore: 85,
+        effectivenessStatus: "En bonne voie",
+        effectivenessExplanation: "La PME a réussi l'intégration de capteurs connectés sur ses lignes et prépare sa recherche de financement. Le diagnostic cyber reste une priorité non traitée.",
+        metrics: [
+          { label: "Productivité brute", before: "100%", after: "115%", unit: "", isPositive: true },
+          { label: "Déchets de découpe", before: "18%", after: "14%", unit: "%", isPositive: true },
+          { label: "Consommation d'énergie", before: "100%", after: "88%", unit: "%", isPositive: true }
+        ],
+        steps: {
+          amorcage: {
+            proposed: ["Mise en relation partenaires IA & industrie"],
+            realized: [{ serviceName: "Mise en relation partenaires IA & industrie", status: "completed", org: "Pôle Mecatech", resultText: "Partenaire trouvé pour le tri optique" }]
+          },
+          diagnostic: {
+            proposed: ["Diagnostic de maturité numérique PME"],
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "Agence du Numérique", resultText: "Maturité numérique de départ évaluée" }]
+          },
+          coaching: {
+            proposed: ["Parcours cybersécurité PME"],
+            realized: []
+          },
+          planification: {
+            proposed: ["Accompagnement stratégie données territoriales"],
+            realized: []
+          },
+          implementation: {
+            proposed: ["Accompagnement transformation digitale industrie 4.0"],
+            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "active", org: "Wallonie Entreprendre", resultText: "Lignes de montage en cours de digitalisation" }]
+          },
+          investissement: {
+            proposed: ["Recherche de financement innovation"],
+            realized: []
+          }
+        }
       },
-      diagnostic: {
-        proposed: ["Diagnostic de maturité numérique PME"],
-        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "Agence du Numérique", resultText: "Maturité numérique de départ évaluée" }]
-      },
-      coaching: {
-        proposed: ["Parcours cybersécurité PME"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      planification: {
-        proposed: ["Accompagnement stratégie données territoriales"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      implementation: {
-        proposed: ["Accompagnement transformation digitale industrie 4.0"],
-        realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "active" as const, org: "Wallonie Entreprendre", resultText: "Lignes de montage en cours de digitalisation" }]
-      },
-      investissement: {
-        proposed: ["Recherche de financement innovation"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+      {
+        id: "j-2",
+        name: "Résilience Cybersécurité",
+        provider: "AKT / AdN",
+        objective: "Sécurisation de l'infrastructure d'usine connectée",
+        effectivenessScore: 25,
+        effectivenessStatus: "Insuffisant",
+        effectivenessExplanation: "L'audit cybersécurité initial n'a pas été réalisé alors qu'il est indispensable pour protéger les capteurs IoT industriels nouvellement installés.",
+        metrics: [
+          { label: "Intrusions bloquées", before: "0%", after: "15%", unit: "", isPositive: true },
+          { label: "Employés formés", before: "0%", after: "0%", unit: "%", isPositive: true }
+        ],
+        steps: {
+          amorcage: { proposed: [], realized: [] },
+          diagnostic: {
+            proposed: ["Diagnostic de maturité numérique PME"],
+            realized: []
+          },
+          coaching: {
+            proposed: ["Parcours cybersécurité PME"],
+            realized: []
+          },
+          planification: { proposed: [], realized: [] },
+          implementation: { proposed: [], realized: [] },
+          investissement: { proposed: [], realized: [] }
+        }
       }
-    }
+    ]
   },
   {
     id: "ben-2",
@@ -223,43 +269,65 @@ const initialBeneficiaries: Beneficiary[] = [
     size: "Startup (18 emp.)",
     sector: "BioTech",
     location: "Liège",
-    journeyName: "Recherche & Collaboration S3",
-    effectivenessScore: 78,
-    effectivenessStatus: "En bonne voie" as const,
-    effectivenessExplanation: "Le consortium d'innovation S3 a été validé et le financement R&D de 250k€ a été sécurisé auprès de WE. Reste à lancer l'expérimentation IA avec l'EDIH.",
-    maturityInitial: 15,
-    maturityCurrent: 70,
-    metrics: [
-      { label: "Brevets R&D déposés", before: 0, after: 1, unit: "", isPositive: true },
-      { label: "Chercheurs recrutés", before: 0, after: 3, unit: "", isPositive: true },
-      { label: "Budget R&D sécurisé", before: "50k", after: "300k", unit: "€", isPositive: true }
-    ],
-    steps: {
-      amorcage: {
-        proposed: ["Détection de consortiums innovation S3"],
-        realized: [{ serviceName: "Détection de consortiums innovation S3", status: "completed" as const, org: "SPW EER", resultText: "Consortium validé avec l'ULiège" }]
+    journeys: [
+      {
+        id: "j-3",
+        name: "Recherche & Collaboration S3",
+        provider: "SPW EER",
+        objective: "Consortiums de recherche clinique et validation TRL",
+        effectivenessScore: 78,
+        effectivenessStatus: "En bonne voie",
+        effectivenessExplanation: "Le consortium d'innovation S3 a été validé et le diagnostic TRL est complet. Reste à lancer l'expérimentation IA avec l'EDIH.",
+        metrics: [
+          { label: "Brevets R&D déposés", before: 0, after: 1, unit: "", isPositive: true },
+          { label: "Chercheurs recrutés", before: 0, after: 3, unit: "", isPositive: true }
+        ],
+        steps: {
+          amorcage: {
+            proposed: ["Détection de consortiums innovation S3"],
+            realized: [{ serviceName: "Détection de consortiums innovation S3", status: "completed", org: "SPW EER", resultText: "Consortium validé avec l'ULiège" }]
+          },
+          diagnostic: {
+            proposed: ["Diagnostic de maturité numérique PME"],
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité TRL 3 évaluée" }]
+          },
+          coaching: { proposed: [], realized: [] },
+          planification: { proposed: [], realized: [] },
+          implementation: {
+            proposed: ["Programme expérimentation IA industrielle"],
+            realized: []
+          },
+          investissement: { proposed: [], realized: [] }
+        }
       },
-      diagnostic: {
-        proposed: ["Diagnostic de maturité numérique PME"],
-        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Maturité TRL 3 évaluée" }]
-      },
-      coaching: {
-        proposed: [] as string[],
-        realized: [{ serviceName: "Parcours cybersécurité PME", status: "completed" as const, org: "AKT / AdN", resultText: "Sécurisation des données cliniques" }]
-      },
-      planification: {
-        proposed: ["Accompagnement stratégie données territoriales"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      implementation: {
-        proposed: ["Programme expérimentation IA industrielle"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      investissement: {
-        proposed: ["Recherche de financement innovation"],
-        realized: [{ serviceName: "Recherche de financement innovation", status: "completed" as const, org: "Wallonie Entreprendre", resultText: "Aide à la R&D obtenue" }]
+      {
+        id: "j-4",
+        name: "Accompagnement Économique & Export",
+        provider: "WE / AWEX",
+        objective: "Levée de fonds R&D et développement international",
+        effectivenessScore: 95,
+        effectivenessStatus: "Succès Majeur",
+        effectivenessExplanation: "Aide financière substantielle sécurisée auprès de Wallonie Entreprendre et plan d'expansion export en cours de préparation.",
+        metrics: [
+          { label: "Budget R&D sécurisé", before: "50k", after: "300k", unit: "€", isPositive: true },
+          { label: "Chiffre d'affaires export", before: "0%", after: "+25%", unit: "", isPositive: true }
+        ],
+        steps: {
+          amorcage: { proposed: [], realized: [] },
+          diagnostic: { proposed: [], realized: [] },
+          coaching: {
+            proposed: ["Accompagnement export international digital"],
+            realized: []
+          },
+          planification: { proposed: [], realized: [] },
+          implementation: { proposed: [], realized: [] },
+          investissement: {
+            proposed: ["Recherche de financement innovation"],
+            realized: [{ serviceName: "Recherche de financement innovation", status: "completed", org: "Wallonie Entreprendre", resultText: "Aide à la R&D de 250k€ obtenue" }]
+          }
+        }
       }
-    }
+    ]
   },
   {
     id: "ben-3",
@@ -267,46 +335,39 @@ const initialBeneficiaries: Beneficiary[] = [
     size: "TPE (4 emp.)",
     sector: "Retail",
     location: "Charleroi",
-    journeyName: "Sécurité & Résilience",
-    effectivenessScore: 92,
-    effectivenessStatus: "Succès Majeur" as const,
-    effectivenessExplanation: "Audit complet cybersécurité effectué et plan d'action résolu. Les employés ont été formés, le risque de rançongiciel a été neutralisé à 100%.",
-    maturityInitial: 10,
-    maturityCurrent: 85,
-    metrics: [
-      { label: "Intrusions / Failles bloquées", before: "10%", after: "100%", unit: "", isPositive: true },
-      { label: "Équipe formée au Phishing", before: "0%", after: "100%", unit: "", isPositive: true },
-      { label: "Indisponibilité IT (jours/an)", before: 4.5, after: 0.1, unit: " j", isPositive: true }
-    ],
-    steps: {
-      amorcage: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      diagnostic: {
-        proposed: ["Diagnostic de maturité numérique PME"],
-        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Maturité cyber évaluée" }]
-      },
-      coaching: {
-        proposed: ["Parcours cybersécurité PME"],
-        realized: [
-          { serviceName: "Parcours cybersécurité PME", status: "completed" as const, org: "AKT / AdN", resultText: "Audit de vulnérabilité & pare-feu" },
-          { serviceName: "Formation Cyber express", status: "completed" as const, org: "AdN", resultText: "Sensibilisation phishing effectuée" }
-        ]
-      },
-      planification: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      implementation: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      investissement: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+    journeys: [
+      {
+        id: "j-5",
+        name: "Résilience Cybersécurité",
+        provider: "AKT / AdN",
+        objective: "Audit de vulnérabilité et formation des collaborateurs",
+        effectivenessScore: 92,
+        effectivenessStatus: "Succès Majeur",
+        effectivenessExplanation: "Audit complet cybersécurité effectué et plan d'action résolu. Les employés ont été formés, le risque de rançongiciel a été neutralisé à 100%.",
+        metrics: [
+          { label: "Intrusions / Failles bloquées", before: "10%", after: "100%", unit: "", isPositive: true },
+          { label: "Équipe formée au Phishing", before: "0%", after: "100%", unit: "", isPositive: true },
+          { label: "Indisponibilité IT (jours/an)", before: 4.5, after: 0.1, unit: " j", isPositive: true }
+        ],
+        steps: {
+          amorcage: { proposed: [], realized: [] },
+          diagnostic: {
+            proposed: ["Diagnostic de maturité numérique PME"],
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Maturité cyber évaluée" }]
+          },
+          coaching: {
+            proposed: ["Parcours cybersécurité PME"],
+            realized: [
+              { serviceName: "Parcours cybersécurité PME", status: "completed", org: "AKT / AdN", resultText: "Audit de vulnérabilité & pare-feu" },
+              { serviceName: "Formation Cyber express", status: "completed", org: "AdN", resultText: "Sensibilisation phishing effectuée" }
+            ]
+          },
+          planification: { proposed: [], realized: [] },
+          implementation: { proposed: [], realized: [] },
+          investissement: { proposed: [], realized: [] }
+        }
       }
-    }
+    ]
   },
   {
     id: "ben-4",
@@ -314,43 +375,39 @@ const initialBeneficiaries: Beneficiary[] = [
     size: "PME (45 emp.)",
     sector: "Textile",
     location: "Mons",
-    journeyName: "Transition Énergétique",
-    effectivenessScore: 95,
-    effectivenessStatus: "Succès Majeur" as const,
-    effectivenessExplanation: "Transition énergétique remarquable avec réduction majeure des émissions carbones directes (-25%) et économies d'énergies substantielles sur l'outil industriel.",
-    maturityInitial: 20,
-    maturityCurrent: 75,
-    metrics: [
-      { label: "Émissions de CO2 directes", before: "100%", after: "75%", unit: "", isPositive: true },
-      { label: "Économies d'énergie", before: "0 €", after: "18 500 €", unit: "/an", isPositive: true },
-      { label: "Matériaux recyclés", before: "5%", after: "40%", unit: "", isPositive: true }
-    ],
-    steps: {
-      amorcage: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      diagnostic: {
-        proposed: ["Diagnostic de maturité numérique PME"],
-        realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed" as const, org: "AdN", resultText: "Audit énergétique préliminaire" }]
-      },
-      coaching: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      planification: {
-        proposed: ["Programme transition énergétique industrielle"],
-        realized: [{ serviceName: "Programme transition énergétique industrielle", status: "completed" as const, org: "Cluster Tweed", resultText: "Plan carbone validé par un expert" }]
-      },
-      implementation: {
-        proposed: ["Accompagnement transformation digitale industrie 4.0"],
-        realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "completed" as const, org: "Wallonie Entreprendre", resultText: "Optimisation de l'outil industriel" }]
-      },
-      investissement: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+    journeys: [
+      {
+        id: "j-6",
+        name: "Transition Énergétique & Décarbonation",
+        provider: "Cluster Tweed",
+        objective: "Plan carbone et décarbonation de l'outil industriel",
+        effectivenessScore: 95,
+        effectivenessStatus: "Succès Majeur",
+        effectivenessExplanation: "Transition énergétique remarquable avec réduction majeure des émissions carbones directes (-25%) et économies d'énergies substantielles sur l'outil industriel.",
+        metrics: [
+          { label: "Émissions de CO2 directes", before: "100%", after: "75%", unit: "", isPositive: true },
+          { label: "Économies d'énergie", before: "0 €", after: "18 500 €", unit: "/an", isPositive: true },
+          { label: "Matériaux recyclés", before: "5%", after: "40%", unit: "", isPositive: true }
+        ],
+        steps: {
+          amorcage: { proposed: [], realized: [] },
+          diagnostic: {
+            proposed: ["Diagnostic de maturité numérique PME"],
+            realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "AdN", resultText: "Audit énergétique préliminaire" }]
+          },
+          coaching: { proposed: [], realized: [] },
+          planification: {
+            proposed: ["Programme transition énergétique industrielle"],
+            realized: [{ serviceName: "Programme transition énergétique industrielle", status: "completed", org: "Cluster Tweed", resultText: "Plan carbone validé par un expert" }]
+          },
+          implementation: {
+            proposed: ["Accompagnement transformation digitale industrie 4.0"],
+            realized: [{ serviceName: "Accompagnement transformation digitale industrie 4.0", status: "completed", org: "Wallonie Entreprendre", resultText: "Optimisation de l'outil industriel" }]
+          },
+          investissement: { proposed: [], realized: [] }
+        }
       }
-    }
+    ]
   },
   {
     id: "ben-5",
@@ -358,47 +415,40 @@ const initialBeneficiaries: Beneficiary[] = [
     size: "Régie (12 emp.)",
     sector: "Smart City",
     location: "Namur",
-    journeyName: "Données Territoriales",
-    effectivenessScore: 52,
-    effectivenessStatus: "Mitigé" as const,
-    effectivenessExplanation: "La stratégie de données territoriales a été rédigée avec succès, mais le consortium S3 n'a pas pu être mis en place, créant un blocage pour la phase d'amorçage.",
-    maturityInitial: 30,
-    maturityCurrent: 55,
-    metrics: [
-      { label: "Catalogues OpenData", before: 0, after: 24, unit: "", isPositive: true },
-      { label: "Communes partenaires", before: 1, after: 5, unit: "", isPositive: true },
-      { label: "Requêtes API citoyennes", before: "0", after: "15k", unit: "/mois", isPositive: true }
-    ],
-    steps: {
-      amorcage: {
-        proposed: ["Détection de consortiums innovation S3"],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      diagnostic: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      coaching: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      planification: {
-        proposed: ["Accompagnement stratégie données territoriales"],
-        realized: [{ serviceName: "Accompagnement stratégie données territoriales", status: "completed" as const, org: "Agence du Numérique", resultText: "Schéma directeur OpenData approuvé" }]
-      },
-      implementation: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
-      },
-      investissement: {
-        proposed: [] as string[],
-        realized: [] as { serviceName: string; status: "completed" | "active"; org: string; resultText: string; }[]
+    journeys: [
+      {
+        id: "j-7",
+        name: "Données Territoriales",
+        provider: "Agence du Numérique",
+        objective: "Stratégie de données territoriales ouvertes et souveraines",
+        effectivenessScore: 52,
+        effectivenessStatus: "Mitigé",
+        effectivenessExplanation: "La stratégie de données territoriales a été rédigée avec succès, mais le consortium S3 n'a pas pu être mis en place, créant un blocage pour la phase d'amorçage.",
+        metrics: [
+          { label: "Catalogues OpenData", before: 0, after: 24, unit: "", isPositive: true },
+          { label: "Communes partenaires", before: 1, after: 5, unit: "", isPositive: true },
+          { label: "Requêtes API citoyennes", before: "0", after: "15k", unit: "/mois", isPositive: true }
+        ],
+        steps: {
+          amorcage: {
+            proposed: ["Détection de consortiums innovation S3"],
+            realized: []
+          },
+          diagnostic: { proposed: [], realized: [] },
+          coaching: { proposed: [], realized: [] },
+          planification: {
+            proposed: ["Accompagnement stratégie données territoriales"],
+            realized: [{ serviceName: "Accompagnement stratégie données territoriales", status: "completed", org: "Agence du Numérique", resultText: "Schéma directeur OpenData approuvé" }]
+          },
+          implementation: { proposed: [], realized: [] },
+          investissement: { proposed: [], realized: [] }
+        }
       }
-    }
+    ]
   }
 ];
 
-const calculateEffectiveness = (beneficiary: Beneficiary) => {
+const calculateEffectiveness = (journey: BeneficiaryJourneyInstance) => {
   let totalProposed = 0;
   let matches = 0;
   let overlaps = 0;
@@ -407,7 +457,7 @@ const calculateEffectiveness = (beneficiary: Beneficiary) => {
   const phases = ["amorcage", "diagnostic", "coaching", "planification", "implementation", "investissement"] as const;
   
   phases.forEach(phaseId => {
-    const step = beneficiary.steps[phaseId];
+    const step = journey.steps[phaseId];
     if (step.proposed.length > 0) {
       totalProposed += step.proposed.length;
       step.proposed.forEach(propSvc => {
@@ -435,7 +485,7 @@ const calculateEffectiveness = (beneficiary: Beneficiary) => {
   
   score = Math.max(0, Math.min(100, score - (overlaps * 10)));
   
-  let status: "Succès Majeur" | "En bonne voie" | "Mitigé" | "Insuffisant" = "Mitigé";
+  let status: EffectivenessType = "Mitigé";
   if (score >= 90) status = "Succès Majeur";
   else if (score >= 70) status = "En bonne voie";
   else if (score >= 40) status = "Mitigé";
@@ -445,11 +495,11 @@ const calculateEffectiveness = (beneficiary: Beneficiary) => {
   if (status === "Succès Majeur") {
     explanation = "Excellent alignement ! La PME a suivi l'essentiel du parcours recommandé sans ruptures majeures. Les gains d'impact mesurés confirment le ROI très positif.";
   } else if (status === "En bonne voie") {
-    explanation = "Bonne progression générale. La plupart des services critiques recommandés sont complétés ou en cours d'exécution. Quelques gaps mineurs restent à combler.";
+    explanation = "Bonne progression générale. La plupart des services recommandés sont complétés ou en cours d'exécution. Quelques gaps mineurs restent à combler.";
   } else if (status === "Mitigé") {
-    explanation = "Plusieurs écarts constatés. Des étapes clés recommandées n'ont pas été réalisées (gaps) ou des services ont été entamés hors planification initiale.";
+    explanation = "Plusieurs écarts constatés. Des étapes recommandées n'ont pas été réalisées (gaps) ou des services ont été entamés sans planification préalable.";
   } else {
-    explanation = "Parcours très fragmenté. Forte dérive par rapport aux recommandations initiales avec plusieurs zones blanches critiques non résolues.";
+    explanation = "Parcours très fragmenté. Forte dérive par rapport aux recommandations avec plusieurs zones blanches critiques non résolues.";
   }
 
   return { score, status, explanation };
@@ -463,8 +513,9 @@ export default function ServicesContainer() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Beneficiaries State
-  const [beneficiaries, setBeneficiaries] = useState(initialBeneficiaries);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(initialBeneficiaries);
   const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>("ben-1");
+  const [selectedJourneyId, setSelectedJourneyId] = useState<string>("j-1");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Simulator States
@@ -472,32 +523,57 @@ export default function ServicesContainer() {
   const [simService, setSimService] = useState<string>("");
   const [simStatus, setSimStatus] = useState<"completed" | "active">("completed");
   const [simResult, setSimResult] = useState<string>("");
+  const [simNewJourneyName, setSimNewJourneyName] = useState<string>("Transformation Numérique (Industrie 4.0)");
+
+  useEffect(() => {
+    // Automatically pre-populate simulator service selector
+    if (servicesList.length > 0 && !simService) {
+      setSimService(servicesList[0].name);
+    }
+  }, [servicesList, simService]);
+
+  useEffect(() => {
+    // Ensure active journey selection exists for the active company
+    const activeB = beneficiaries.find(b => b.id === selectedBeneficiaryId);
+    if (activeB && activeB.journeys.length > 0) {
+      const exists = activeB.journeys.some(j => j.id === selectedJourneyId);
+      if (!exists) {
+        setSelectedJourneyId(activeB.journeys[0].id);
+      }
+    }
+  }, [selectedBeneficiaryId, beneficiaries, selectedJourneyId]);
 
   const handleAddProposed = (phaseId: string, serviceName: string) => {
     setBeneficiaries(prev => prev.map(b => {
       if (b.id !== selectedBeneficiaryId) return b;
       
-      const phaseKey = phaseId as keyof typeof b.steps;
-      const currentProposed = b.steps[phaseKey].proposed;
-      if (currentProposed.includes(serviceName)) return b; // avoid duplicates
-      
-      const updatedSteps = {
-        ...b.steps,
-        [phaseKey]: {
-          ...b.steps[phaseKey],
-          proposed: [...currentProposed, serviceName]
-        }
-      };
-      
-      const updatedBeneficiary = { ...b, steps: updatedSteps };
-      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
-      
-      return {
-        ...updatedBeneficiary,
-        effectivenessScore: score,
-        effectivenessStatus: status,
-        effectivenessExplanation: explanation
-      };
+      const updatedJourneys = b.journeys.map(j => {
+        if (j.id !== selectedJourneyId) return j;
+        
+        const phaseKey = phaseId as keyof typeof j.steps;
+        const currentProposed = j.steps[phaseKey].proposed;
+        if (currentProposed.includes(serviceName)) return j;
+        
+        const updatedSteps = {
+          ...j.steps,
+          [phaseKey]: {
+            ...j.steps[phaseKey],
+            proposed: [...currentProposed, serviceName]
+          }
+        };
+        
+        const updatedJourney = { ...j, steps: updatedSteps };
+        const { score, status, explanation } = calculateEffectiveness(updatedJourney);
+        
+        return {
+          ...updatedJourney,
+          effectivenessScore: score,
+          effectivenessStatus: status,
+          effectivenessExplanation: explanation
+        };
+      });
+
+      return { ...b, journeys: updatedJourneys };
     }));
   };
 
@@ -508,28 +584,34 @@ export default function ServicesContainer() {
       const matchedSvc = servicesList.find(s => s.name === serviceName);
       const orgName = matchedSvc ? matchedSvc.organisationId : "Partenaire";
       
-      const phaseKey = phaseId as keyof typeof b.steps;
-      const currentRealized = b.steps[phaseKey].realized;
-      const updatedSteps = {
-        ...b.steps,
-        [phaseKey]: {
-          ...b.steps[phaseKey],
-          realized: [
-            ...currentRealized,
-            { serviceName, status, org: orgName, resultText: resultText || "Réalisation enregistrée" }
-          ]
-        }
-      };
-      
-      const updatedBeneficiary = { ...b, steps: updatedSteps };
-      const { score, status: effStatus, explanation } = calculateEffectiveness(updatedBeneficiary);
-      
-      return {
-        ...updatedBeneficiary,
-        effectivenessScore: score,
-        effectivenessStatus: effStatus,
-        effectivenessExplanation: explanation
-      };
+      const updatedJourneys = b.journeys.map(j => {
+        if (j.id !== selectedJourneyId) return j;
+        
+        const phaseKey = phaseId as keyof typeof j.steps;
+        const currentRealized = j.steps[phaseKey].realized;
+        const updatedSteps = {
+          ...j.steps,
+          [phaseKey]: {
+            ...j.steps[phaseKey],
+            realized: [
+              ...currentRealized,
+              { serviceName, status, org: orgName, resultText: resultText || "Réalisation enregistrée" }
+            ]
+          }
+        };
+        
+        const updatedJourney = { ...j, steps: updatedSteps };
+        const { score, status: effStatus, explanation } = calculateEffectiveness(updatedJourney);
+        
+        return {
+          ...updatedJourney,
+          effectivenessScore: score,
+          effectivenessStatus: effStatus,
+          effectivenessExplanation: explanation
+        };
+      });
+
+      return { ...b, journeys: updatedJourneys };
     }));
   };
 
@@ -537,24 +619,30 @@ export default function ServicesContainer() {
     setBeneficiaries(prev => prev.map(b => {
       if (b.id !== selectedBeneficiaryId) return b;
       
-      const phaseKey = phaseId as keyof typeof b.steps;
-      const updatedSteps = {
-        ...b.steps,
-        [phaseKey]: {
-          ...b.steps[phaseKey],
-          proposed: b.steps[phaseKey].proposed.filter(p => p !== serviceName)
-        }
-      };
-      
-      const updatedBeneficiary = { ...b, steps: updatedSteps };
-      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
-      
-      return {
-        ...updatedBeneficiary,
-        effectivenessScore: score,
-        effectivenessStatus: status,
-        effectivenessExplanation: explanation
-      };
+      const updatedJourneys = b.journeys.map(j => {
+        if (j.id !== selectedJourneyId) return j;
+        
+        const phaseKey = phaseId as keyof typeof j.steps;
+        const updatedSteps = {
+          ...j.steps,
+          [phaseKey]: {
+            ...j.steps[phaseKey],
+            proposed: j.steps[phaseKey].proposed.filter(p => p !== serviceName)
+          }
+        };
+        
+        const updatedJourney = { ...j, steps: updatedSteps };
+        const { score, status, explanation } = calculateEffectiveness(updatedJourney);
+        
+        return {
+          ...updatedJourney,
+          effectivenessScore: score,
+          effectivenessStatus: status,
+          effectivenessExplanation: explanation
+        };
+      });
+
+      return { ...b, journeys: updatedJourneys };
     }));
   };
 
@@ -562,23 +650,95 @@ export default function ServicesContainer() {
     setBeneficiaries(prev => prev.map(b => {
       if (b.id !== selectedBeneficiaryId) return b;
       
-      const phaseKey = phaseId as keyof typeof b.steps;
-      const updatedSteps = {
-        ...b.steps,
-        [phaseKey]: {
-          ...b.steps[phaseKey],
-          realized: b.steps[phaseKey].realized.filter((_, idx) => idx !== serviceIndex)
+      const updatedJourneys = b.journeys.map(j => {
+        if (j.id !== selectedJourneyId) return j;
+        
+        const phaseKey = phaseId as keyof typeof j.steps;
+        const updatedSteps = {
+          ...j.steps,
+          [phaseKey]: {
+            ...j.steps[phaseKey],
+            realized: j.steps[phaseKey].realized.filter((_, idx) => idx !== serviceIndex)
+          }
+        };
+        
+        const updatedJourney = { ...j, steps: updatedSteps };
+        const { score, status, explanation } = calculateEffectiveness(updatedJourney);
+        
+        return {
+          ...updatedJourney,
+          effectivenessScore: score,
+          effectivenessStatus: status,
+          effectivenessExplanation: explanation
+        };
+      });
+
+      return { ...b, journeys: updatedJourneys };
+    }));
+  };
+
+  const handleEnrollJourney = (journeyTemplateName: string) => {
+    const template = journeyTemplates.find(t => t.name === journeyTemplateName);
+    if (!template) return;
+    
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      
+      const alreadyEnrolled = b.journeys.some(j => j.name === journeyTemplateName);
+      if (alreadyEnrolled) {
+        alert(`⚠️ Déjà inscrit au parcours: ${journeyTemplateName}`);
+        return b;
+      }
+      
+      const newJourneyInstance: BeneficiaryJourneyInstance = {
+        id: `j-${Date.now()}`,
+        name: template.name,
+        provider: template.provider,
+        objective: template.objective,
+        effectivenessScore: 0,
+        effectivenessStatus: "Insuffisant",
+        effectivenessExplanation: "Ce parcours vient d'être initié. Proposez des services pour commencer à combler les étapes.",
+        metrics: [
+          { label: "Maturité départ", before: "0%", after: "10%", unit: "", isPositive: true },
+          { label: "Avancement R&D", before: "0", after: "0", unit: "", isPositive: true }
+        ],
+        steps: {
+          amorcage: { proposed: [], realized: [] },
+          diagnostic: { proposed: [], realized: [] },
+          coaching: { proposed: [], realized: [] },
+          planification: { proposed: [], realized: [] },
+          implementation: { proposed: [], realized: [] },
+          investissement: { proposed: [], realized: [] }
         }
       };
       
-      const updatedBeneficiary = { ...b, steps: updatedSteps };
-      const { score, status, explanation } = calculateEffectiveness(updatedBeneficiary);
+      // Auto switch to this new journey
+      setSelectedJourneyId(newJourneyInstance.id);
       
       return {
-        ...updatedBeneficiary,
-        effectivenessScore: score,
-        effectivenessStatus: status,
-        effectivenessExplanation: explanation
+        ...b,
+        journeys: [...b.journeys, newJourneyInstance]
+      };
+    }));
+  };
+
+  const handleWithdrawJourney = (journeyId: string) => {
+    setBeneficiaries(prev => prev.map(b => {
+      if (b.id !== selectedBeneficiaryId) return b;
+      if (b.journeys.length <= 1) {
+        alert("⚠️ Un bénéficiaire doit avoir au moins un parcours actif.");
+        return b;
+      }
+      
+      const updatedJourneys = b.journeys.filter(j => j.id !== journeyId);
+      // Auto fallback selected journey
+      if (selectedJourneyId === journeyId) {
+        setSelectedJourneyId(updatedJourneys[0].id);
+      }
+      
+      return {
+        ...b,
+        journeys: updatedJourneys
       };
     }));
   };
@@ -1106,10 +1266,10 @@ export default function ServicesContainer() {
 
       {/* 4. BENEFICIARIES VIEW */}
       {activeTab === "beneficiaries" && (() => {
-        const getPhaseDiagnostic = (phaseId: string, step: typeof initialBeneficiaries[0]["steps"][keyof typeof initialBeneficiaries[0]["steps"]]) => {
+        const getPhaseDiagnostic = (phaseId: string, step: BeneficiaryJourneyInstance["steps"][keyof BeneficiaryJourneyInstance["steps"]]) => {
           const hasProposed = step.proposed.length > 0;
-          const completed = step.realized.filter(r => r.status === "completed");
-          const active = step.realized.filter(r => r.status === "active");
+          const completed = step.realized.filter((r: any) => r.status === "completed");
+          const active = step.realized.filter((r: any) => r.status === "active");
           const hasRealized = completed.length > 0 || active.length > 0;
 
           if (!hasProposed && !hasRealized) {
@@ -1136,7 +1296,7 @@ export default function ServicesContainer() {
               desc: "Service réalisé de manière autonome."
             };
           }
-          if (step.realized.filter(r => r.status === "completed").length > 1) {
+          if (step.realized.filter((r: any) => r.status === "completed").length > 1) {
             return {
               status: "overlap",
               label: "Doublon",
@@ -1153,6 +1313,7 @@ export default function ServicesContainer() {
         };
 
         const b = beneficiaries.find(x => x.id === selectedBeneficiaryId) || beneficiaries[0];
+        const selectedJourney = b.journeys.find(j => j.id === selectedJourneyId) || b.journeys[0];
 
         const handleLocalAddProposed = () => {
           if (!simService) return;
@@ -1208,22 +1369,24 @@ export default function ServicesContainer() {
                     )
                     .map((item) => {
                       const isActive = item.id === selectedBeneficiaryId;
-                      const completion = Object.values(item.steps).reduce((acc, step) => {
+                      const primaryJourney = item.journeys[0];
+                      const completion = primaryJourney ? Object.values(primaryJourney.steps).reduce((acc: number, step: any) => {
                         if (step.proposed.length > 0) {
-                          const matched = step.proposed.some(p => step.realized.some(r => r.serviceName.toLowerCase() === p.toLowerCase() && (r.status === "completed" || r.status === "active")));
+                          const matched = step.proposed.some((p: string) => step.realized.some((r: any) => r.serviceName.toLowerCase() === p.toLowerCase() && (r.status === "completed" || r.status === "active")));
                           if (matched) return acc + 1;
                         }
                         return acc;
-                      }, 0);
-                      const totalProposedPhases = Object.values(item.steps).filter(step => step.proposed.length > 0).length;
+                      }, 0) : 0;
+                      const totalProposedPhases = primaryJourney ? Object.values(primaryJourney.steps).filter((step: any) => step.proposed.length > 0).length : 0;
                       const pct = totalProposedPhases > 0 ? Math.round((completion / totalProposedPhases) * 100) : 100;
 
+                      const effStatus = primaryJourney ? primaryJourney.effectivenessStatus : "Insuffisant";
                       let badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20";
-                      if (item.effectivenessStatus === "Succès Majeur") {
+                      if (effStatus === "Succès Majeur") {
                         badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20";
-                      } else if (item.effectivenessStatus === "En bonne voie") {
+                      } else if (effStatus === "En bonne voie") {
                         badgeColor = "bg-teal-500/10 text-teal-600 dark:text-teal-450 border-teal-500/20";
-                      } else if (item.effectivenessStatus === "Mitigé") {
+                      } else if (effStatus === "Mitigé") {
                         badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20";
                       }
 
@@ -1244,7 +1407,7 @@ export default function ServicesContainer() {
                               <span className="text-xs font-extrabold text-gray-800 dark:text-gray-100 truncate block">{item.name}</span>
                             </div>
                             <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-bold border shrink-0", badgeColor)}>
-                              {item.effectivenessStatus}
+                              {effStatus}
                             </span>
                           </div>
 
@@ -1289,7 +1452,7 @@ export default function ServicesContainer() {
                     <div className="flex items-center gap-3">
                       <div className="text-left sm:text-right">
                         <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Objectif Territorial</span>
-                        <span className="text-xs font-black text-teal-600 dark:text-teal-400">{b.journeyName}</span>
+                        <span className="text-xs font-black text-teal-600 dark:text-teal-400">{selectedJourney ? selectedJourney.name : "Non inscrit"}</span>
                       </div>
                       <button
                         onClick={() => {
@@ -1307,6 +1470,60 @@ export default function ServicesContainer() {
                     </div>
                   </div>
 
+                  {/* Journey Switcher Tabs */}
+                  <div className="border-b border-gray-100 dark:border-gray-700 pb-4">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
+                      Parcours Actifs du Bénéficiaire (Cliquez pour basculer)
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {b.journeys.map((j) => {
+                        const isSelected = j.id === selectedJourneyId;
+                        let jBadgeColor = "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-450";
+                        if (j.effectivenessStatus === "Succès Majeur") jBadgeColor = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-450";
+                        else if (j.effectivenessStatus === "En bonne voie") jBadgeColor = "bg-teal-500/10 text-teal-600 border-teal-500/20 dark:text-teal-450";
+                        else if (j.effectivenessStatus === "Mitigé") jBadgeColor = "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-450";
+
+                        return (
+                          <div
+                            key={j.id}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 cursor-pointer text-xs",
+                              isSelected
+                                ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                                : "bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            )}
+                            onClick={() => setSelectedJourneyId(j.id)}
+                          >
+                            <div className="flex flex-col text-left">
+                              <span className="font-bold leading-tight">{j.name}</span>
+                              <span className={cn("text-[9px] mt-0.5 font-medium", isSelected ? "text-teal-100" : "text-gray-450 dark:text-gray-400")}>
+                                {j.provider} • Efficacité: {j.effectivenessScore}%
+                              </span>
+                            </div>
+                            <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-extrabold border shrink-0", isSelected ? "bg-white/20 text-white border-white/30" : jBadgeColor)}>
+                              {j.effectivenessStatus}
+                            </span>
+                            {b.journeys.length > 1 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleWithdrawJourney(j.id);
+                                }}
+                                title="Se désinscrire de ce parcours"
+                                className={cn(
+                                  "p-1 rounded-md transition hover:bg-rose-500/20 hover:text-rose-500 ml-1 cursor-pointer",
+                                  isSelected ? "text-teal-100 hover:bg-white/20 hover:text-white" : "text-gray-400"
+                                )}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Bilan d'impact panel ("A porté ses fruits ?") */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                     {/* Left: Effectiveness score gauge */}
@@ -1316,7 +1533,7 @@ export default function ServicesContainer() {
                           Efficacité du Parcours
                         </span>
                         <div className="flex items-baseline justify-center gap-1 mt-2">
-                          <span className="text-3xl font-black text-teal-600 dark:text-teal-400">{b.effectivenessScore}</span>
+                          <span className="text-3xl font-black text-teal-600 dark:text-teal-400">{selectedJourney ? selectedJourney.effectivenessScore : 0}</span>
                           <span className="text-sm font-bold text-gray-400">/ 100</span>
                         </div>
                       </div>
@@ -1326,15 +1543,15 @@ export default function ServicesContainer() {
                           <div
                             className={cn(
                               "h-full rounded-full transition-all duration-500",
-                              b.effectivenessScore >= 90
+                              (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 90
                                 ? "bg-emerald-500"
-                                : b.effectivenessScore >= 70
+                                : (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 70
                                   ? "bg-teal-500"
-                                  : b.effectivenessScore >= 40
+                                  : (selectedJourney ? selectedJourney.effectivenessScore : 0) >= 40
                                     ? "bg-amber-500"
                                     : "bg-rose-500"
                             )}
-                            style={{ width: `${b.effectivenessScore}%` }}
+                            style={{ width: `${selectedJourney ? selectedJourney.effectivenessScore : 0}%` }}
                           />
                         </div>
                         <span className="text-[10px] font-extrabold block text-gray-500 dark:text-gray-450 pt-1">
@@ -1350,7 +1567,7 @@ export default function ServicesContainer() {
                           <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
                           <span>Bilan d'impact territorial</span>
                         </div>
-                        {b.effectivenessExplanation}
+                        {selectedJourney ? selectedJourney.effectivenessExplanation : ""}
                       </div>
 
                       {/* Comparateur Avant vs Après */}
@@ -1359,7 +1576,7 @@ export default function ServicesContainer() {
                           Mesures & Retours d'Impact (Avant vs Après)
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          {b.metrics.map((metric, mIdx) => (
+                          {selectedJourney ? selectedJourney.metrics.map((metric: any, mIdx: number) => (
                             <div key={mIdx} className="bg-white dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm flex flex-col justify-between">
                               <span className="text-[9px] text-gray-400 font-bold block truncate">{metric.label}</span>
                               <div className="flex items-center justify-between mt-1">
@@ -1375,7 +1592,7 @@ export default function ServicesContainer() {
                                 </span>
                               </div>
                             </div>
-                          ))}
+                          )) : null}
                         </div>
                       </div>
                     </div>
@@ -1402,7 +1619,7 @@ export default function ServicesContainer() {
                       { id: "implementation", label: "5. Mise en œuvre", desc: "Accompagnement, labs, prototype" },
                       { id: "investissement", label: "6. Investissement", desc: "Financements et subsides" }
                     ] as const).map((phase) => {
-                      const stepData = b.steps[phase.id];
+                      const stepData = selectedJourney ? selectedJourney.steps[phase.id] : { proposed: [], realized: [] };
                       const diag = getPhaseDiagnostic(phase.id, stepData);
 
                       return (
@@ -1442,7 +1659,7 @@ export default function ServicesContainer() {
                               </span>
                               {stepData.proposed.length > 0 ? (
                                 <div className="space-y-1">
-                                  {stepData.proposed.map((pSvc, idx) => (
+                                  {stepData.proposed.map((pSvc: string, idx: number) => (
                                     <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 px-2 py-1 rounded-md border border-gray-150 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300">
                                       <span className="truncate pr-2 font-medium" title={pSvc}>{pSvc}</span>
                                       <button
@@ -1467,11 +1684,11 @@ export default function ServicesContainer() {
                               </span>
                               {stepData.realized.length > 0 ? (
                                 <div className="space-y-1">
-                                  {stepData.realized.map((rSvc, idx) => {
+                                  {stepData.realized.map((rSvc: any, idx: number) => {
                                     const isCompleted = rSvc.status === "completed";
 
                                     return (
-                                      <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-150 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300">
+                                      <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-150 dark:border-gray-850 text-[10px] text-gray-700 dark:text-gray-300">
                                         <div className="flex-1 min-w-0 pr-1">
                                           <div className="flex items-center gap-1.5">
                                               <span className={cn(
@@ -1534,7 +1751,7 @@ export default function ServicesContainer() {
                     Utilisez ce panneau pour ajouter des recommandations ou simuler des actions pour {b.name}. Les calculs d'efficacité, les statuts de gaps et de doublons se mettront à jour en temps réel.
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 pt-2">
                     {/* simulator col 1: propose service */}
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
                       <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
@@ -1663,6 +1880,45 @@ export default function ServicesContainer() {
                         </button>
                       </div>
                     </div>
+
+                    {/* simulator col 3: enroll new journey */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-150 dark:border-gray-800 space-y-4">
+                      <div className="flex items-center gap-1 text-xs font-bold text-gray-850 dark:text-gray-200">
+                        <Sparkles className="w-4 h-4 text-purple-500 animate-pulse" />
+                        <span>3. Inscrire à un Nouveau Parcours</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                            Modèle de Parcours
+                          </label>
+                          <select
+                            value={simNewJourneyName}
+                            onChange={(e) => setSimNewJourneyName(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-purple-500"
+                          >
+                            {journeyTemplates.map((t, idx) => (
+                              <option key={idx} value={t.name}>
+                                {t.name} ({t.provider})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight italic bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <strong>Objectif :</strong> {journeyTemplates.find(t => t.name === simNewJourneyName)?.objective}
+                        </div>
+
+                        <button
+                          onClick={() => handleEnrollJourney(simNewJourneyName)}
+                          className="w-full py-1.5 bg-purple-650 hover:bg-purple-755 text-white bg-purple-600 hover:bg-purple-700 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                        >
+                          Inscrire au Parcours
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>

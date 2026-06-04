@@ -2426,9 +2426,11 @@ export default function ServicesContainer() {
                     </div>
                   </div>
                 )}
+              </div> {/* Ends Right Side col-span-9 */}
+            </div> {/* Ends Grid grid-cols-12 */}
 
-                {/* Comparative Gaps & Doublons Grid */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
+            {/* Comparative Gaps & Doublons Grid (Full Screen Width) */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
                   {/* Section Header */}
                   <div className="flex items-start gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex-1">

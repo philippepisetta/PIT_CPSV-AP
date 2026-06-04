@@ -1880,24 +1880,39 @@ export default function ServicesContainer() {
                 </div>
 
                 {/* Comparative Gaps & Doublons Grid */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                      Analyse du Parcours : Gaps & Doublons
-                    </h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Cartographie complète des 6 phases pour {b.name}. Repérez les services recommandés non initiés (gaps) et les chevauchements redondants (doublons).
-                    </p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-5">
+                  {/* Section Header */}
+                  <div className="flex items-start gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+                        Analyse du Parcours : Gaps &amp; Doublons
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                        Cartographie des 6 phases pour <strong>{b.name}</strong>. Gaps = services recommandés non initiés · Doublons = chevauchements redondants.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />Gap
+                      </span>
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />Doublon
+                      </span>
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />Match
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex overflow-x-auto xl:grid xl:grid-cols-6 gap-4 pb-4 scrollbar-thin">
+                  {/* Phase Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                     {([
-                      { id: "amorcage", label: "1. Amorçage", desc: "Sensibilisation et mise en relation" },
-                      { id: "diagnostic", label: "2. Diagnostic", desc: "Évaluation de maturité et TRL" },
-                      { id: "coaching", label: "3. Coaching", desc: "Conseils et cybersécurité" },
-                      { id: "planification", label: "4. Planification", desc: "Roadmap et stratégie" },
-                      { id: "implementation", label: "5. Mise en œuvre", desc: "Accompagnement, labs, prototype" },
-                      { id: "investissement", label: "6. Investissement", desc: "Financements et subsides" }
+                      { id: "amorcage",      num: "1", label: "Amorçage",      desc: "Sensibilisation & mise en relation" },
+                      { id: "diagnostic",    num: "2", label: "Diagnostic",    desc: "Évaluation maturité & TRL" },
+                      { id: "coaching",      num: "3", label: "Coaching",      desc: "Conseils & cybersécurité" },
+                      { id: "planification", num: "4", label: "Planification", desc: "Roadmap & stratégie" },
+                      { id: "implementation",num: "5", label: "Mise en œuvre", desc: "Accompagnement & prototype" },
+                      { id: "investissement",num: "6", label: "Investissement", desc: "Financements & subsides" }
                     ] as const).map((phase) => {
                       const stepData = selectedJourney ? selectedJourney.steps[phase.id] : { proposed: [], realized: [] };
                       const diag = getPhaseDiagnostic(phase.id, stepData);
@@ -1906,95 +1921,110 @@ export default function ServicesContainer() {
                         <div
                           key={phase.id}
                           className={cn(
-                            "flex-1 min-w-[240px] xl:min-w-0 p-4 rounded-xl border flex flex-col justify-between min-h-[220px] transition-all duration-300",
+                            "flex flex-col rounded-xl border overflow-hidden transition-all duration-300",
                             diag.status === "gap"
-                              ? "bg-rose-500/5 border-rose-500/20 dark:bg-rose-950/10"
+                              ? "border-rose-300 dark:border-rose-800"
                               : diag.status === "overlap"
-                                ? "bg-amber-500/5 border-amber-500/20 dark:bg-amber-955/10"
+                                ? "border-amber-300 dark:border-amber-800"
                                 : diag.status === "opportunity"
-                                  ? "bg-blue-500/5 border-blue-500/20 dark:bg-blue-955/10"
+                                  ? "border-blue-300 dark:border-blue-800"
                                   : diag.status === "match"
-                                    ? "bg-emerald-500/5 border-emerald-500/20 dark:bg-emerald-955/10"
-                                    : "bg-gray-50 dark:bg-gray-900/50 border-gray-150 dark:border-gray-800"
+                                    ? "border-emerald-300 dark:border-emerald-800"
+                                    : "border-gray-200 dark:border-gray-700"
                           )}
                         >
-                          <div className="space-y-3">
-                            {/* Phase Header */}
-                            <div className="flex justify-between items-start gap-2">
-                              <div>
-                                <span className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider">
-                                  {phase.label}
-                                </span>
-                                <p className="text-[9px] text-gray-450 dark:text-gray-400 leading-tight">{phase.desc}</p>
-                              </div>
-                              <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-extrabold border select-none whitespace-nowrap", diag.bg)}>
-                                  {diag.label}
-                                </span>
-                            </div>
-
-                            {/* Proposed List */}
-                            <div className="space-y-1">
-                              <span className="text-[8px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
-                                Proposé (Recommandé)
+                          {/* Card Header — couleur de fond selon statut */}
+                          <div className={cn(
+                            "px-3 pt-3 pb-2",
+                            diag.status === "gap"       ? "bg-rose-50 dark:bg-rose-950/20"
+                            : diag.status === "overlap"   ? "bg-amber-50 dark:bg-amber-950/20"
+                            : diag.status === "opportunity"? "bg-blue-50 dark:bg-blue-950/20"
+                            : diag.status === "match"     ? "bg-emerald-50 dark:bg-emerald-950/20"
+                            : "bg-gray-50 dark:bg-gray-900/50"
+                          )}>
+                            {/* Numéro + Badge statut sur la même ligne, bien séparés */}
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[10px] font-black text-gray-600 dark:text-gray-300 shadow-sm">
+                                {phase.num}
                               </span>
+                              <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold border whitespace-nowrap", diag.bg)}>
+                                {diag.label}
+                              </span>
+                            </div>
+                            {/* Label de la phase sur sa propre ligne */}
+                            <p className="text-[11px] font-bold text-gray-800 dark:text-gray-100 leading-tight">
+                              {phase.label}
+                            </p>
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
+                              {phase.desc}
+                            </p>
+                          </div>
+
+                          {/* Card Body */}
+                          <div className="flex-1 flex flex-col gap-3 p-3 bg-white dark:bg-gray-800">
+                            {/* Section Proposé */}
+                            <div>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                                <span className="text-[9px] font-extrabold text-blue-500 dark:text-blue-400 uppercase tracking-wider">
+                                  Proposé
+                                </span>
+                              </div>
                               {stepData.proposed.length > 0 ? (
                                 <div className="space-y-1">
                                   {stepData.proposed.map((pSvc: string, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 px-2 py-1 rounded-md border border-gray-150 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300">
-                                      <span className="truncate pr-2 font-medium" title={pSvc}>{pSvc}</span>
+                                    <div key={idx} className="flex items-center justify-between gap-1 bg-blue-50 dark:bg-blue-950/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900">
+                                      <span className="text-[10px] text-gray-700 dark:text-gray-300 font-medium truncate" title={pSvc}>{pSvc}</span>
                                       <button
                                         onClick={() => handleRemoveProposed(phase.id, pSvc)}
-                                        title="Supprimer la recommandation"
-                                        className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition cursor-pointer"
+                                        title="Supprimer"
+                                        className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition cursor-pointer shrink-0"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="w-3 h-3" />
                                       </button>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-[9px] text-gray-400 italic block pl-1">Aucune recommandation</span>
+                                <p className="text-[9px] text-gray-400 italic pl-1">Aucune recommandation</p>
                               )}
                             </div>
 
-                            {/* Realized List */}
-                            <div className="space-y-1">
-                              <span className="text-[8px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
-                                Réalisé (Actions)
-                              </span>
+                            {/* Section Réalisé */}
+                            <div>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                                <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                  Réalisé
+                                </span>
+                              </div>
                               {stepData.realized.length > 0 ? (
                                 <div className="space-y-1">
                                   {stepData.realized.map((rSvc: any, idx: number) => {
                                     const isCompleted = rSvc.status === "completed";
-
                                     return (
-                                      <div key={idx} className="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-150 dark:border-gray-850 text-[10px] text-gray-700 dark:text-gray-300">
-                                        <div className="flex-1 min-w-0 pr-1">
-                                          <div className="flex items-center gap-1.5">
-                                              <span className={cn(
-                                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                                isCompleted ? "bg-emerald-500" : "bg-teal-500 animate-pulse"
-                                              )} />
-                                            <span className="truncate font-bold text-gray-800 dark:text-gray-200 leading-tight block" title={rSvc.serviceName}>
-                                                {rSvc.serviceName}
-                                              </span>
-                                          </div>
-                                          <div className="flex justify-between items-center text-[8px] text-gray-400 mt-1">
-                                            <span className="truncate">{rSvc.org}</span>
-                                            <span className={cn("px-1 py-0.2 rounded font-semibold", isCompleted ? "bg-emerald-500/10 text-emerald-600" : "bg-teal-500/10 text-teal-500")}>
-                                                {isCompleted ? "Fait" : "En cours"}
-                                              </span>
-                                          </div>
-                                          <p className="text-[8px] text-gray-400 italic mt-0.5 line-clamp-1 border-t border-gray-50 dark:border-gray-800 pt-0.5">
-                                            {rSvc.resultText}
+                                      <div key={idx} className="flex items-start gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900">
+                                        <span className={cn(
+                                          "w-1.5 h-1.5 rounded-full shrink-0 mt-1",
+                                          isCompleted ? "bg-emerald-500" : "bg-teal-400 animate-pulse"
+                                        )} />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[10px] font-bold text-gray-800 dark:text-gray-200 truncate leading-tight" title={rSvc.serviceName}>
+                                            {rSvc.serviceName}
                                           </p>
+                                          <div className="flex items-center justify-between mt-0.5 gap-1">
+                                            <span className="text-[8px] text-gray-400 truncate">{rSvc.org}</span>
+                                            <span className={cn("text-[8px] font-bold px-1 rounded shrink-0", isCompleted ? "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30" : "text-teal-600 bg-teal-100 dark:bg-teal-900/30")}>
+                                              {isCompleted ? "✓ Fait" : "⟳ En cours"}
+                                            </span>
+                                          </div>
                                         </div>
                                         <button
                                           onClick={() => handleRemoveRealized(phase.id, idx)}
-                                          title="Retirer l'action réalisée"
-                                          className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition shrink-0 self-start mt-0.5 cursor-pointer"
+                                          title="Retirer"
+                                          className="text-gray-400 hover:text-rose-500 p-0.5 rounded transition shrink-0 cursor-pointer"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
+                                          <Trash2 className="w-3 h-3" />
                                         </button>
                                       </div>
                                     );
@@ -2002,17 +2032,17 @@ export default function ServicesContainer() {
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1 text-rose-500/80 pl-1">
-                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <AlertCircle className="w-3 h-3 shrink-0" />
                                   <span className="text-[9px] font-bold">Aucun service suivi</span>
                                 </div>
                               )}
                             </div>
-                          </div>
 
-                          {/* Phase description/diagnosis text */}
-                          <p className="text-[8.5px] text-gray-450 dark:text-gray-400 border-t border-gray-100 dark:border-gray-850 pt-2 mt-4 leading-tight italic">
-                            {diag.desc}
-                          </p>
+                            {/* Diagnostic */}
+                            <p className="text-[8.5px] text-gray-400 italic border-t border-gray-100 dark:border-gray-700 pt-2 mt-auto leading-snug">
+                              {diag.desc}
+                            </p>
+                          </div>
                         </div>
                       );
                     })}

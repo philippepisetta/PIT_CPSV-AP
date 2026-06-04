@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+/.pnpm-store
+
+# Next.js build output
+.next/
+out/
+
+# Production build and caches
+build/
+dist/
+.npm
+.eslintcache
+
+# Environmental secrets (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Database Backup (Do not push raw data dump to Git)
+dump.sql

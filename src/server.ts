@@ -636,9 +636,9 @@ app.get('/api/recommender/:companyId', async (req, res) => {
         }
       });
       if (operator === 'OR') {
-        return results.some(r => r === true);
+        return results.some((r: boolean) => r === true);
       }
-      return results.every(r => r === true);
+      return results.every((r: boolean) => r === true);
     };
 
     // Charger l'ensemble des besoins de la base

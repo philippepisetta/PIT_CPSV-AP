@@ -1493,7 +1493,7 @@ export default function ServicesContainer() {
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer",
                   selectedTheme === theme
-                    ? "bg-primary border-primary text-white"
+                    ? "bg-teal-700 border-teal-700 text-white"
                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50"
                 )}
               >
@@ -1504,7 +1504,7 @@ export default function ServicesContainer() {
 
           <button
             onClick={() => setShowServiceWizard(true)}
-            className="flex items-center gap-1 px-4 py-2 bg-primary hover:bg-teal-800 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer border-0"
+            className="flex items-center gap-1 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer border-0"
           >
             <Plus className="w-3.5 h-3.5" />
             Ajouter un service

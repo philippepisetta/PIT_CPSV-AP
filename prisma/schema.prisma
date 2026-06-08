@@ -48,6 +48,7 @@ model PublicService {
   catalogues      Catalogue[]      @relation("CatalogueServices")
   supportsBusinessNeed BusinessNeed[]  @relation("ServiceNeeds")
   journeySteps         JourneyStep[]
+  impacts              Json?
 
   @@map("public_services")
 }
@@ -253,6 +254,7 @@ model Company {
   playsRole           EcosystemRole[]   @relation("CompanyRoles")
   needs               BusinessNeed[]    @relation("CompanyNeeds")
   enrolledJourneys    Journey[]         @relation("CompanyJourneys")
+  roadmapLogs         Json?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
@@ -313,6 +315,7 @@ model BusinessNeed {
   valueChainStages ValueChainStage[] @relation("NeedStages")
   journeys         Journey[]         @relation("JourneyNeeds")
   services         PublicService[]   @relation("ServiceNeeds")
+  rule             Json?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 

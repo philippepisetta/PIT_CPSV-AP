@@ -226,6 +226,7 @@ async function main() {
       catalogues: {
         connect: [{ id: cataloguePIT.id }],
       },
+      impacts: { carbon: 30, jobs: 40, sovereignty: 50, resilience: 60, competitiveness: 70, digiscoreBoost: 15 },
     },
   });
 
@@ -337,6 +338,7 @@ async function main() {
       catalogues: {
         connect: [{ id: cataloguePIT.id }],
       },
+      impacts: { carbon: 50, jobs: 60, sovereignty: 60, resilience: 70, competitiveness: 80, digiscoreBoost: 20 },
     },
   });
 
@@ -405,6 +407,7 @@ async function main() {
       catalogues: {
         connect: [{ id: cataloguePIT.id }],
       },
+      impacts: { carbon: 20, jobs: 80, sovereignty: 70, resilience: 75, competitiveness: 85, digiscoreBoost: 10 },
     },
   });
 
@@ -440,6 +443,7 @@ async function main() {
       catalogues: {
         connect: [{ id: cataloguePIT.id }],
       },
+      impacts: { carbon: 25, jobs: 70, sovereignty: 60, resilience: 65, competitiveness: 90, digiscoreBoost: 10 },
     },
   });
 
@@ -499,6 +503,7 @@ async function main() {
       catalogues: {
         connect: [{ id: cataloguePIT.id }],
       },
+      impacts: { carbon: 10, jobs: 30, sovereignty: 40, resilience: 50, competitiveness: 55, digiscoreBoost: 5 },
     },
   });
 
@@ -566,7 +571,14 @@ async function main() {
       description: 'Mettre en place des solutions automatisées (caméras, capteurs, IA vision) pour le contrôle qualité.',
       valueChains: { connect: [{ id: vcAgri.id }] },
       valueChainStages: { connect: [{ id: stageProd.id }] },
-      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] },
+      rule: {
+        operator: "AND",
+        conditions: [
+          { field: "sector", operator: "==", value: "Agroalimentaire" },
+          { field: "digiscoreScore", operator: "<", value: 50 }
+        ]
+      }
     }
   });
 
@@ -577,7 +589,14 @@ async function main() {
       description: 'Intégrer les technologies et méthodes de Building Information Modeling pour la maquette numérique et la collaboration.',
       valueChains: { connect: [{ id: vcConst.id }] },
       valueChainStages: { connect: [{ id: stageConcep.id }] },
-      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] },
+      rule: {
+        operator: "AND",
+        conditions: [
+          { field: "sector", operator: "==", value: "Construction" },
+          { field: "digiscoreScore", operator: "<", value: 40 }
+        ]
+      }
     }
   });
 
@@ -586,7 +605,14 @@ async function main() {
       name: 'Digitaliser la relation client',
       uri: 'https://pit.wallonie.be/id/need/digitaliser-relation-client',
       description: 'Mettre en place un CRM, un portail client ou des outils marketing pour optimiser les ventes.',
-      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] },
+      rule: {
+        operator: "OR",
+        conditions: [
+          { field: "size", operator: "==", value: "PME" },
+          { field: "digiscoreScore", operator: "<", value: 60 }
+        ]
+      }
     }
   });
 
@@ -595,7 +621,14 @@ async function main() {
       name: 'Réduire les coûts énergétiques',
       uri: 'https://pit.wallonie.be/id/need/reduire-couts-energetiques',
       description: 'Optimiser l\'utilisation d\'énergie et la transition vers des sources renouvelables.',
-      services: { connect: [{ id: sDiagNum.id }] }
+      services: { connect: [{ id: sDiagNum.id }] },
+      rule: {
+        operator: "OR",
+        conditions: [
+          { field: "sector", operator: "==", value: "Agroalimentaire" },
+          { field: "sector", operator: "==", value: "Industrie 4.0" }
+        ]
+      }
     }
   });
 
@@ -604,7 +637,13 @@ async function main() {
       name: 'Améliorer la cybersécurité',
       uri: 'https://pit.wallonie.be/id/need/ameliorer-cybersecurite',
       description: 'Sécuriser l\'infrastructure informatique, auditer les failles de sécurité et former les équipes.',
-      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] },
+      rule: {
+        operator: "AND",
+        conditions: [
+          { field: "digiscoreScore", operator: "<", value: 70 }
+        ]
+      }
     }
   });
 
@@ -623,7 +662,11 @@ async function main() {
       belongsToValueChain: { connect: [{ id: vcAgri.id }] },
       participatesInStage: { connect: [{ id: stageProd.id }] },
       playsRole: { connect: [{ id: roleTrans.id }] },
-      needs: { connect: [{ id: bnCtrlQual.id }] }
+      needs: { connect: [{ id: bnCtrlQual.id }] },
+      roadmapLogs: [
+        { id: "log-1", operator: "AdN", action: "Création du profil", timestamp: "2026-06-08T09:00:00Z", detail: "Profil initial de l'entreprise créé." },
+        { id: "log-2", operator: "AdN", action: "Audit Digiscore", timestamp: "2026-06-08T09:15:00Z", detail: "Diagnostic Digiscore validé avec un score de 45%." }
+      ]
     }
   });
 
@@ -640,7 +683,11 @@ async function main() {
       belongsToValueChain: { connect: [{ id: vcConst.id }] },
       participatesInStage: { connect: [{ id: stageConcep.id }] },
       playsRole: { connect: [{ id: roleInteg.id }] },
-      needs: { connect: [{ id: bnBim.id }] }
+      needs: { connect: [{ id: bnBim.id }] },
+      roadmapLogs: [
+        { id: "log-1", operator: "WE", action: "Création du profil", timestamp: "2026-06-08T09:30:00Z", detail: "Profil initial de l'entreprise créé." },
+        { id: "log-2", operator: "WE", action: "Audit Digiscore", timestamp: "2026-06-08T09:45:00Z", detail: "Diagnostic Digiscore validé avec un score de 30%." }
+      ]
     }
   });
 

@@ -924,6 +924,7 @@ export default function ServicesContainer() {
   // Company Form / Modal States
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [companyFormMode, setCompanyFormMode] = useState<"create" | "edit">("create");
+
   const [compName, setCompName] = useState("");
   const [compSize, setCompSize] = useState("PME");
   const [compSector, setCompSector] = useState("");
@@ -935,6 +936,22 @@ export default function ServicesContainer() {
   const [compStageIds, setCompStageIds] = useState<number[]>([]);
   const [compRoleIds, setCompRoleIds] = useState<number[]>([]);
   const [compNeedIds, setCompNeedIds] = useState<number[]>([]);
+
+  // --- NEW: Besoin Builder states ---
+  const [needRuleOperator, setNeedRuleOperator] = useState<"AND" | "OR">("AND");
+  const [needRuleConditions, setNeedRuleConditions] = useState<Array<{field: string; operator: string; value: string}>>([]);
+  const addRuleCondition = () => setNeedRuleConditions(prev => [...prev, { field: "sector", operator: "==", value: "" }]);
+  const updateRuleCondition = (idx: number, key: string, value: string) => setNeedRuleConditions(prev => prev.map((c, i) => i === idx ? { ...c, [key]: value } : c));
+  const removeRuleCondition = (idx: number) => setNeedRuleConditions(prev => prev.filter((_, i) => i !== idx));
+
+  // --- NEW: Multi-operator collaboration states ---
+  const [activeOperator, setActiveOperator] = useState<"AdN" | "WE" | "AWEX" | "UCM">("AdN");
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<Array<{id: string; operator: string; action: string; timestamp: string; detail: string}>>([]);
+
+  // --- NEW: Simulation Digiscore boost states ---
+  const [simCheckedServices, setSimCheckedServices] = useState<Set<string>>(new Set());
+  const toggleSimService = (svcName: string) => setSimCheckedServices(prev => { const next = new Set(prev); next.has(svcName) ? next.delete(svcName) : next.add(svcName); return next; });
 
   const handleCreateReferential = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -955,7 +972,8 @@ export default function ServicesContainer() {
         ...body,
         valueChainIds: newNeedVcIds,
         valueChainStageIds: newNeedStageIds,
-        serviceIds: newNeedSvcIds
+        serviceIds: newNeedSvcIds,
+        rule: needRuleConditions.length > 0 ? { operator: needRuleOperator, conditions: needRuleConditions.map(c => ({ ...c, value: isNaN(Number(c.value)) ? c.value : Number(c.value) })) } : null
       };
     }
 
@@ -1238,6 +1256,16 @@ export default function ServicesContainer() {
       }
     }
   }, [selectedBeneficiaryId, beneficiaries, selectedJourneyId]);
+
+  // Load audit logs when beneficiary selection changes
+  useEffect(() => {
+    const b = beneficiaries.find(b => b.id === selectedBeneficiaryId);
+    if (b && Array.isArray((b as any).roadmapLogs)) {
+      setAuditLogs((b as any).roadmapLogs);
+    } else {
+      setAuditLogs([]);
+    }
+  }, [selectedBeneficiaryId, beneficiaries]);
 
   const handleAddProposed = (phaseId: string, serviceName: string) => {
     setBeneficiaries(prev => prev.map(b => {
@@ -2534,6 +2562,71 @@ export default function ServicesContainer() {
                           <option key={svc.id} value={svc.id}>{svc.name}</option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* ✨ BESOIN BUILDER — Règles logiques dynamiques */}
+                    <div className="space-y-3 pt-3 border-t border-fuchsia-100 dark:border-fuchsia-900/30">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Besoin Builder — Règles d&apos;Attribution Dynamiques
+                        </span>
+                        <button type="button" onClick={addRuleCondition}
+                          className="text-[9px] font-bold text-fuchsia-600 bg-fuchsia-50 dark:bg-fuchsia-950/30 border border-fuchsia-200 dark:border-fuchsia-800 px-2 py-0.5 rounded-full hover:bg-fuchsia-100 transition cursor-pointer">
+                          + Ajouter une condition
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-gray-400 leading-snug">Ce besoin sera suggéré automatiquement si l&apos;entreprise satisfait les conditions ci-dessous.</p>
+
+                      {/* Operator toggle */}
+                      {needRuleConditions.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-gray-400 font-bold uppercase">Opérateur logique :</span>
+                          {(["AND", "OR"] as const).map(op => (
+                            <button key={op} type="button" onClick={() => setNeedRuleOperator(op)}
+                              className={cn("text-[9px] font-black px-2.5 py-0.5 rounded-full border transition cursor-pointer",
+                                needRuleOperator === op
+                                  ? "bg-fuchsia-600 text-white border-fuchsia-600"
+                                  : "bg-transparent text-fuchsia-600 border-fuchsia-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/20")}>
+                              {op}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Condition rows */}
+                      <div className="space-y-1.5">
+                        {needRuleConditions.map((cond, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <select value={cond.field} onChange={e => updateRuleCondition(idx, "field", e.target.value)}
+                              className="flex-1 px-2 py-1 text-[10px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-100 outline-none">
+                              <option value="sector">Secteur</option>
+                              <option value="size">Taille</option>
+                              <option value="location">Localisation</option>
+                              <option value="digiscoreScore">Digiscore</option>
+                            </select>
+                            <select value={cond.operator} onChange={e => updateRuleCondition(idx, "operator", e.target.value)}
+                              className="w-14 px-1 py-1 text-[10px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-100 outline-none">
+                              <option value="==">==</option>
+                              <option value="!=">!=</option>
+                              <option value="<">&lt;</option>
+                              <option value=">">&gt;</option>
+                              <option value="<=">&lt;=</option>
+                              <option value=">=">&gt;=</option>
+                            </select>
+                            <input type="text" placeholder="valeur" value={cond.value} onChange={e => updateRuleCondition(idx, "value", e.target.value)}
+                              className="flex-1 px-2 py-1 text-[10px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-100 outline-none" />
+                            <button type="button" onClick={() => removeRuleCondition(idx)}
+                              className="p-0.5 text-rose-400 hover:text-rose-600 cursor-pointer border-0 bg-transparent">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        {needRuleConditions.length === 0 && (
+                          <p className="text-[9px] text-gray-300 dark:text-gray-600 italic">
+                            Aucune règle — le besoin sera appliqué uniquement par croisement filière × maillon.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -3905,109 +3998,253 @@ export default function ServicesContainer() {
                 </div>
 
                 {/* Simulation controls panel */}
-                {benefViewMode === "simulation" && (
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-                      <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                        Moteur de Simulation & Critères de Recommandation S3
-                      </h3>
+                {benefViewMode === "simulation" && (() => {
+                  // --- Digiscore boost calculation ---
+                  const b = beneficiaries.find(x => x.id === selectedBeneficiaryId);
+                  const baseScore = (b as any)?.digiscoreScore ?? 0;
+                  const totalBoost = Array.from(simCheckedServices).reduce((acc, svcName) => {
+                    const svc = servicesList.find(s => s.name === svcName) as any;
+                    return acc + (svc?.impacts?.digiscoreBoost ?? svc?.impacts?.competitiveness ? 5 : 0);
+                  }, 0);
+                  const simScore = Math.min(100, baseScore + totalBoost);
+                  return (
+                  <div className="space-y-4">
+                    {/* Impact Prédictif Digiscore */}
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Gauge className="w-5 h-5 text-amber-500 animate-pulse" />
+                        <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                          Simulation d&apos;Impact Prédictif — Digiscore
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Gauge comparée */}
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <div className="flex items-end gap-6">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-gray-400 font-bold uppercase mb-1">Score Actuel</span>
+                              <div className="relative w-20 h-20">
+                                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" strokeWidth="3"/>
+                                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#14b8a6" strokeWidth="3"
+                                    strokeDasharray={`${baseScore} ${100 - baseScore}`} strokeLinecap="round"/>
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-base font-black text-teal-600">{baseScore}%</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-black text-amber-400">→</div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-amber-600 font-black uppercase mb-1">Après Simulation</span>
+                              <div className="relative w-24 h-24">
+                                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#fde68a" strokeWidth="3"/>
+                                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" strokeWidth="3.5"
+                                    strokeDasharray={`${simScore} ${100 - simScore}`} strokeLinecap="round"
+                                    className="transition-all duration-700"/>
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-amber-600">{simScore}%</span>
+                              </div>
+                            </div>
+                          </div>
+                          {totalBoost > 0 && (
+                            <span className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                              +{totalBoost}% grâce à {simCheckedServices.size} service{simCheckedServices.size > 1 ? "s" : ""} simulé{simCheckedServices.size > 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Checklist des services simulés */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Cocher les services à simuler :</span>
+                          {servicesList.slice(0, 6).map(svc => (
+                            <label key={svc.id} className="flex items-center gap-2 cursor-pointer group">
+                              <input type="checkbox" checked={simCheckedServices.has(svc.name)}
+                                onChange={() => toggleSimService(svc.name)}
+                                className="w-3.5 h-3.5 accent-amber-500 cursor-pointer" />
+                              <span className={cn("text-xs transition", simCheckedServices.has(svc.name) ? "text-amber-700 dark:text-amber-400 font-bold" : "text-gray-500 dark:text-gray-400")}>
+                                {svc.name}
+                              </span>
+                              {(svc as any).impacts?.digiscoreBoost && (
+                                <span className="text-[9px] text-emerald-600 font-bold ml-auto">+{(svc as any).impacts.digiscoreBoost}%</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400">
-                      Définissez vos contraintes de budget, de temps et votre priorité d'impact. L'algorithme client calcule instantanément la meilleure combinaison de services sémantiques pour combler les gaps constatés.
-                    </p>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-                      {/* Budget max Slider */}
-                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
-                        <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
-                          <span>Budget Max (Cumulé)</span>
-                          <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simBudgetMax.toLocaleString()} €</span>
-                        </div>
-                        <input
-                          type="range"
-                          min={realCost}
-                          max={realCost + 40000}
-                          step={1000}
-                          value={simBudgetMax}
-                          onChange={(e) => setSimBudgetMax(Number(e.target.value))}
-                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600"
-                        />
-                        <div className="flex justify-between text-[8px] text-gray-400">
-                          <span>Actuel ({realCost.toLocaleString()} €)</span>
-                          <span>Max ({ (realCost + 40000).toLocaleString() } €)</span>
-                        </div>
+                    {/* Existing simulation controls */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                          Moteur de Simulation &amp; Critères de Recommandation S3
+                        </h3>
                       </div>
-
-                      {/* Duration max Slider */}
-                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
-                        <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
-                          <span>Durée Max (Cumulée)</span>
-                          <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simDurationMax} jours</span>
+                      <p className="text-xs text-gray-400">
+                        Définissez vos contraintes de budget, de temps et votre priorité d&apos;impact. L&apos;algorithme client calcule instantanément la meilleure combinaison de services sémantiques pour combler les gaps constatés.
+                      </p>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                        {/* Budget max Slider */}
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                          <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                            <span>Budget Max (Cumulé)</span>
+                            <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simBudgetMax.toLocaleString()} €</span>
+                          </div>
+                          <input type="range" min={realCost} max={realCost + 40000} step={1000} value={simBudgetMax}
+                            onChange={(e) => setSimBudgetMax(Number(e.target.value))}
+                            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+                          <div className="flex justify-between text-[8px] text-gray-400">
+                            <span>Actuel ({realCost.toLocaleString()} €)</span>
+                            <span>Max ({ (realCost + 40000).toLocaleString() } €)</span>
+                          </div>
                         </div>
-                        <input
-                          type="range"
-                          min={realDuration}
-                          max={realDuration + 180}
-                          step={5}
-                          value={simDurationMax}
-                          onChange={(e) => setSimDurationMax(Number(e.target.value))}
-                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600"
-                        />
-                        <div className="flex justify-between text-[8px] text-gray-400">
-                          <span>Actuel ({realDuration} j)</span>
-                          <span>Max ({realDuration + 180} j)</span>
+                        {/* Duration max Slider */}
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                          <div className="flex justify-between items-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                            <span>Durée Max (Cumulée)</span>
+                            <span className="text-teal-650 dark:text-teal-400 font-extrabold">{simDurationMax} jours</span>
+                          </div>
+                          <input type="range" min={realDuration} max={realDuration + 180} step={5} value={simDurationMax}
+                            onChange={(e) => setSimDurationMax(Number(e.target.value))}
+                            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+                          <div className="flex justify-between text-[8px] text-gray-400">
+                            <span>Actuel ({realDuration} j)</span>
+                            <span>Max ({realDuration + 180} j)</span>
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Priority selector */}
-                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
-                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                          Priorité Strategique S3
-                        </label>
-                        <select
-                          value={simPriority}
-                          onChange={(e) => setSimPriority(e.target.value as any)}
-                          className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
-                        >
-                          <option value="competitiveness">📈 Compétitivité industrielle</option>
-                          <option value="jobs">👥 Création & Maintien d'emplois</option>
-                          <option value="resilience">🛡️ Cyber-résilience & Sécurité</option>
-                          <option value="carbon">🌱 Décarbonation & Climat</option>
-                          <option value="sovereignty">🔐 Souveraineté & Interopérabilité</option>
-                        </select>
+                        {/* Priority selector */}
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-2">
+                          <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">Priorité Strategique S3</label>
+                          <select value={simPriority} onChange={(e) => setSimPriority(e.target.value as any)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500">
+                            <option value="competitiveness">📈 Compétitivité industrielle</option>
+                            <option value="jobs">👥 Création &amp; Maintien d&apos;emplois</option>
+                            <option value="resilience">🛡️ Cyber-résilience &amp; Sécurité</option>
+                            <option value="carbon">🌱 Décarbonation &amp; Climat</option>
+                            <option value="sovereignty">🔐 Souveraineté &amp; Interopérabilité</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </div> {/* Ends Right Side col-span-9 */}
             </div> {/* Ends Grid grid-cols-12 */}
 
             {/* Comparative Gaps & Doublons Grid (Full Screen Width) */}
             <div className="bg-white dark:bg-gray-800 p-6 -mx-6 px-6 md:px-8 border-y border-gray-200 dark:border-gray-700 shadow-md space-y-5">
-                  {/* Section Header */}
-                  <div className="flex items-start gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
-                    <div className="flex-1">
-                      <h3 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-                        Analyse du Parcours : Gaps &amp; Doublons
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                        Cartographie des 6 phases pour <strong>{b.name}</strong>. Gaps = services recommandés non initiés · Doublons = chevauchements redondants.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-455 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />Gap
-                      </span>
-                      {benefViewMode === "simulation" && (
-                        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-455 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />Simulé
+                  {/* Section Header with Multi-Operator Collaboration Bar */}
+                  <div className="flex flex-col gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+                          Analyse du Parcours : Gaps &amp; Doublons
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                          Cartographie des 6 phases pour <strong>{b.name}</strong>. Gaps = services recommandés non initiés · Doublons = chevauchements redondants.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-455 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />Gap
                         </span>
-                      )}
-                      <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-455 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />Match
-                      </span>
+                        {benefViewMode === "simulation" && (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-455 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />Simulé
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-455 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />Match
+                        </span>
+                      </div>
                     </div>
+
+                    {/* 🤝 MULTI-OPERATOR COLLABORATION BAR */}
+                    <div className="flex flex-wrap items-center gap-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-150 dark:border-gray-800 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Conseiller actif :</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {(["AdN", "WE", "AWEX", "UCM"] as const).map(op => {
+                          const colors: Record<string, string> = {
+                            AdN: "bg-fuchsia-600 text-white border-fuchsia-600",
+                            WE: "bg-emerald-600 text-white border-emerald-600",
+                            AWEX: "bg-blue-600 text-white border-blue-600",
+                            UCM: "bg-orange-500 text-white border-orange-500",
+                          };
+                          const inactiveColors: Record<string, string> = {
+                            AdN: "text-fuchsia-600 border-fuchsia-300 hover:bg-fuchsia-50",
+                            WE: "text-emerald-600 border-emerald-300 hover:bg-emerald-50",
+                            AWEX: "text-blue-600 border-blue-300 hover:bg-blue-50",
+                            UCM: "text-orange-500 border-orange-300 hover:bg-orange-50",
+                          };
+                          return (
+                            <button key={op} type="button"
+                              onClick={() => setActiveOperator(op)}
+                              className={cn("text-[10px] font-black px-3 py-1 rounded-full border transition cursor-pointer",
+                                activeOperator === op ? colors[op] : `bg-transparent ${inactiveColors[op]}`)}>
+                              {op}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Presence indicator */}
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                          2 conseillers connectés (AdN, WE)
+                        </span>
+                        <button type="button" onClick={() => {
+                          setShowAuditLog(!showAuditLog);
+                        }}
+                          className="text-[9px] font-bold text-gray-400 hover:text-gray-700 border border-gray-200 dark:border-gray-700 px-2 py-0.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer">
+                          {showAuditLog ? "Masquer" : "📋 Journal d'audit"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Audit log panel */}
+                    {showAuditLog && (
+                      <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 max-h-48 overflow-y-auto space-y-2">
+                        <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block mb-2">Journal d&apos;Audit Collaboratif</span>
+                        {auditLogs.length === 0 ? (
+                          <p className="text-[10px] text-gray-400 italic">Aucune action enregistrée pour ce bénéficiaire.</p>
+                        ) : auditLogs.map((log, idx) => {
+                          const opColors: Record<string, string> = {
+                            AdN: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-400",
+                            WE: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+                            AWEX: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
+                            UCM: "bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400",
+                          };
+                          return (
+                            <div key={idx} className="flex items-start gap-2 text-[10px]">
+                              <span className={cn("px-1.5 py-0.5 rounded font-bold text-[9px] shrink-0", opColors[log.operator] || "bg-gray-200 text-gray-600")}>{log.operator}</span>
+                              <div className="flex-1">
+                                <span className="font-bold text-gray-700 dark:text-gray-300">{log.action}</span>
+                                {log.detail && <p className="text-gray-500 dark:text-gray-500 text-[9px] mt-0.5">{log.detail}</p>}
+                              </div>
+                              <span className="text-[8px] text-gray-400 shrink-0">{new Date(log.timestamp).toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                          );
+                        })}
+                        {/* Log a new action */}
+                        <button type="button"
+                          onClick={() => {
+                            const newLog = { id: `log-${Date.now()}`, operator: activeOperator, action: "Validation de l'étape", timestamp: new Date().toISOString(), detail: `Validé par ${activeOperator} via le cockpit PIT.` };
+                            setAuditLogs(prev => [...prev, newLog]);
+                          }}
+                          className={cn("w-full mt-2 py-1.5 text-[10px] font-bold rounded-lg border transition cursor-pointer",
+                            activeOperator === "AdN" ? "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100 dark:bg-fuchsia-950/20 dark:text-fuchsia-400 dark:border-fuchsia-800" :
+                            activeOperator === "WE" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800" :
+                            activeOperator === "AWEX" ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800" :
+                            "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-800")}>
+                          + Enregistrer une action ({activeOperator})
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Phase Cards Grid */}

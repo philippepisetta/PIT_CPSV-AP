@@ -476,7 +476,8 @@ app.patch('/api/companies/:id', async (req, res) => {
     const {
       name, size, sector, location, demand,
       digiscoreScore, digiscoreLevel, digiscoreDate,
-      belongsToValueChainIds, participatesInStageIds, playsRoleIds, needIds
+      belongsToValueChainIds, participatesInStageIds, playsRoleIds, needIds,
+      roadmapLogs
     } = req.body;
 
     const updated = await prisma.company.update({
@@ -502,6 +503,7 @@ app.patch('/api/companies/:id', async (req, res) => {
         needs: needIds ? {
           set: needIds.map((id: any) => ({ id: parseInt(id) }))
         } : undefined,
+        roadmapLogs: roadmapLogs !== undefined ? roadmapLogs : undefined,
       },
       include: { belongsToValueChain: true, participatesInStage: true, playsRole: true, needs: true }
     });
@@ -611,21 +613,42 @@ app.get('/api/recommender/:companyId', async (req, res) => {
     const companyStageIds = company.participatesInStage.map(s => s.id);
     const expressedNeedIds = company.needs.map(n => n.id);
 
-    // Trouver les besoins pertinents : soit exprimés, soit matchants filière ET maillon
-    const matchedNeeds = await prisma.businessNeed.findMany({
-      where: {
-        OR: [
-          { id: { in: expressedNeedIds } },
-          {
-            valueChains: { some: { id: { in: companyVcIds } } },
-            valueChainStages: { some: { id: { in: companyStageIds } } }
-          }
-        ]
-      },
+    // Fonction d'évaluation des règles logiques dynamiques pour le Besoin Builder
+    const evaluateRule = (rule: any, comp: any): boolean => {
+      if (!rule || !rule.conditions || !Array.isArray(rule.conditions)) {
+        return false;
+      }
+      const operator = rule.operator || 'AND';
+      const results = rule.conditions.map((cond: any) => {
+        const { field, operator: condOp, value } = cond;
+        const companyValue = comp[field];
+        if (companyValue === undefined || companyValue === null) {
+          return false;
+        }
+        switch (condOp) {
+          case '==': return companyValue == value;
+          case '!=': return companyValue != value;
+          case '<':  return companyValue < value;
+          case '>':  return companyValue > value;
+          case '<=': return companyValue <= value;
+          case '>=': return companyValue >= value;
+          default: return false;
+        }
+      });
+      if (operator === 'OR') {
+        return results.some(r => r === true);
+      }
+      return results.every(r => r === true);
+    };
+
+    // Charger l'ensemble des besoins de la base
+    const allNeeds = await prisma.businessNeed.findMany({
       include: {
+        valueChains: true,
+        valueChainStages: true,
         services: {
           include: {
-            organization: true
+            organization: true,
           }
         },
         journeys: {
@@ -639,6 +662,32 @@ app.get('/api/recommender/:companyId', async (req, res) => {
           }
         }
       }
+    });
+
+    // Filtrer sémantiquement les besoins correspondants
+    const matchedNeeds = allNeeds.filter(need => {
+      // 1. S'il est exprimé explicitement
+      if (expressedNeedIds.includes(need.id)) {
+        return true;
+      }
+      // 2. Si une règle dynamique valide le besoin
+      if (need.rule) {
+        try {
+          const ruleObj = typeof need.rule === 'string' ? JSON.parse(need.rule) : need.rule;
+          if (evaluateRule(ruleObj, company)) {
+            return true;
+          }
+        } catch (e) {
+          console.error(`Erreur d'évaluation pour le besoin ${need.id}:`, e);
+        }
+      }
+      // 3. Sinon, par croisement sémantique par défaut (filière ET maillon)
+      const hasVc = need.valueChains.some(vc => companyVcIds.includes(vc.id));
+      const hasStage = need.valueChainStages.some(st => companyStageIds.includes(st.id));
+      if (hasVc && hasStage) {
+        return true;
+      }
+      return false;
     });
 
     const recommendedServices: any[] = [];

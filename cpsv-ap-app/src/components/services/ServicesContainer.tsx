@@ -1446,7 +1446,7 @@ export default function ServicesContainer() {
               <span className="text-[10px] font-bold text-gray-400 uppercase">Services Encodés</span>
               <h4 className="text-xl font-black text-gray-900 dark:text-gray-100 mt-1">{servicesList.length}</h4>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650">
               <Database className="w-4 h-4" />
             </div>
           </div>
@@ -1493,7 +1493,7 @@ export default function ServicesContainer() {
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer",
                   selectedTheme === theme
-                    ? "bg-primary-500 border-primary-500 text-white"
+                    ? "bg-primary border-primary text-white"
                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50"
                 )}
               >
@@ -1504,7 +1504,7 @@ export default function ServicesContainer() {
 
           <button
             onClick={() => setShowServiceWizard(true)}
-            className="flex items-center gap-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer border-0"
+            className="flex items-center gap-1 px-4 py-2 bg-primary hover:bg-teal-800 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer border-0"
           >
             <Plus className="w-3.5 h-3.5" />
             Ajouter un service
@@ -1531,17 +1531,17 @@ export default function ServicesContainer() {
                   <tr
                     key={svc.id}
                     onClick={() => setSelectedService(svc)}
-                    className="hover:bg-primary-50/35 dark:hover:bg-primary-950/15 cursor-pointer border-b border-gray-100 dark:border-gray-800 transition-colors"
+                    className="hover:bg-teal-50/35 dark:hover:bg-teal-950/15 cursor-pointer border-b border-gray-100 dark:border-gray-800 transition-colors"
                   >
                     <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100 max-w-[200px]">
-                      <div className="hover:text-primary-500 transition-colors">{svc.name}</div>
+                      <div className="hover:text-primary transition-colors">{svc.name}</div>
                       <div className="text-[10px] text-gray-400 font-normal truncate mt-0.5">{svc.uri}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-medium">{svc.organisationId}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         {svc.themes.map((t: string) => (
-                          <span key={t} className="px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-950/20 text-primary-600 dark:text-primary-400 font-semibold text-[9px] border border-primary-100 dark:border-primary-900">
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 font-semibold text-[9px] border border-teal-100 dark:border-teal-900">
                             {t}
                           </span>
                         ))}
@@ -1591,7 +1591,7 @@ export default function ServicesContainer() {
         {/* Header description */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-650 flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
               <Route className="w-5 h-5 text-purple-500 animate-pulse" />
               <span>Catalogue de Méthodes & Gestion des Parcours</span>
             </h3>
@@ -1602,7 +1602,7 @@ export default function ServicesContainer() {
           {!isCreatingTemplate && !editingTemplate && (
             <button
               onClick={handleStartCreateTemplate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-purple-655 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0 border-0"
+              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0 border-0"
             >
               <Plus className="w-4 h-4" />
               Nouveau Parcours
@@ -1614,7 +1614,7 @@ export default function ServicesContainer() {
         { (isCreatingTemplate || editingTemplate) ? (
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md space-y-6">
             <div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-555">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-purple-600">
                 {editingTemplate ? "Modifier le Modèle de Parcours" : "Créer un Modèle de Parcours"}
               </h4>
               <p className="text-xs text-gray-405 mt-0.5">
@@ -1764,7 +1764,7 @@ export default function ServicesContainer() {
 
               {/* Right Column: Steps mapping selection */}
               <div className="md:col-span-2 space-y-4">
-                <span className="text-[10px] font-extrabold text-purple-650 uppercase tracking-wider block border-b border-gray-100 dark:border-gray-700 pb-2 mb-2 pl-1">
+                <span className="text-[10px] font-extrabold text-purple-600 uppercase tracking-wider block border-b border-gray-100 dark:border-gray-700 pb-2 mb-2 pl-1">
                   Association des Services aux 6 Étapes du Parcours
                 </span>
 
@@ -1831,7 +1831,7 @@ export default function ServicesContainer() {
               </button>
               <button
                 onClick={handleSaveTemplate}
-                className="px-4 py-2 bg-purple-650 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition shadow-sm border-0 cursor-pointer"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition shadow-sm border-0 cursor-pointer"
               >
                 Enregistrer le Parcours
               </button>
@@ -1985,7 +1985,7 @@ export default function ServicesContainer() {
                           <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-400">
                             {template.businessEvent}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-500/10 text-purple-650 border border-purple-500/20 dark:text-purple-400">
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20 dark:text-purple-400">
                             {template.euStrategy}
                           </span>
                           <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-teal-500/10 text-teal-650 border border-teal-500/20 dark:text-teal-400">
@@ -2028,7 +2028,7 @@ export default function ServicesContainer() {
                                 )}
                               >
                                 <span className="truncate pr-1">{p.label}</span>
-                                <span className={cn("px-1 py-0.2 rounded text-[7px]", count > 0 ? "bg-purple-500/10 text-purple-650 font-bold border border-purple-500/20" : "bg-gray-100 dark:bg-gray-800")}>
+                                <span className={cn("px-1 py-0.2 rounded text-[7px]", count > 0 ? "bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20" : "bg-gray-100 dark:bg-gray-800")}>
                                   {count}
                                 </span>
                               </div>
@@ -2273,7 +2273,7 @@ export default function ServicesContainer() {
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-gray-400 uppercase">Impact Moyen Atteint</span>
-                    <h4 className="text-xl font-black text-purple-650 mt-1">
+                    <h4 className="text-xl font-black text-purple-600 mt-1">
                       {strategyBenefs.length ? (strategyBenefs.reduce((sum, b) => sum + (b.journeys[0]?.effectivenessScore || 0), 0) / strategyBenefs.length).toFixed(0) : 0}%
                     </h4>
                   </div>
@@ -3867,7 +3867,7 @@ export default function ServicesContainer() {
                       <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Thématiques S3</h4>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {selectedService.themes.map((t: string) => (
-                          <span key={t} className="px-1.5 py-0.5 text-[9px] font-semibold bg-primary-50 dark:bg-primary-950/20 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-900 rounded">
+                          <span key={t} className="px-1.5 py-0.5 text-[9px] font-semibold bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900 rounded">
                             {t}
                           </span>
                         ))}
@@ -3879,14 +3879,14 @@ export default function ServicesContainer() {
                 {/* Strategic Impact Radar or Scores */}
                 <div className="bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-3">
                   <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-primary-500" />
+                    <Layers className="w-3.5 h-3.5 text-teal-650" />
                     Impact Stratégique Régional (S3)
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs pt-1">
                     {Object.entries(selectedService.impacts).map(([key, val]: any) => (
                       <div key={key} className="flex flex-col justify-center items-center bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-800/80 shadow-xs">
                         <span className="text-[8px] text-gray-400 font-bold uppercase truncate w-full text-center">{key}</span>
-                        <span className="font-extrabold text-primary-600 dark:text-primary-400 text-sm mt-1">{val}%</span>
+                        <span className="font-extrabold text-teal-700 dark:text-teal-400 text-sm mt-1">{val}%</span>
                       </div>
                     ))}
                   </div>
@@ -3976,7 +3976,7 @@ export default function ServicesContainer() {
                         navigator.clipboard.writeText(JSON.stringify(jsonLd, null, 2));
                         alert("✅ JSON-LD sémantique copié dans le presse-papiers !");
                       }}
-                      className="text-[10px] font-bold text-primary-500 hover:text-primary-600 flex items-center gap-1 transition cursor-pointer"
+                      className="text-[10px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 transition cursor-pointer"
                     >
                       <Copy className="w-3 h-3" />
                       Copier JSON-LD

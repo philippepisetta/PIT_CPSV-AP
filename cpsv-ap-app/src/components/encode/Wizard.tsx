@@ -19,7 +19,6 @@ import OutcomesStep from "./steps/OutcomesStep";
 import ImpactsStep from "./steps/ImpactsStep";
 import ResourcesStep from "./steps/ResourcesStep";
 import RelatedServicesStep from "./steps/RelatedServicesStep";
-import JourneyStep from "./steps/JourneyStep";
 import KpisStep from "./steps/KpisStep";
 import InteropMetadataStep from "./steps/InteropMetadataStep";
 import PublicationStep from "./steps/PublicationStep";
@@ -43,10 +42,9 @@ const steps = [
   { id: "impacts", component: ImpactsStep, label: "11. Impacts Territoriaux" },
   { id: "resources", component: ResourcesStep, label: "12. Ressources" },
   { id: "relatedServices", component: RelatedServicesStep, label: "13. Services Liés" },
-  { id: "journey", component: JourneyStep, label: "14. Parcours Client" },
-  { id: "kpis", component: KpisStep, label: "15. Indicateurs KPI" },
-  { id: "interop", component: InteropMetadataStep, label: "16. Interopérabilité" },
-  { id: "publication", component: PublicationStep, label: "17. Publication & Gouvernance" },
+  { id: "kpis", component: KpisStep, label: "14. Indicateurs KPI" },
+  { id: "interop", component: InteropMetadataStep, label: "15. Interopérabilité" },
+  { id: "publication", component: PublicationStep, label: "16. Publication & Gouvernance" },
 ];
 
 export default function Wizard({ onSuccess }: { onSuccess?: () => void }) {

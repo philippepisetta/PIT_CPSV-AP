@@ -31,3 +31,5 @@ Thumbs.db
 
 # Database Backup (Do not push raw data dump to Git)
 dump.sql
+
+.vercel

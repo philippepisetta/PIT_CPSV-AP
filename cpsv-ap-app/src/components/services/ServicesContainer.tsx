@@ -898,13 +898,188 @@ const runSimulation = (
 
 export default function ServicesContainer() {
   const [activeTab, setActiveTab] = useState<"catalogues" | "strategies" | "beneficiaries" | "craft">("catalogues");
-  const [catalogueSubTab, setCatalogueSubTab] = useState<"services" | "journeys">("services");
+  const [catalogueSubTab, setCatalogueSubTab] = useState<"services" | "journeys" | "referentials">("services");
   const [showServiceWizard, setShowServiceWizard] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<"s3" | "circular" | "edih" | "tremplin">("s3");
   const [servicesList, setServicesList] = useState(walloonServices);
   const [selectedTheme, setSelectedTheme] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<any | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Referentials States
+  const [valueChains, setValueChains] = useState<any[]>([]);
+  const [stages, setStages] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [businessNeeds, setBusinessNeeds] = useState<any[]>([]);
+  
+  // Referential creation states
+  const [refType, setRefType] = useState<"valuechain" | "stage" | "role" | "need">("valuechain");
+  const [newRefName, setNewRefName] = useState("");
+  const [newRefDesc, setNewRefDesc] = useState("");
+  const [newRefUri, setNewRefUri] = useState("");
+  const [newNeedVcIds, setNewNeedVcIds] = useState<number[]>([]);
+  const [newNeedStageIds, setNewNeedStageIds] = useState<number[]>([]);
+  const [newNeedSvcIds, setNewNeedSvcIds] = useState<number[]>([]);
+
+  // Company Form / Modal States
+  const [showCompanyForm, setShowCompanyForm] = useState(false);
+  const [companyFormMode, setCompanyFormMode] = useState<"create" | "edit">("create");
+  const [compName, setCompName] = useState("");
+  const [compSize, setCompSize] = useState("PME");
+  const [compSector, setCompSector] = useState("");
+  const [compLocation, setCompLocation] = useState("");
+  const [compDemand, setCompDemand] = useState("");
+  const [compDigiscore, setCompDigiscore] = useState<number>(30);
+  const [compDigiLevel, setCompDigiLevel] = useState("Intermediate");
+  const [compVcIds, setCompVcIds] = useState<number[]>([]);
+  const [compStageIds, setCompStageIds] = useState<number[]>([]);
+  const [compRoleIds, setCompRoleIds] = useState<number[]>([]);
+  const [compNeedIds, setCompNeedIds] = useState<number[]>([]);
+
+  const handleCreateReferential = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRefName) return;
+
+    let url = "";
+    let body: any = { name: newRefName, description: newRefDesc, uri: newRefUri };
+
+    if (refType === "valuechain") {
+      url = "/api/value-chains";
+    } else if (refType === "stage") {
+      url = "/api/stages";
+    } else if (refType === "role") {
+      url = "/api/roles";
+    } else if (refType === "need") {
+      url = "/api/business-needs";
+      body = {
+        ...body,
+        valueChainIds: newNeedVcIds,
+        valueChainStageIds: newNeedStageIds,
+        serviceIds: newNeedSvcIds
+      };
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        alert("✅ Référentiel créé avec succès !");
+        setNewRefName("");
+        setNewRefDesc("");
+        setNewRefUri("");
+        setNewNeedVcIds([]);
+        setNewNeedStageIds([]);
+        setNewNeedSvcIds([]);
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        const error = await res.json();
+        alert(`❌ Erreur: ${error.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erreur de communication avec le serveur");
+    }
+  };
+
+  const handleDeleteReferential = async (type: string, id: number) => {
+    if (!confirm("❌ Êtes-vous sûr de vouloir supprimer cet élément ?")) return;
+    let url = "";
+    if (type === "valuechain") url = `/api/value-chains/${id}`;
+    else if (type === "stage") url = `/api/stages/${id}`;
+    else if (type === "role") url = `/api/roles/${id}`;
+    else if (type === "need") url = `/api/business-needs/${id}`;
+
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      if (res.ok) {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenEditCompany = (company: any) => {
+    setCompanyFormMode("edit");
+    setCompName(company.name);
+    setCompSize(company.size);
+    setCompSector(company.sector);
+    setCompLocation(company.location);
+    setCompDemand(company.demand || "");
+    setCompDigiscore(company.digiscore?.score || 30);
+    setCompDigiLevel(company.digiscore?.level || "Intermediate");
+    
+    fetch(`/api/companies/${company.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setCompVcIds(data.belongsToValueChain?.map((x: any) => x.id) || []);
+        setCompStageIds(data.participatesInStage?.map((x: any) => x.id) || []);
+        setCompRoleIds(data.playsRole?.map((x: any) => x.id) || []);
+        setCompNeedIds(data.needs?.map((x: any) => x.id) || []);
+        setShowCompanyForm(true);
+      });
+  };
+
+  const handleOpenCreateCompany = () => {
+    setCompanyFormMode("create");
+    setCompName("");
+    setCompSize("PME");
+    setCompSector("");
+    setCompLocation("");
+    setCompDemand("");
+    setCompDigiscore(30);
+    setCompDigiLevel("Intermediate");
+    setCompVcIds([]);
+    setCompStageIds([]);
+    setCompRoleIds([]);
+    setCompNeedIds([]);
+    setShowCompanyForm(true);
+  };
+
+  const handleSaveCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!compName) return;
+
+    const body = {
+      name: compName,
+      size: compSize,
+      sector: compSector,
+      location: compLocation,
+      demand: compDemand,
+      digiscoreScore: compDigiscore,
+      digiscoreLevel: compDigiLevel,
+      digiscoreDate: new Date().toISOString(),
+      belongsToValueChainIds: compVcIds,
+      participatesInStageIds: compStageIds,
+      playsRoleIds: compRoleIds,
+      needIds: compNeedIds
+    };
+
+    const url = companyFormMode === "create" ? "/api/companies" : `/api/companies/${selectedBeneficiaryId}`;
+    const method = companyFormMode === "create" ? "POST" : "PATCH";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        alert(companyFormMode === "create" ? "✅ Entreprise créée avec succès !" : "✅ Profil mis à jour avec succès !");
+        setShowCompanyForm(false);
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        const error = await res.json();
+        alert(`❌ Erreur: ${error.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erreur de communication");
+    }
+  };
 
   // Beneficiaries State
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(initialBeneficiaries);
@@ -1285,15 +1460,13 @@ export default function ServicesContainer() {
     }));
   };
 
-  // Dynamic DB fetching and merging with fallback seeds
+  // Load services, referentials, journeys and companies from the database
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await fetch("/api/services");
         if (res.ok) {
           const dbServices = await res.json();
-          console.log("Loaded services from database:", dbServices);
-
           const mappedDbServices = dbServices.map((dbSvc: any) => {
             const matchingRich = walloonServices.find(
               (w) => w.uri === dbSvc.uri || w.name.toLowerCase() === dbSvc.name.toLowerCase()
@@ -1334,7 +1507,6 @@ export default function ServicesContainer() {
             };
           });
 
-          // Mix in any remaining rich mock services not yet saved to DB
           const combined = [...mappedDbServices];
           walloonServices.forEach((w) => {
             const exists = mappedDbServices.some(
@@ -1344,14 +1516,189 @@ export default function ServicesContainer() {
               combined.push(w);
             }
           });
-
           setServicesList(combined);
         }
       } catch (err) {
-        console.error("Failed to load services, using mocks:", err);
+        console.error("Failed to load services:", err);
       }
     };
+
+    const fetchMeta = async () => {
+      try {
+        const res = await fetch("/api/meta");
+        if (res.ok) {
+          const data = await res.json();
+          setValueChains(data.valueChains || []);
+          setStages(data.stages || []);
+          setRoles(data.roles || []);
+          setBusinessNeeds(data.needs || []);
+        }
+      } catch (err) {
+        console.error("Failed to load meta referentials:", err);
+      }
+    };
+
+    const getServicePhaseName = (svc: any) => {
+      const name = (svc.name || "").toLowerCase();
+      if (name.includes("financ") || name.includes("subside") || name.includes("invest")) return "investissement";
+      if (name.includes("diagnost") || name.includes("evalu") || name.includes("audit")) return "diagnostic";
+      if (name.includes("coach") || name.includes("cyber") || name.includes("sensib")) return "coaching";
+      if (name.includes("plan") || name.includes("strateg")) return "planification";
+      if (name.includes("implem") || name.includes("prototyp") || name.includes("ia") || name.includes("transition")) return "implementation";
+      return "amorcage";
+    };
+
+    const fetchJourneys = async () => {
+      try {
+        const res = await fetch("/api/journeys");
+        if (res.ok) {
+          const dbJourneys = await res.json();
+          if (dbJourneys && dbJourneys.length > 0) {
+            const mapped = dbJourneys.map((j: any) => {
+              const stepsObj: any = {
+                amorcage: [],
+                diagnostic: [],
+                coaching: [],
+                planification: [],
+                implementation: [],
+                investissement: []
+              };
+
+              (j.steps || []).forEach((step: any) => {
+                const phaseId = getServicePhaseName(step.service || { name: step.name });
+                stepsObj[phaseId].push(step.name);
+              });
+
+              return {
+                id: String(j.id),
+                name: j.name,
+                provider: j.provider,
+                objective: j.objective || "",
+                businessEvent: "Operating Business",
+                euStrategy: "Décennie Numérique",
+                localS3: "Industrie 4.0",
+                filiere: j.valueChains && j.valueChains[0] ? j.valueChains[0].name : "Industrie Manufacturière",
+                valueChainSegment: j.valueChainStages && j.valueChainStages[0] ? j.valueChainStages[0].name : "Production & Industrialisation",
+                steps: stepsObj
+              };
+            });
+
+            const combined = [...mapped];
+            initialJourneyTemplates.forEach(t => {
+              if (!mapped.some((m: any) => m.name.toLowerCase() === t.name.toLowerCase())) {
+                combined.push(t);
+              }
+            });
+            setJourneyTemplates(combined);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load journeys:", err);
+      }
+    };
+
+    const fetchCompanies = async () => {
+      try {
+        const res = await fetch("/api/companies");
+        if (res.ok) {
+          const dbCompanies = await res.json();
+          if (dbCompanies && dbCompanies.length > 0) {
+            const mapped = dbCompanies.map((c: any) => {
+              const journeysMapped = (c.enrolledJourneys || []).map((j: any) => {
+                const stepsObj: any = {
+                  amorcage: { proposed: [], realized: [], simulated: [] },
+                  diagnostic: { proposed: [], realized: [], simulated: [] },
+                  coaching: { proposed: [], realized: [], simulated: [] },
+                  planification: { proposed: [], realized: [], simulated: [] },
+                  implementation: { proposed: [], realized: [], simulated: [] },
+                  investissement: { proposed: [], realized: [], simulated: [] }
+                };
+
+                (j.steps || []).forEach((step: any) => {
+                  const phaseId = getServicePhaseName(step.service || { name: step.name });
+                  stepsObj[phaseId].proposed.push(step.name);
+                  if (c.digiscoreScore && c.digiscoreScore > 40 && phaseId === "diagnostic") {
+                    stepsObj[phaseId].realized.push({
+                      serviceName: step.name,
+                      status: "completed",
+                      org: step.service?.organization?.name || "Agence du Numérique",
+                      resultText: "Diagnostic complété",
+                      costEur: 1500,
+                      durationDays: 15,
+                      benefitScore: 85,
+                      resourcesPersonDays: 5
+                    });
+                  }
+                });
+
+                const journeyInstance: any = {
+                  id: String(j.id),
+                  name: j.name,
+                  provider: j.provider,
+                  objective: j.objective || "Accompagnement",
+                  steps: stepsObj,
+                  metrics: [
+                    { label: "Maturité numérique", before: "20%", after: `${c.digiscoreScore || 45}%`, unit: "", isPositive: true }
+                  ]
+                };
+
+                const { score, status, explanation } = calculateEffectiveness(journeyInstance);
+                journeyInstance.effectivenessScore = score;
+                journeyInstance.effectivenessStatus = status;
+                journeyInstance.effectivenessExplanation = explanation;
+
+                return journeyInstance;
+              });
+
+              const finalJourneys = journeysMapped.length > 0 ? journeysMapped : [
+                {
+                  id: "j-mock-1",
+                  name: "Transformation Numérique (Industrie 4.0)",
+                  provider: "AdN / WE",
+                  objective: "Lignes de production connectées",
+                  effectivenessScore: 70,
+                  effectivenessStatus: "En bonne voie",
+                  effectivenessExplanation: "Diagnostic réalisé. En attente d'implémentation.",
+                  metrics: [{ label: "Productivité", before: "100%", after: "110%", unit: "", isPositive: true }],
+                  steps: {
+                    amorcage: { proposed: ["Mise en relation partenaires IA & industrie"], realized: [], simulated: [] },
+                    diagnostic: { proposed: ["Diagnostic de maturité numérique PME"], realized: [{ serviceName: "Diagnostic de maturité numérique PME", status: "completed", org: "Agence du Numérique", resultText: "Maturité initiale évaluée", costEur: 1500, durationDays: 15, benefitScore: 82, resourcesPersonDays: 5 }], simulated: [] },
+                    coaching: { proposed: [], realized: [], simulated: [] },
+                    planification: { proposed: [], realized: [], simulated: [] },
+                    implementation: { proposed: ["Accompagnement transformation digitale industrie 4.0"], realized: [], simulated: [] },
+                    investissement: { proposed: [], realized: [], simulated: [] }
+                  }
+                }
+              ];
+
+              return {
+                id: String(c.id),
+                name: c.name,
+                size: c.size,
+                sector: c.sector,
+                location: c.location,
+                demand: c.demand || "Aucune demande spécifique",
+                strategies: (c.needs || []).map((n: any) => n.name),
+                digiscore: {
+                  score: c.digiscoreScore || 30,
+                  level: c.digiscoreLevel || "Intermediate",
+                  date: c.digiscoreDate ? new Date(c.digiscoreDate).toISOString().split('T')[0] : "2026-06-01"
+                },
+                journeys: finalJourneys
+              };
+            });
+            setBeneficiaries(mapped);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load companies:", err);
+      }
+    };
+
     fetchServices();
+    fetchMeta();
+    fetchJourneys();
+    fetchCompanies();
   }, [refreshTrigger]);
 
   // Filter logic
@@ -1504,10 +1851,10 @@ export default function ServicesContainer() {
 
           <button
             onClick={() => setShowServiceWizard(true)}
-            className="flex items-center gap-1 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer border-0"
+            className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            Ajouter un service
+            Nouvel Encodage de Service
           </button>
         </div>
 
@@ -1602,10 +1949,10 @@ export default function ServicesContainer() {
           {!isCreatingTemplate && !editingTemplate && (
             <button
               onClick={handleStartCreateTemplate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0 border-0"
+              className="flex items-center gap-1.5 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0 border-0"
             >
               <Plus className="w-4 h-4" />
-              Nouveau Parcours
+              Nouvel Encodage de Parcours
             </button>
           )}
         </div>
@@ -2053,6 +2400,253 @@ export default function ServicesContainer() {
     );
   };
 
+  const renderReferentials = () => {
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider text-fuchsia-650 flex items-center gap-1.5">
+              <Database className="w-5 h-5 text-fuchsia-500 animate-pulse" />
+              <span>Gestion des Référentiels Sémantiques</span>
+            </h3>
+            <p className="text-xs text-gray-550 dark:text-gray-400">
+              Gérez les taxonomies territoriales (filières, maillons, rôles) et les besoins métiers transversaux reliant les entreprises aux services publics.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-150 dark:border-gray-850 shadow-sm space-y-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2 px-2">Taxonomies</span>
+            {([
+              { id: "valuechain", label: "Filières Économiques", desc: "Secteurs d'activité (S3)" },
+              { id: "stage", label: "Maillons Industriels", desc: "Chaîne de valeur" },
+              { id: "role", label: "Rôles Écosystème", desc: "Acteurs de la PIT" },
+              { id: "need", label: "Besoins Métier", desc: "Besoins d'innovation" }
+            ] as const).map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => {
+                  setRefType(r.id);
+                  setNewRefName("");
+                  setNewRefDesc("");
+                  setNewRefUri("");
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-lg transition text-xs flex flex-col cursor-pointer border-0 bg-transparent",
+                  refType === r.id
+                    ? "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400 font-bold border-l-2 border-fuchsia-500"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+                )}
+              >
+                <span>{r.label}</span>
+                <span className="text-[9px] font-normal opacity-75 mt-0.5">{r.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="md:col-span-5 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm space-y-4">
+              <h4 className="text-xs font-bold text-gray-900 dark:text-zinc-100 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2">
+                Ajouter un élément
+              </h4>
+              <form onSubmit={handleCreateReferential} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nom / Libellé *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ex: Agroalimentaire"
+                    value={newRefName}
+                    onChange={(e) => setNewRefName(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Description</label>
+                  <textarea
+                    placeholder="Description sémantique..."
+                    value={newRefDesc}
+                    onChange={(e) => setNewRefDesc(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">URI Sémantique (Optionnel)</label>
+                  <input
+                    type="text"
+                    placeholder="ex: https://pit.wallonie.be/id/value-chain/agro"
+                    value={newRefUri}
+                    onChange={(e) => setNewRefUri(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                  />
+                </div>
+
+                {refType === "need" && (
+                  <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">Liaisons Sémantiques</span>
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Filières concernées</label>
+                      <select
+                        multiple
+                        value={newNeedVcIds.map(String)}
+                        onChange={(e) => {
+                          const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                          setNewNeedVcIds(values);
+                        }}
+                        className="w-full h-20 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                      >
+                        {valueChains.map((vc) => (
+                          <option key={vc.id} value={vc.id}>{vc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Maillons concernés</label>
+                      <select
+                        multiple
+                        value={newNeedStageIds.map(String)}
+                        onChange={(e) => {
+                          const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                          setNewNeedStageIds(values);
+                        }}
+                        className="w-full h-20 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                      >
+                        {stages.map((st) => (
+                          <option key={st.id} value={st.id}>{st.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Services associés</label>
+                      <select
+                        multiple
+                        value={newNeedSvcIds.map(String)}
+                        onChange={(e) => {
+                          const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                          setNewNeedSvcIds(values);
+                        }}
+                        className="w-full h-20 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                      >
+                        {servicesList.map((svc) => (
+                          <option key={svc.id} value={svc.id}>{svc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg text-xs font-bold transition border-0 cursor-pointer shadow-sm"
+                >
+                  Ajouter au Référentiel
+                </button>
+              </form>
+            </div>
+
+            <div className="md:col-span-7 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-150 dark:border-gray-800 shadow-sm space-y-4">
+              <h4 className="text-xs font-bold text-gray-900 dark:text-zinc-100 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2">
+                Éléments Actuels
+              </h4>
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1">
+                {refType === "valuechain" && valueChains.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg border border-gray-150 dark:border-gray-850">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-250 block">{item.name}</span>
+                      <span className="text-[9px] text-gray-400 block mt-0.5 truncate">{item.uri}</span>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-405 mt-1">{item.description}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteReferential("valuechain", item.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-500 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-0 bg-transparent shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {refType === "stage" && stages.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg border border-gray-150 dark:border-gray-850">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-250 block">{item.name}</span>
+                      <span className="text-[9px] text-gray-400 block mt-0.5 truncate">{item.uri}</span>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-405 mt-1">{item.description}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteReferential("stage", item.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-500 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-0 bg-transparent shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {refType === "role" && roles.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg border border-gray-150 dark:border-gray-850">
+                    <div className="min-w-0 flex-1 pr-3">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-250 block">{item.name}</span>
+                      <span className="text-[9px] text-gray-400 block mt-0.5 truncate">{item.uri}</span>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-405 mt-1">{item.description}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteReferential("role", item.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-500 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-0 bg-transparent shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {refType === "need" && businessNeeds.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg border border-gray-150 dark:border-gray-850">
+                    <div className="min-w-0 flex-1 pr-3 space-y-2">
+                      <div>
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-250 block">{item.name}</span>
+                        <span className="text-[9px] text-gray-400 block mt-0.5 truncate">{item.uri}</span>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-405 mt-1">{item.description}</p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-200/50 dark:border-gray-800">
+                        {item.valueChains?.map((vc: any) => (
+                          <span key={vc.id} className="bg-purple-100/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-400 text-[8px] font-bold px-1.5 py-0.2 rounded">
+                            {vc.name}
+                          </span>
+                        ))}
+                        {item.valueChainStages?.map((st: any) => (
+                          <span key={st.id} className="bg-teal-100/50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900/60 text-teal-700 dark:text-teal-400 text-[8px] font-bold px-1.5 py-0.2 rounded">
+                            {st.name}
+                          </span>
+                        ))}
+                        {item.services?.map((s: any) => (
+                          <span key={s.id} className="bg-blue-100/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-400 text-[8px] font-bold px-1.5 py-0.2 rounded">
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteReferential("need", item.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-500 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-0 bg-transparent shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header premium type Linear/Notion */}
@@ -2141,7 +2735,7 @@ export default function ServicesContainer() {
               className={cn(
                 "pb-2 text-sm font-bold border-b-2 transition-all duration-200 cursor-pointer border-0 bg-transparent",
                 catalogueSubTab === "services" && !showServiceWizard
-                  ? "border-primary-500 text-gray-900 dark:text-gray-100"
+                  ? "border-fuchsia-500 text-gray-900 dark:text-gray-100"
                   : "border-transparent text-gray-400 hover:text-gray-600"
               )}
             >
@@ -2155,15 +2749,31 @@ export default function ServicesContainer() {
               className={cn(
                 "pb-2 text-sm font-bold border-b-2 transition-all duration-200 cursor-pointer border-0 bg-transparent",
                 catalogueSubTab === "journeys"
-                  ? "border-primary-500 text-gray-900 dark:text-gray-100"
+                  ? "border-fuchsia-500 text-gray-900 dark:text-gray-100"
                   : "border-transparent text-gray-400 hover:text-gray-600"
               )}
             >
               Modèles de Parcours
             </button>
+            <button
+              onClick={() => {
+                setCatalogueSubTab("referentials");
+                setShowServiceWizard(false);
+              }}
+              className={cn(
+                "pb-2 text-sm font-bold border-b-2 transition-all duration-200 cursor-pointer border-0 bg-transparent",
+                catalogueSubTab === "referentials"
+                  ? "border-fuchsia-500 text-gray-900 dark:text-gray-100"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
+            >
+              Référentiels Sémantiques
+            </button>
           </div>
 
-          {catalogueSubTab === "services" ? renderServicesCatalogue() : renderJourneysCatalogue()}
+          {catalogueSubTab === "services" && renderServicesCatalogue()}
+          {catalogueSubTab === "journeys" && renderJourneysCatalogue()}
+          {catalogueSubTab === "referentials" && renderReferentials()}
         </div>
       )}
 
@@ -2734,17 +3344,27 @@ export default function ServicesContainer() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left Side: Master List of companies */}
               <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-md">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
-                    <Search className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Rechercher une PME..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-gray-700 dark:text-gray-100"
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                      <Search className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Rechercher une PME..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-gray-705 dark:text-gray-100"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateCompany}
+                    className="p-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl transition cursor-pointer border-0 shadow-sm shrink-0 flex items-center justify-center"
+                    title="Ajouter une entreprise"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
 
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
@@ -3801,6 +4421,224 @@ export default function ServicesContainer() {
       {activeTab === "craft" && (
         <CraftEcosystem />
       )}
+
+      {/* Company Form Modal */}
+      <AnimatePresence>
+        {showCompanyForm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCompanyForm(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-45 cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 220 }}
+              className="fixed right-0 top-0 h-full w-full sm:w-[450px] md:w-[520px] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-50 overflow-y-auto p-6 flex flex-col justify-between"
+            >
+              <div className="space-y-5">
+                <div className="flex justify-between items-start border-b border-gray-150 dark:border-gray-800 pb-4">
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-gray-100">
+                      {companyFormMode === "create" ? "Ajouter une Entreprise" : "Modifier le profil de l'entreprise"}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">Saisissez les informations sémantiques et de contact.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompanyForm(false)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition cursor-pointer border-0 bg-transparent"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveCompany} className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nom de l'entreprise *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="ex: Biscuiterie Dupont"
+                      value={compName}
+                      onChange={(e) => setCompName(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Taille *</label>
+                      <select
+                        value={compSize}
+                        onChange={(e) => setCompSize(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                      >
+                        <option value="TPE">TPE (moins de 10 ETP)</option>
+                        <option value="PME">PME (10-250 ETP)</option>
+                        <option value="ETI">ETI (250-5000 ETP)</option>
+                        <option value="Grande Entreprise">GE (plus de 5000 ETP)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Localisation (Ville) *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="ex: Namur"
+                        value={compLocation}
+                        onChange={(e) => setCompLocation(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Secteur *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="ex: Agroalimentaire"
+                        value={compSector}
+                        onChange={(e) => setCompSector(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Digiscore Score (0-100)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="45"
+                        value={compDigiscore}
+                        onChange={(e) => setCompDigiscore(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Niveau Digiscore</label>
+                    <select
+                      value={compDigiLevel}
+                      onChange={(e) => setCompDigiLevel(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500"
+                    >
+                      <option value="Beginner">Débutant (Score &lt; 30)</option>
+                      <option value="Intermediate">Intermédiaire (Score 30-60)</option>
+                      <option value="Advanced">Avancé (Score 60-85)</option>
+                      <option value="Expert">Expert (Score &gt; 85)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Demande / Problématique de l'entreprise</label>
+                    <textarea
+                      placeholder="Décrivez les besoins en innovation et accompagnement de l'entreprise..."
+                      value={compDemand}
+                      onChange={(e) => setCompDemand(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-fuchsia-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Alignement Sémantique (Taxonomies)</span>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Filières (ValueChains)</label>
+                        <select
+                          multiple
+                          value={compVcIds.map(String)}
+                          onChange={(e) => {
+                            const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                            setCompVcIds(values);
+                          }}
+                          className="w-full h-24 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                        >
+                          {valueChains.map((vc) => (
+                            <option key={vc.id} value={vc.id}>{vc.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Maillons (Stages)</label>
+                        <select
+                          multiple
+                          value={compStageIds.map(String)}
+                          onChange={(e) => {
+                            const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                            setCompStageIds(values);
+                          }}
+                          className="w-full h-24 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                        >
+                          {stages.map((st) => (
+                            <option key={st.id} value={st.id}>{st.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Rôles Écosystème</label>
+                        <select
+                          multiple
+                          value={compRoleIds.map(String)}
+                          onChange={(e) => {
+                            const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                            setCompRoleIds(values);
+                          }}
+                          className="w-full h-24 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                        >
+                          {roles.map((r) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Besoins métier</label>
+                        <select
+                          multiple
+                          value={compNeedIds.map(String)}
+                          onChange={(e) => {
+                            const values = Array.from(e.target.selectedOptions, option => Number(option.value));
+                            setCompNeedIds(values);
+                          }}
+                          className="w-full h-24 px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-[10px] outline-none text-gray-700 dark:text-gray-100"
+                        >
+                          {businessNeeds.map((n) => (
+                            <option key={n.id} value={n.id}>{n.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg text-xs font-bold transition border-0 cursor-pointer shadow-sm mt-4"
+                  >
+                    Enregistrer le Profil
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Detail Slide-Over Panel */}
       <AnimatePresence>

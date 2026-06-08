@@ -46,6 +46,8 @@ model PublicService {
   rules           Rule[]
   criterions      Criterion[]
   catalogues      Catalogue[]      @relation("CatalogueServices")
+  supportsBusinessNeed BusinessNeed[]  @relation("ServiceNeeds")
+  journeySteps         JourneyStep[]
 
   @@map("public_services")
 }
@@ -233,4 +235,119 @@ model Catalogue {
   publicServices PublicService[] @relation("CatalogueServices")
 
   @@map("catalogues")
+}
+
+// 15. Entreprise / Bénéficiaire (Company)
+model Company {
+  id                  Int               @id @default(autoincrement())
+  name                String
+  size                String
+  sector              String
+  location            String
+  demand              String?           @db.Text
+  digiscoreScore      Int?
+  digiscoreLevel      String?
+  digiscoreDate       DateTime?
+  belongsToValueChain ValueChain[]      @relation("CompanyValueChains")
+  participatesInStage ValueChainStage[] @relation("CompanyStages")
+  playsRole           EcosystemRole[]   @relation("CompanyRoles")
+  needs               BusinessNeed[]    @relation("CompanyNeeds")
+  enrolledJourneys    Journey[]         @relation("CompanyJourneys")
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@map("companies")
+}
+
+// 16. Filière Économique (ValueChain)
+model ValueChain {
+  id          Int            @id @default(autoincrement())
+  uri         String?        @unique
+  name        String
+  description String?        @db.Text
+  companies   Company[]      @relation("CompanyValueChains")
+  needs       BusinessNeed[] @relation("NeedValueChains")
+  journeys    Journey[]      @relation("JourneyValueChains")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("value_chains")
+}
+
+// 17. Maillon de la Chaîne de Valeur (ValueChainStage)
+model ValueChainStage {
+  id          Int            @id @default(autoincrement())
+  uri         String?        @unique
+  name        String
+  description String?        @db.Text
+  companies   Company[]      @relation("CompanyStages")
+  needs       BusinessNeed[] @relation("NeedStages")
+  journeys    Journey[]      @relation("JourneyStages")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("value_chain_stages")
+}
+
+// 18. Rôle dans l'Écosystème (EcosystemRole)
+model EcosystemRole {
+  id          Int       @id @default(autoincrement())
+  uri         String?   @unique
+  name        String
+  description String?   @db.Text
+  companies   Company[] @relation("CompanyRoles")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("ecosystem_roles")
+}
+
+// 19. Besoin Métier (BusinessNeed)
+model BusinessNeed {
+  id               Int               @id @default(autoincrement())
+  uri              String?           @unique
+  name             String
+  description      String?           @db.Text
+  companies        Company[]         @relation("CompanyNeeds")
+  valueChains      ValueChain[]      @relation("NeedValueChains")
+  valueChainStages ValueChainStage[] @relation("NeedStages")
+  journeys         Journey[]         @relation("JourneyNeeds")
+  services         PublicService[]   @relation("ServiceNeeds")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("business_needs")
+}
+
+// 20. Parcours Type (Journey)
+model Journey {
+  id               Int               @id @default(autoincrement())
+  uri              String?           @unique
+  name             String
+  provider         String
+  objective        String?           @db.Text
+  companies        Company[]         @relation("CompanyJourneys")
+  needs            BusinessNeed[]    @relation("JourneyNeeds")
+  valueChains      ValueChain[]      @relation("JourneyValueChains")
+  valueChainStages ValueChainStage[] @relation("JourneyStages")
+  steps            JourneyStep[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("journeys")
+}
+
+// 21. Étape de Parcours Type (JourneyStep)
+model JourneyStep {
+  id              Int            @id @default(autoincrement())
+  name            String
+  position        Int
+  journeyId       Int
+  journey         Journey        @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  serviceId       Int?
+  service         PublicService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("journey_steps")
 }

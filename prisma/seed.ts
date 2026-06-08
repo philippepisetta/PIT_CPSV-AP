@@ -7,6 +7,13 @@ async function main() {
 
   // Nettoyage de la base de données pour assurer la répétabilité du seed
   console.log('🧹 Nettoyage des anciennes données...');
+  await prisma.journeyStep.deleteMany({});
+  await prisma.journey.deleteMany({});
+  await prisma.company.deleteMany({});
+  await prisma.businessNeed.deleteMany({});
+  await prisma.ecosystemRole.deleteMany({});
+  await prisma.valueChainStage.deleteMany({});
+  await prisma.valueChain.deleteMany({});
   await prisma.catalogue.deleteMany({});
   await prisma.rule.deleteMany({});
   await prisma.criterion.deleteMany({});
@@ -506,6 +513,199 @@ async function main() {
     },
   });
 
+  // 8. Création des Filières Économiques (ValueChains)
+  console.log('🌱 Création des Filières Économiques...');
+  const vcAgri = await prisma.valueChain.create({
+    data: { name: 'Agroalimentaire', uri: 'https://pit.wallonie.be/id/value-chain/agroalimentaire', description: 'Production et transformation de produits agricoles et agroalimentaires.' }
+  });
+  const vcConst = await prisma.valueChain.create({
+    data: { name: 'Construction', uri: 'https://pit.wallonie.be/id/value-chain/construction', description: 'Bâtiment, travaux publics, éco-construction et infrastructures.' }
+  });
+  const vcIndus = await prisma.valueChain.create({ data: { name: 'Industrie 4.0', uri: 'https://pit.wallonie.be/id/value-chain/industrie-4-0' } });
+  const vcBiotech = await prisma.valueChain.create({ data: { name: 'Biotech', uri: 'https://pit.wallonie.be/id/value-chain/biotech' } });
+  const vcSante = await prisma.valueChain.create({ data: { name: 'Santé', uri: 'https://pit.wallonie.be/id/value-chain/sante' } });
+  const vcHydro = await prisma.valueChain.create({ data: { name: 'Hydrogène', uri: 'https://pit.wallonie.be/id/value-chain/hydrogene' } });
+  const vcEner = await prisma.valueChain.create({ data: { name: 'Energie', uri: 'https://pit.wallonie.be/id/value-chain/energie' } });
+  const vcNum = await prisma.valueChain.create({ data: { name: 'Numérique', uri: 'https://pit.wallonie.be/id/value-chain/numerique' } });
+  const vcLog = await prisma.valueChain.create({ data: { name: 'Logistique', uri: 'https://pit.wallonie.be/id/value-chain/logistique' } });
+  const vcTour = await prisma.valueChain.create({ data: { name: 'Tourisme', uri: 'https://pit.wallonie.be/id/value-chain/tourisme' } });
+
+  // 9. Création des Maillons (ValueChainStages)
+  console.log('⚙️ Création des Maillons de la Chaîne de Valeur...');
+  const stageRech = await prisma.valueChainStage.create({ data: { name: 'Recherche', uri: 'https://pit.wallonie.be/id/stage/recherche' } });
+  const stageConcep = await prisma.valueChainStage.create({ data: { name: 'Conception', uri: 'https://pit.wallonie.be/id/stage/conception' } });
+  const stageProd = await prisma.valueChainStage.create({ data: { name: 'Production', uri: 'https://pit.wallonie.be/id/stage/production' } });
+  const stageTrans = await prisma.valueChainStage.create({ data: { name: 'Transformation', uri: 'https://pit.wallonie.be/id/stage/transformation' } });
+  const stageAssem = await prisma.valueChainStage.create({ data: { name: 'Assemblage', uri: 'https://pit.wallonie.be/id/stage/assemblage' } });
+  const stageStock = await prisma.valueChainStage.create({ data: { name: 'Stockage', uri: 'https://pit.wallonie.be/id/stage/stockage' } });
+  const stageDist = await prisma.valueChainStage.create({ data: { name: 'Distribution', uri: 'https://pit.wallonie.be/id/stage/distribution' } });
+  const stageComm = await prisma.valueChainStage.create({ data: { name: 'Commercialisation', uri: 'https://pit.wallonie.be/id/stage/commercialisation' } });
+  const stageExport = await prisma.valueChainStage.create({ data: { name: 'Export', uri: 'https://pit.wallonie.be/id/stage/export' } });
+  const stageSav = await prisma.valueChainStage.create({ data: { name: 'Service après-vente', uri: 'https://pit.wallonie.be/id/stage/service-apres-vente' } });
+  const stageRecyc = await prisma.valueChainStage.create({ data: { name: 'Recyclage', uri: 'https://pit.wallonie.be/id/stage/recyclage' } });
+
+  // 10. Création des Rôles (EcosystemRoles)
+  console.log('🎭 Création des Rôles dans l\'Écosystème...');
+  const roleProd = await prisma.ecosystemRole.create({ data: { name: 'Producteur', uri: 'https://pit.wallonie.be/id/role/producteur' } });
+  const roleTrans = await prisma.ecosystemRole.create({ data: { name: 'Transformateur', uri: 'https://pit.wallonie.be/id/role/transformateur' } });
+  const roleDist = await prisma.ecosystemRole.create({ data: { name: 'Distributeur', uri: 'https://pit.wallonie.be/id/role/distributeur' } });
+  const roleSous = await prisma.ecosystemRole.create({ data: { name: 'Sous-traitant', uri: 'https://pit.wallonie.be/id/role/sous-traitant' } });
+  const roleInteg = await prisma.ecosystemRole.create({ data: { name: 'Intégrateur', uri: 'https://pit.wallonie.be/id/role/integrateur' } });
+  const roleCent = await prisma.ecosystemRole.create({ data: { name: 'Centre de recherche', uri: 'https://pit.wallonie.be/id/role/centre-recherche' } });
+  const roleClust = await prisma.ecosystemRole.create({ data: { name: 'Cluster', uri: 'https://pit.wallonie.be/id/role/cluster' } });
+  const roleFin = await prisma.ecosystemRole.create({ data: { name: 'Financeur', uri: 'https://pit.wallonie.be/id/role/financeur' } });
+  const roleAcc = await prisma.ecosystemRole.create({ data: { name: 'Accompagnateur', uri: 'https://pit.wallonie.be/id/role/accompagnateur' } });
+  const rolePub = await prisma.ecosystemRole.create({ data: { name: 'Pouvoir public', uri: 'https://pit.wallonie.be/id/role/pouvoir-public' } });
+
+  // 11. Création des Besoins Métier (BusinessNeeds) et liens avec Services
+  console.log('💡 Création des Besoins Métier...');
+  const bnCtrlQual = await prisma.businessNeed.create({
+    data: {
+      name: 'Automatiser le contrôle qualité',
+      uri: 'https://pit.wallonie.be/id/need/automatiser-controle-qualite',
+      description: 'Mettre en place des solutions automatisées (caméras, capteurs, IA vision) pour le contrôle qualité.',
+      valueChains: { connect: [{ id: vcAgri.id }] },
+      valueChainStages: { connect: [{ id: stageProd.id }] },
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+    }
+  });
+
+  const bnBim = await prisma.businessNeed.create({
+    data: {
+      name: 'Digitaliser les processus BIM',
+      uri: 'https://pit.wallonie.be/id/need/digitaliser-processus-bim',
+      description: 'Intégrer les technologies et méthodes de Building Information Modeling pour la maquette numérique et la collaboration.',
+      valueChains: { connect: [{ id: vcConst.id }] },
+      valueChainStages: { connect: [{ id: stageConcep.id }] },
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+    }
+  });
+
+  const bnRelClient = await prisma.businessNeed.create({
+    data: {
+      name: 'Digitaliser la relation client',
+      uri: 'https://pit.wallonie.be/id/need/digitaliser-relation-client',
+      description: 'Mettre en place un CRM, un portail client ou des outils marketing pour optimiser les ventes.',
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+    }
+  });
+
+  const bnCoutEner = await prisma.businessNeed.create({
+    data: {
+      name: 'Réduire les coûts énergétiques',
+      uri: 'https://pit.wallonie.be/id/need/reduire-couts-energetiques',
+      description: 'Optimiser l\'utilisation d\'énergie et la transition vers des sources renouvelables.',
+      services: { connect: [{ id: sDiagNum.id }] }
+    }
+  });
+
+  const bnCyber = await prisma.businessNeed.create({
+    data: {
+      name: 'Améliorer la cybersécurité',
+      uri: 'https://pit.wallonie.be/id/need/ameliorer-cybersecurite',
+      description: 'Sécuriser l\'infrastructure informatique, auditer les failles de sécurité et former les équipes.',
+      services: { connect: [{ id: sDiagNum.id }, { id: sAccompDigital.id }] }
+    }
+  });
+
+  // 12. Création des Entreprises (Companies)
+  console.log('🏢 Création des Entreprises de démonstration...');
+  const cDupont = await prisma.company.create({
+    data: {
+      name: 'Biscuiterie Dupont',
+      size: 'PME',
+      sector: 'Agroalimentaire',
+      location: 'Namur',
+      demand: 'Nous souhaitons automatiser le contrôle qualité de nos biscuits en fin de ligne de cuisson.',
+      digiscoreScore: 45,
+      digiscoreLevel: 'Moyen',
+      digiscoreDate: new Date('2026-06-01T12:00:00Z'),
+      belongsToValueChain: { connect: [{ id: vcAgri.id }] },
+      participatesInStage: { connect: [{ id: stageProd.id }] },
+      playsRole: { connect: [{ id: roleTrans.id }] },
+      needs: { connect: [{ id: bnCtrlQual.id }] }
+    }
+  });
+
+  const cTechConstruct = await prisma.company.create({
+    data: {
+      name: 'TechConstruct',
+      size: 'PME',
+      sector: 'Construction',
+      location: 'Liège',
+      demand: 'Nous voulons intégrer le BIM pour mieux collaborer sur nos chantiers de construction.',
+      digiscoreScore: 30,
+      digiscoreLevel: 'Faible',
+      digiscoreDate: new Date('2026-05-15T12:00:00Z'),
+      belongsToValueChain: { connect: [{ id: vcConst.id }] },
+      participatesInStage: { connect: [{ id: stageConcep.id }] },
+      playsRole: { connect: [{ id: roleInteg.id }] },
+      needs: { connect: [{ id: bnBim.id }] }
+    }
+  });
+
+  // 13. Création des Parcours Types (Journeys) et Étapes (JourneySteps)
+  console.log('🗺️ Création des Parcours Types...');
+  const jIaVision = await prisma.journey.create({
+    data: {
+      name: "Parcours d'automatisation IA vision",
+      provider: 'EDIH & AdN',
+      uri: 'https://pit.wallonie.be/id/journey/automatisation-ia-vision',
+      objective: 'Intégrer de l\'IA vision pour automatiser le contrôle qualité de la production',
+      needs: { connect: [{ id: bnCtrlQual.id }] },
+      valueChains: { connect: [{ id: vcAgri.id }] },
+      valueChainStages: { connect: [{ id: stageProd.id }] }
+    }
+  });
+
+  await prisma.journeyStep.create({
+    data: {
+      name: 'Diagnostic de maturité numérique',
+      position: 1,
+      journeyId: jIaVision.id,
+      serviceId: sDiagNum.id
+    }
+  });
+
+  await prisma.journeyStep.create({
+    data: {
+      name: 'Accompagnement à la transformation digitale',
+      position: 2,
+      journeyId: jIaVision.id,
+      serviceId: sAccompDigital.id
+    }
+  });
+
+  const jBim = await prisma.journey.create({
+    data: {
+      name: 'Parcours d\'intégration BIM',
+      provider: 'Wallonie Entreprendre',
+      uri: 'https://pit.wallonie.be/id/journey/integration-bim',
+      objective: 'Mettre en œuvre la méthodologie BIM pour la conception numérique dans le secteur de la construction',
+      needs: { connect: [{ id: bnBim.id }] },
+      valueChains: { connect: [{ id: vcConst.id }] },
+      valueChainStages: { connect: [{ id: stageConcep.id }] }
+    }
+  });
+
+  await prisma.journeyStep.create({
+    data: {
+      name: 'Diagnostic de maturité numérique',
+      position: 1,
+      journeyId: jBim.id,
+      serviceId: sDiagNum.id
+    }
+  });
+
+  await prisma.journeyStep.create({
+    data: {
+      name: 'Accompagnement à la transformation digitale',
+      position: 2,
+      journeyId: jBim.id,
+      serviceId: sAccompDigital.id
+    }
+  });
+
   console.log('✅ Base de données initialisée avec succès !');
   console.log('📊 Résumé des insertions :');
   console.log(` - ${await prisma.channel.count()} Canaux.`);
@@ -520,6 +720,13 @@ async function main() {
   console.log(` - ${await prisma.cost.count()} Tarifs configurés.`);
   console.log(` - ${await prisma.contactPoint.count()} Points de contact.`);
   console.log(` - ${await prisma.catalogue.count()} Catalogues créés.`);
+  console.log(` - ${await prisma.valueChain.count()} Filières (ValueChains).`);
+  console.log(` - ${await prisma.valueChainStage.count()} Maillons (ValueChainStages).`);
+  console.log(` - ${await prisma.ecosystemRole.count()} Rôles écosystème.`);
+  console.log(` - ${await prisma.businessNeed.count()} Besoins métier (BusinessNeeds).`);
+  console.log(` - ${await prisma.company.count()} Entreprises (Companies).`);
+  console.log(` - ${await prisma.journey.count()} Parcours.`);
+  console.log(` - ${await prisma.journeyStep.count()} Étapes de parcours.`);
 }
 
 main()

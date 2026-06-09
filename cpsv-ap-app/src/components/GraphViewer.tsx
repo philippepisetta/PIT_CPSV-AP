@@ -36,32 +36,35 @@ export default function GraphViewer() {
 
   // Map of X positions per node type for a clean layered layout
   const typeXMap: Record<string, number> = {
-    company: 20,
-    valuechain: 240,
-    stage: 460,
-    need: 680,
-    journey: 900,
-    service: 1120,
-    organization: 1340,
+    beneficiary: 20,
+    challenge: 220,
+    valuechain: 420,
+    ecosystem: 620,
+    journey: 820,
+    journeystage: 1020,
+    service: 1220,
+    organization: 1420,
   };
 
   // Harmonious theme matching user requests
   const typeColorMap: Record<string, string> = {
-    company: "#d946ef",      // Fuchsia (favorite)
+    beneficiary: "#d946ef",  // Fuchsia
+    challenge: "#ef4444",    // Red
     valuechain: "#8b5cf6",   // Purple
-    stage: "#a78bfa",        // Light purple
-    need: "#f59e0b",         // Amber / Orange
+    ecosystem: "#a855f7",    // Light Purple
     journey: "#10b981",      // Emerald
+    journeystage: "#14b8a6",  // Teal
     service: "#3b82f6",      // Blue
     organization: "#64748b", // Slate
   };
 
   const typeLabelMap: Record<string, string> = {
-    company: "Entreprise",
-    valuechain: "Filière",
-    stage: "Maillon",
-    need: "Besoin",
+    beneficiary: "Bénéficiaire",
+    challenge: "Défi d'affaires",
+    valuechain: "Filière S3",
+    ecosystem: "Écosystème",
     journey: "Parcours",
+    journeystage: "Étape parcours",
     service: "Service CPSV",
     organization: "Opérateur",
   };

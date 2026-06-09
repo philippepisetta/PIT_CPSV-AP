@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 // Servir les fichiers statiques du frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// CORS middleware (pour faciliter le dev local si besoin)
+// CORS middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 
 // --- SERVICES PUBLICS (CPSV-AP) ---
 
-// 1. GET /api/services - Récupérer la liste simplifiée des services publics
+// 1. GET /api/services
 app.get('/api/services', async (req, res) => {
   try {
     const services = await prisma.publicService.findMany({
@@ -42,6 +42,9 @@ app.get('/api/services', async (req, res) => {
             name: true,
           },
         },
+        challenges: { select: { id: true, name: true } },
+        filieresS3: { select: { id: true, name: true } },
+        interventionLevel: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -54,7 +57,7 @@ app.get('/api/services', async (req, res) => {
   }
 });
 
-// 2. GET /api/meta - Récupérer les métadonnées pour alimenter le formulaire d'encodage
+// 2. GET /api/meta - Métadonnées enrichies
 app.get('/api/meta', async (req, res) => {
   try {
     const [
@@ -64,11 +67,18 @@ app.get('/api/meta', async (req, res) => {
       businessEvents,
       lifeEvents,
       catalogues,
-      valueChains,
+      strategicValueChains,
       stages,
       roles,
       needs,
-      services
+      services,
+      challenges,
+      functions,
+      sectors,
+      ecosystems,
+      interventionLevels,
+      collectiveDeliveries,
+      secondLineMissions
     ] = await Promise.all([
       prisma.organization.findMany({ orderBy: { name: 'asc' } }),
       prisma.channel.findMany({ orderBy: { name: 'asc' } }),
@@ -76,11 +86,27 @@ app.get('/api/meta', async (req, res) => {
       prisma.businessEvent.findMany({ orderBy: { name: 'asc' } }),
       prisma.lifeEvent.findMany({ orderBy: { name: 'asc' } }),
       prisma.catalogue.findMany({ orderBy: { name: 'asc' } }),
-      prisma.valueChain.findMany({ orderBy: { name: 'asc' } }),
+      prisma.strategicValueChain.findMany({ orderBy: { name: 'asc' } }),
       prisma.valueChainStage.findMany({ orderBy: { name: 'asc' } }),
       prisma.ecosystemRole.findMany({ orderBy: { name: 'asc' } }),
       prisma.businessNeed.findMany({ orderBy: { name: 'asc' } }),
-      prisma.publicService.findMany({ orderBy: { name: 'asc' } })
+      prisma.publicService.findMany({
+        include: { interventionLevel: true, challenges: true, filieresS3: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } }),
+      prisma.enterpriseFunction.findMany({ orderBy: { name: 'asc' } }),
+      prisma.naceSector.findMany({ orderBy: { code: 'asc' } }),
+      prisma.ecosystem.findMany({ orderBy: { name: 'asc' } }),
+      prisma.interventionLevel.findMany({ orderBy: { id: 'asc' } }),
+      prisma.collectiveDelivery.findMany({
+        include: { service: true, operator: true, companies: true },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.secondLineMission.findMany({
+        include: { service: true, leadOperator: true, operatorsMobilized: true, ecosystems: true, valueChains: true },
+        orderBy: { startDate: 'desc' }
+      }),
     ]);
 
     res.json({
@@ -90,11 +116,18 @@ app.get('/api/meta', async (req, res) => {
       businessEvents,
       lifeEvents,
       catalogues,
-      valueChains,
+      strategicValueChains,
       stages,
       roles,
       needs,
-      services
+      services,
+      challenges,
+      functions,
+      sectors,
+      ecosystems,
+      interventionLevels,
+      collectiveDeliveries,
+      secondLineMissions
     });
   } catch (error: any) {
     console.error('Erreur lors de la récupération des métadonnées:', error);
@@ -102,7 +135,7 @@ app.get('/api/meta', async (req, res) => {
   }
 });
 
-// 3. GET /api/services/:id - Récupérer le graphe complet d'un service public
+// 3. GET /api/services/:id
 app.get('/api/services/:id', async (req, res) => {
   const serviceId = parseInt(req.params.id);
   if (isNaN(serviceId)) {
@@ -125,12 +158,18 @@ app.get('/api/services/:id', async (req, res) => {
           },
         },
         outputs: true,
+        outcomes: true,
         costs: true,
         contactPoints: true,
         criterions: true,
         rules: true,
         catalogues: true,
         supportsBusinessNeed: true,
+        challenges: true,
+        filieresS3: true,
+        impactedFunctions: true,
+        stages: true,
+        ecosystems: true,
       },
     });
 
@@ -146,7 +185,7 @@ app.get('/api/services/:id', async (req, res) => {
   }
 });
 
-// 4. POST /api/services - Encoder / Créer un nouveau service public avec ses relations
+// 4. POST /api/services
 app.post('/api/services', async (req, res) => {
   try {
     const {
@@ -155,16 +194,23 @@ app.post('/api/services', async (req, res) => {
       code,
       uri,
       organizationId,
-      channels, // array of IDs [1, 2]
-      targetAudiences, // array of IDs [1, 2]
-      businessEvents, // array of IDs [1, 2]
-      lifeEvents, // array of IDs [1, 2]
-      catalogues, // array of IDs [1]
-      requirements, // array of objects { name, description, code, uri, evidences: [...] }
-      outputs, // array of objects { name, description, code, uri }
-      costs, // array of objects { name, value, currency, description, uri }
-      contactPoints, // array of objects { name, email, telephone, description, uri }
-      supportsBusinessNeedIds, // array of IDs [1, 2]
+      channels,
+      targetAudiences,
+      businessEvents,
+      lifeEvents,
+      catalogues,
+      requirements,
+      outputs,
+      outcomes,
+      costs,
+      contactPoints,
+      supportsBusinessNeedIds,
+      challenges,
+      filieresS3,
+      impactedFunctions,
+      stages,
+      ecosystemIds,
+      interventionLevelId,
     } = req.body;
 
     if (!name || !organizationId) {
@@ -179,6 +225,7 @@ app.post('/api/services', async (req, res) => {
         code: code || null,
         uri: uri || `https://pit.wallonie.be/id/public-service/${(code || name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
         organizationId: parseInt(organizationId),
+        interventionLevelId: interventionLevelId ? parseInt(interventionLevelId) : null,
         
         channels: channels && Array.isArray(channels) ? {
           connect: channels.map((id: any) => ({ id: parseInt(id) })),
@@ -204,6 +251,26 @@ app.post('/api/services', async (req, res) => {
           connect: supportsBusinessNeedIds.map((id: any) => ({ id: parseInt(id) })),
         } : undefined,
 
+        challenges: challenges && Array.isArray(challenges) ? {
+          connect: challenges.map((id: any) => ({ id: parseInt(id) })),
+        } : undefined,
+
+        filieresS3: filieresS3 && Array.isArray(filieresS3) ? {
+          connect: filieresS3.map((id: any) => ({ id: parseInt(id) })),
+        } : undefined,
+
+        impactedFunctions: impactedFunctions && Array.isArray(impactedFunctions) ? {
+          connect: impactedFunctions.map((id: any) => ({ id: parseInt(id) })),
+        } : undefined,
+
+        stages: stages && Array.isArray(stages) ? {
+          connect: stages.map((id: any) => ({ id: parseInt(id) })),
+        } : undefined,
+
+        ecosystems: ecosystemIds && Array.isArray(ecosystemIds) ? {
+          connect: ecosystemIds.map((id: any) => ({ id: parseInt(id) })),
+        } : undefined,
+
         requirements: requirements && Array.isArray(requirements) ? {
           create: requirements.map((req: any) => ({
             name: req.name,
@@ -227,6 +294,15 @@ app.post('/api/services', async (req, res) => {
             description: out.description || null,
             code: out.code || null,
             uri: out.uri || `https://pit.wallonie.be/id/output/${out.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          }))
+        } : undefined,
+
+        outcomes: outcomes && Array.isArray(outcomes) ? {
+          create: outcomes.map((out: any) => ({
+            name: out.name,
+            description: out.description || null,
+            code: out.code || null,
+            uri: out.uri || `https://pit.wallonie.be/id/outcome/${out.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
           }))
         } : undefined,
 
@@ -267,10 +343,12 @@ app.post('/api/services', async (req, res) => {
 });
 
 
-// --- FILIERES / VALUE CHAINS ---
+// --- FILIERES / STRATEGIC VALUE CHAINS ---
 app.get('/api/value-chains', async (req, res) => {
   try {
-    const data = await prisma.valueChain.findMany({ orderBy: { name: 'asc' } });
+    const data = await prisma.strategicValueChain.findMany({
+      orderBy: { name: 'asc' }
+    });
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -280,8 +358,8 @@ app.get('/api/value-chains', async (req, res) => {
 app.post('/api/value-chains', async (req, res) => {
   try {
     const { name, description, uri } = req.body;
-    const item = await prisma.valueChain.create({
-      data: { name, description, uri: uri || `https://pit.wallonie.be/id/value-chain/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
+    const item = await prisma.strategicValueChain.create({
+      data: { name, description, uri: uri || `https://pit.wallonie.be/id/strategic-value-chain/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
     });
     res.status(201).json(item);
   } catch (err: any) {
@@ -289,17 +367,8 @@ app.post('/api/value-chains', async (req, res) => {
   }
 });
 
-app.delete('/api/value-chains/:id', async (req, res) => {
-  try {
-    await prisma.valueChain.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-
-// --- MAILLONS / STAGES ---
+// --- MAILLONS / VALUE CHAIN STAGES ---
 app.get('/api/stages', async (req, res) => {
   try {
     const data = await prisma.valueChainStage.findMany({ orderBy: { name: 'asc' } });
@@ -311,9 +380,9 @@ app.get('/api/stages', async (req, res) => {
 
 app.post('/api/stages', async (req, res) => {
   try {
-    const { name, description, uri } = req.body;
+    const { name, description, category, uri } = req.body;
     const item = await prisma.valueChainStage.create({
-      data: { name, description, uri: uri || `https://pit.wallonie.be/id/stage/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
+      data: { name, description, category, uri: uri || `https://pit.wallonie.be/id/stage/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
     });
     res.status(201).json(item);
   } catch (err: any) {
@@ -321,53 +390,34 @@ app.post('/api/stages', async (req, res) => {
   }
 });
 
-app.delete('/api/stages/:id', async (req, res) => {
-  try {
-    await prisma.valueChainStage.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-
-// --- ROLES ECOSYSTEME ---
-app.get('/api/roles', async (req, res) => {
+// --- DEFIS D'AFFAIRES (BUSINESS CHALLENGES) ---
+app.get('/api/challenges', async (req, res) => {
   try {
-    const data = await prisma.ecosystemRole.findMany({ orderBy: { name: 'asc' } });
+    const data = await prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } });
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/roles', async (req, res) => {
-  try {
-    const { name, description, uri } = req.body;
-    const item = await prisma.ecosystemRole.create({
-      data: { name, description, uri: uri || `https://pit.wallonie.be/id/role/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
-    });
-    res.status(201).json(item);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-app.delete('/api/roles/:id', async (req, res) => {
+// --- SECTEURS NACE (NACE SECTORS) ---
+app.get('/api/sectors', async (req, res) => {
   try {
-    await prisma.ecosystemRole.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
+    const data = await prisma.naceSector.findMany({ orderBy: { code: 'asc' } });
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 
-// --- BESOINS METIER ---
-app.get('/api/business-needs', async (req, res) => {
+// --- ECOSYSTEMES ---
+app.get('/api/ecosystems', async (req, res) => {
   try {
-    const data = await prisma.businessNeed.findMany({
-      include: { valueChains: true, valueChainStages: true, services: true },
+    const data = await prisma.ecosystem.findMany({
+      include: { actors: true, services: true, journeys: true, filieresS3: true, challenges: true },
       orderBy: { name: 'asc' }
     });
     res.json(data);
@@ -376,19 +426,35 @@ app.get('/api/business-needs', async (req, res) => {
   }
 });
 
-app.post('/api/business-needs', async (req, res) => {
+app.get('/api/ecosystems/:id', async (req, res) => {
   try {
-    const { name, description, uri, valueChainIds, valueChainStageIds, serviceIds } = req.body;
-    const item = await prisma.businessNeed.create({
+    const data = await prisma.ecosystem.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { actors: true, services: true, journeys: true, filieresS3: true, challenges: true }
+    });
+    if (!data) return res.status(404).json({ error: 'Écosystème non trouvé' });
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ecosystems', async (req, res) => {
+  try {
+    const { name, description, mission, territory, actorIds, serviceIds, journeyIds, filiereIds, challengeIds } = req.body;
+    const item = await prisma.ecosystem.create({
       data: {
         name,
         description,
-        uri: uri || `https://pit.wallonie.be/id/need/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        valueChains: valueChainIds ? { connect: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        valueChainStages: valueChainStageIds ? { connect: valueChainStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        mission,
+        territory,
+        actors: actorIds ? { connect: actorIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
         services: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        journeys: journeyIds ? { connect: journeyIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieresS3: filiereIds ? { connect: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        challenges: challengeIds ? { connect: challengeIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
       },
-      include: { valueChains: true, valueChainStages: true, services: true }
+      include: { actors: true, services: true }
     });
     res.status(201).json(item);
   } catch (err: any) {
@@ -396,21 +462,225 @@ app.post('/api/business-needs', async (req, res) => {
   }
 });
 
-app.delete('/api/business-needs/:id', async (req, res) => {
+
+// --- REALISATIONS DE SERVICES (SERVICE DELIVERIES) ---
+app.get('/api/service-deliveries', async (req, res) => {
   try {
-    await prisma.businessNeed.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
+    const beneficiaryId = req.query.beneficiaryId ? parseInt(req.query.beneficiaryId as string) : undefined;
+    const data = await prisma.serviceDelivery.findMany({
+      where: beneficiaryId ? { beneficiaryId } : undefined,
+      include: { beneficiary: true, service: true, operator: true },
+      orderBy: { date: 'desc' }
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/service-deliveries', async (req, res) => {
+  try {
+    const {
+      beneficiaryId, serviceId, journeyId, journeyStageId,
+      status, date, operatorId, outputReal, outcomeReal, impact,
+      maturityBefore, maturityAfter, maturityDelta, evidenceFiles
+    } = req.body;
+
+    const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
+                         : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
+                         : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
+                         : 'CANCELLED';
+
+    const item = await prisma.serviceDelivery.create({
+      data: {
+        beneficiaryId: parseInt(beneficiaryId),
+        serviceId: parseInt(serviceId),
+        journeyId: journeyId ? parseInt(journeyId) : null,
+        journeyStageId: journeyStageId ? parseInt(journeyStageId) : null,
+        status: mappedStatus,
+        date: date ? new Date(date) : new Date(),
+        operatorId: parseInt(operatorId),
+        outputReal,
+        outcomeReal,
+        impact,
+        maturityBefore,
+        maturityAfter,
+        maturityDelta,
+        evidenceFiles
+      },
+      include: { beneficiary: true, service: true, operator: true }
+    });
+
+    // Si le statut est Terminé, mettre à jour dynamiquement la maturité du bénéficiaire !
+    if (mappedStatus === 'COMPLETED' && maturityAfter) {
+      const bUpdateData: any = {};
+      if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
+      if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
+      if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
+      if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
+      if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
+
+      await prisma.beneficiary.update({
+        where: { id: parseInt(beneficiaryId) },
+        data: bUpdateData
+      });
+    }
+
+    res.status(201).json(item);
+  } catch (err: any) {
+    console.error('Erreur creation service delivery:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/service-deliveries/:id', async (req, res) => {
+  try {
+    const { status, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles } = req.body;
+    const deliveryId = parseInt(req.params.id);
+
+    const original = await prisma.serviceDelivery.findUnique({ where: { id: deliveryId } });
+    if (!original) return res.status(404).json({ error: 'Réalisation de service non trouvée' });
+
+    const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
+                         : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
+                         : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
+                         : status === 'Annulé' || status === 'CANCELLED' ? 'CANCELLED'
+                         : undefined;
+
+    const updated = await prisma.serviceDelivery.update({
+      where: { id: deliveryId },
+      data: {
+        status: mappedStatus, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles
+      }
+    });
+
+    // Si statut passe à Terminé, appliquer la maturité
+    if (mappedStatus === 'COMPLETED' && maturityAfter) {
+      const bUpdateData: any = {};
+      if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
+      if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
+      if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
+      if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
+      if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
+
+      await prisma.beneficiary.update({
+        where: { id: original.beneficiaryId },
+        data: bUpdateData
+      });
+    }
+
+    res.json(updated);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 
-// --- ENTREPRISES ---
-app.get('/api/companies', async (req, res) => {
+// --- LIVRAISONS COLLECTIVES (COLLECTIVE DELIVERIES) ---
+app.get('/api/collective-deliveries', async (req, res) => {
   try {
-    const data = await prisma.company.findMany({
-      include: { belongsToValueChain: true, participatesInStage: true, playsRole: true, needs: true },
+    const data = await prisma.collectiveDelivery.findMany({
+      include: { service: true, operator: true, companies: true },
+      orderBy: { date: 'desc' }
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/collective-deliveries', async (req, res) => {
+  try {
+    const {
+      serviceId, title, date, operatorId, status,
+      participantsCount, companiesCount, satisfactionScore, leadsCount, nextSteps,
+      companyIds, notes
+    } = req.body;
+
+    const item = await prisma.collectiveDelivery.create({
+      data: {
+        serviceId: parseInt(serviceId),
+        title,
+        date: date ? new Date(date) : new Date(),
+        operatorId: parseInt(operatorId),
+        status: status || 'PLANNED',
+        participantsCount: participantsCount ? parseInt(participantsCount) : 0,
+        companiesCount: companiesCount ? parseInt(companiesCount) : 0,
+        satisfactionScore: satisfactionScore ? parseFloat(satisfactionScore) : null,
+        leadsCount: leadsCount ? parseInt(leadsCount) : 0,
+        nextSteps,
+        notes,
+        companies: companyIds && Array.isArray(companyIds) ? {
+          connect: companyIds.map((id: any) => ({ id: parseInt(id) }))
+        } : undefined
+      },
+      include: { service: true, operator: true, companies: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    console.error('Erreur creation collective delivery:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- MISSIONS DE DEUXIEME LIGNE (SECOND LINE MISSIONS) ---
+app.get('/api/second-line-missions', async (req, res) => {
+  try {
+    const data = await prisma.secondLineMission.findMany({
+      include: { service: true, leadOperator: true, operatorsMobilized: true, ecosystems: true, valueChains: true },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/second-line-missions', async (req, res) => {
+  try {
+    const {
+      serviceId, title, startDate, endDate, status,
+      leadOperatorId, operatorIds, collaborationsCount, deliverables, territoryCovered,
+      ecosystemIds, valueChainIds, notes
+    } = req.body;
+
+    const item = await prisma.secondLineMission.create({
+      data: {
+        serviceId: parseInt(serviceId),
+        title,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'PLANNED',
+        leadOperatorId: parseInt(leadOperatorId),
+        operatorsMobilized: operatorIds && Array.isArray(operatorIds) ? {
+          connect: operatorIds.map((id: any) => ({ id: parseInt(id) }))
+        } : undefined,
+        collaborationsCount: collaborationsCount ? parseInt(collaborationsCount) : 0,
+        deliverables,
+        territoryCovered,
+        ecosystems: ecosystemIds && Array.isArray(ecosystemIds) ? {
+          connect: ecosystemIds.map((id: any) => ({ id: parseInt(id) }))
+        } : undefined,
+        valueChains: valueChainIds && Array.isArray(valueChainIds) ? {
+          connect: valueChainIds.map((id: any) => ({ id: parseInt(id) }))
+        } : undefined,
+        notes
+      },
+      include: { service: true, leadOperator: true, operatorsMobilized: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    console.error('Erreur creation second line mission:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// --- BENEFICIAIRES (BENEFICIARIES) ---
+app.get('/api/beneficiaries', async (req, res) => {
+  try {
+    const data = await prisma.beneficiary.findMany({
+      include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
       orderBy: { name: 'asc' }
     });
     res.json(data);
@@ -419,46 +689,95 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
-app.get('/api/companies/:id', async (req, res) => {
+// Alias /api/companies pour rétrocompatibilité
+app.get('/api/companies', async (req, res) => {
   try {
-    const item = await prisma.company.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: { belongsToValueChain: true, participatesInStage: true, playsRole: true, needs: true }
+    const data = await prisma.beneficiary.findMany({
+      include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
+      orderBy: { name: 'asc' }
     });
-    if (!item) {
-      res.status(404).json({ error: 'Entreprise non trouvée' });
-      return;
-    }
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/beneficiaries/:id', async (req, res) => {
+  try {
+    const item = await prisma.beneficiary.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        primaryNaceSector: true,
+        secondaryNaceSectors: true,
+        challenges: true,
+        filieresS3: true,
+        stages: true,
+        needs: true,
+        deliveries: { include: { service: true, operator: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
     res.json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/companies', async (req, res) => {
+// Alias /api/companies/:id
+app.get('/api/companies/:id', async (req, res) => {
+  try {
+    const item = await prisma.beneficiary.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        primaryNaceSector: true,
+        secondaryNaceSectors: true,
+        challenges: true,
+        filieresS3: true,
+        stages: true,
+        needs: true,
+        deliveries: { include: { service: true, operator: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/beneficiaries', async (req, res) => {
   try {
     const {
-      name, size, sector, location, demand,
-      digiscoreScore, digiscoreLevel, digiscoreDate,
-      belongsToValueChainIds, participatesInStageIds, playsRoleIds, needIds
+      name, bce, size, employees, revenue, location, province, arrondissement, demand,
+      primaryNaceSectorId, secondaryNaceSectorIds, challengeIds, filiereS3Ids, stageIds, roleIds, needIds,
+      maturityDigital, maturityIa, maturityCyber, maturityExport, maturityDurability
     } = req.body;
 
-    const item = await prisma.company.create({
+    const item = await prisma.beneficiary.create({
       data: {
         name,
+        bce: bce || null,
         size,
-        sector,
+        employees: employees ? parseInt(employees) : null,
+        revenue: revenue ? parseFloat(revenue) : null,
         location,
+        province,
+        arrondissement,
         demand: demand || null,
-        digiscoreScore: digiscoreScore ? parseInt(digiscoreScore) : null,
-        digiscoreLevel: digiscoreLevel || null,
-        digiscoreDate: digiscoreDate ? new Date(digiscoreDate) : null,
-        belongsToValueChain: belongsToValueChainIds ? { connect: belongsToValueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        participatesInStage: participatesInStageIds ? { connect: participatesInStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        playsRole: playsRoleIds ? { connect: playsRoleIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        primaryNaceSectorId: primaryNaceSectorId ? parseInt(primaryNaceSectorId) : null,
+        secondaryNaceSectors: secondaryNaceSectorIds ? { connect: secondaryNaceSectorIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        challenges: challengeIds ? { connect: challengeIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieresS3: filiereS3Ids ? { connect: filiereS3Ids.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        stages: stageIds ? { connect: stageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        playsRole: roleIds ? { connect: roleIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
         needs: needIds ? { connect: needIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        maturityDigital: maturityDigital ? parseInt(maturityDigital) : 1,
+        maturityIa: maturityIa ? parseInt(maturityIa) : 1,
+        maturityCyber: maturityCyber ? parseInt(maturityCyber) : 1,
+        maturityExport: maturityExport ? parseInt(maturityExport) : 1,
+        maturityDurability: maturityDurability ? parseInt(maturityDurability) : 1
       },
-      include: { belongsToValueChain: true, participatesInStage: true, playsRole: true, needs: true }
+      include: { primaryNaceSector: true, challenges: true, filieresS3: true }
     });
     res.status(201).json(item);
   } catch (err: any) {
@@ -466,73 +785,111 @@ app.post('/api/companies', async (req, res) => {
   }
 });
 
-app.patch('/api/companies/:id', async (req, res) => {
-  const companyId = parseInt(req.params.id);
-  if (isNaN(companyId)) {
-    res.status(400).json({ error: 'ID d\'entreprise invalide' });
-    return;
-  }
+// Alias /api/companies (POST)
+app.post('/api/companies', async (req, res) => {
   try {
     const {
-      name, size, sector, location, demand,
-      digiscoreScore, digiscoreLevel, digiscoreDate,
+      name, size, location, demand,
+      belongsToValueChainIds, participatesInStageIds, playsRoleIds, needIds
+    } = req.body;
+
+    const item = await prisma.beneficiary.create({
+      data: {
+        name,
+        size,
+        location,
+        demand: demand || null,
+        filieresS3: belongsToValueChainIds ? { connect: belongsToValueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        stages: participatesInStageIds ? { connect: participatesInStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        playsRole: playsRoleIds ? { connect: playsRoleIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        needs: needIds ? { connect: needIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+      },
+      include: { filieresS3: true, stages: true, playsRole: true, needs: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Patch Beneficiary
+app.patch('/api/beneficiaries/:id', async (req, res) => {
+  const beneficiaryId = parseInt(req.params.id);
+  if (isNaN(beneficiaryId)) return res.status(400).json({ error: 'ID invalide' });
+  try {
+    const {
+      name, bce, size, employees, revenue, location, province, arrondissement, demand,
+      primaryNaceSectorId, secondaryNaceSectorIds, challengeIds, filiereS3Ids, stageIds, roleIds, needIds,
+      maturityDigital, maturityIa, maturityCyber, maturityExport, maturityDurability, roadmapLogs
+    } = req.body;
+
+    const updated = await prisma.beneficiary.update({
+      where: { id: beneficiaryId },
+      data: {
+        name, bce, size, demand, location, province, arrondissement,
+        employees: employees !== undefined ? (employees ? parseInt(employees) : null) : undefined,
+        revenue: revenue !== undefined ? (revenue ? parseFloat(revenue) : null) : undefined,
+        primaryNaceSectorId: primaryNaceSectorId !== undefined ? (primaryNaceSectorId ? parseInt(primaryNaceSectorId) : null) : undefined,
+        secondaryNaceSectors: secondaryNaceSectorIds ? { set: secondaryNaceSectorIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        challenges: challengeIds ? { set: challengeIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieresS3: filiereS3Ids ? { set: filiereS3Ids.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        stages: stageIds ? { set: stageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        playsRole: roleIds ? { set: roleIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        needs: needIds ? { set: needIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        roadmapLogs: roadmapLogs !== undefined ? roadmapLogs : undefined,
+        maturityDigital: maturityDigital !== undefined ? parseInt(maturityDigital) : undefined,
+        maturityIa: maturityIa !== undefined ? parseInt(maturityIa) : undefined,
+        maturityCyber: maturityCyber !== undefined ? parseInt(maturityCyber) : undefined,
+        maturityExport: maturityExport !== undefined ? parseInt(maturityExport) : undefined,
+        maturityDurability: maturityDurability !== undefined ? parseInt(maturityDurability) : undefined,
+      },
+      include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true }
+    });
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Alias Patch /api/companies/:id
+app.patch('/api/companies/:id', async (req, res) => {
+  const companyId = parseInt(req.params.id);
+  if (isNaN(companyId)) return res.status(400).json({ error: 'ID invalide' });
+  try {
+    const {
+      name, size, location, demand,
       belongsToValueChainIds, participatesInStageIds, playsRoleIds, needIds,
       roadmapLogs
     } = req.body;
 
-    const updated = await prisma.company.update({
+    const updated = await prisma.beneficiary.update({
       where: { id: companyId },
       data: {
-        name,
-        size,
-        sector,
-        location,
-        demand,
-        digiscoreScore: digiscoreScore !== undefined ? (digiscoreScore ? parseInt(digiscoreScore) : null) : undefined,
-        digiscoreLevel: digiscoreLevel !== undefined ? digiscoreLevel : undefined,
-        digiscoreDate: digiscoreDate !== undefined ? (digiscoreDate ? new Date(digiscoreDate) : null) : undefined,
-        belongsToValueChain: belongsToValueChainIds ? {
-          set: belongsToValueChainIds.map((id: any) => ({ id: parseInt(id) }))
-        } : undefined,
-        participatesInStage: participatesInStageIds ? {
-          set: participatesInStageIds.map((id: any) => ({ id: parseInt(id) }))
-        } : undefined,
-        playsRole: playsRoleIds ? {
-          set: playsRoleIds.map((id: any) => ({ id: parseInt(id) }))
-        } : undefined,
-        needs: needIds ? {
-          set: needIds.map((id: any) => ({ id: parseInt(id) }))
-        } : undefined,
-        roadmapLogs: roadmapLogs !== undefined ? roadmapLogs : undefined,
+        name, size, location, demand,
+        filieresS3: belongsToValueChainIds ? { set: belongsToValueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        stages: participatesInStageIds ? { set: participatesInStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        playsRole: playsRoleIds ? { set: playsRoleIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        needs: needIds ? { set: needIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        roadmapLogs: roadmapLogs !== undefined ? roadmapLogs : undefined
       },
-      include: { belongsToValueChain: true, participatesInStage: true, playsRole: true, needs: true }
+      include: { filieresS3: true, stages: true, playsRole: true, needs: true }
     });
     res.json(updated);
-  } catch (error: any) {
-    console.error(`Erreur lors de la mise à jour de l'entreprise ${companyId}:`, error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'entreprise', details: error.message });
-  }
-});
-
-app.delete('/api/companies/:id', async (req, res) => {
-  try {
-    await prisma.company.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 
-// --- PARCOURS TYPES ---
+// --- CATALOGUE DES PARCOURS (JOURNEYS) ---
 app.get('/api/journeys', async (req, res) => {
   try {
     const data = await prisma.journey.findMany({
       include: {
-        needs: true,
-        valueChains: true,
-        valueChainStages: true,
-        steps: { orderBy: { position: 'asc' }, include: { service: true } }
+        challenges: true,
+        filieresS3: true,
+        stagesTransverses: true,
+        stages: { orderBy: { position: 'asc' }, include: { services: { include: { organization: true } } } }
       },
       orderBy: { name: 'asc' }
     });
@@ -542,159 +899,97 @@ app.get('/api/journeys', async (req, res) => {
   }
 });
 
-app.post('/api/journeys', async (req, res) => {
-  try {
-    const { name, provider, objective, uri, needIds, valueChainIds, valueChainStageIds, steps } = req.body;
-    
-    const item = await prisma.journey.create({
-      data: {
-        name,
-        provider,
-        objective: objective || null,
-        uri: uri || `https://pit.wallonie.be/id/journey/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        needs: needIds ? { connect: needIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        valueChains: valueChainIds ? { connect: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        valueChainStages: valueChainStageIds ? { connect: valueChainStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
-        steps: steps && Array.isArray(steps) ? {
-          create: steps.map((s: any) => ({
-            name: s.name,
-            position: parseInt(s.position),
-            serviceId: s.serviceId ? parseInt(s.serviceId) : null
-          }))
-        } : undefined
-      },
-      include: {
-        needs: true,
-        valueChains: true,
-        valueChainStages: true,
-        steps: { orderBy: { position: 'asc' }, include: { service: true } }
-      }
-    });
-    res.status(201).json(item);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-app.delete('/api/journeys/:id', async (req, res) => {
-  try {
-    await prisma.journey.delete({ where: { id: parseInt(req.params.id) } });
-    res.sendStatus(204);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// --- MOTEUR DE RECOMMANDATION (API) ---
-app.get('/api/recommender/:companyId', async (req, res) => {
-  const companyId = parseInt(req.params.companyId);
-  if (isNaN(companyId)) {
-    res.status(400).json({ error: 'ID d\'entreprise invalide' });
+// --- MOTEUR DE RECOMMANDATION INTELLIGENT ---
+// Route générique unifiée (supportant alias /api/recommender/:companyId ou /api/recommender/:beneficiaryId)
+const runRecommender = async (req: express.Request, res: express.Response) => {
+  const idParam = req.params.companyId || req.params.beneficiaryId;
+  const beneficiaryId = parseInt(String(idParam));
+  if (isNaN(beneficiaryId)) {
+    res.status(400).json({ error: 'ID de bénéficiaire invalide' });
     return;
   }
   try {
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
+    const beneficiary = await prisma.beneficiary.findUnique({
+      where: { id: beneficiaryId },
       include: {
-        belongsToValueChain: true,
-        participatesInStage: true,
-        playsRole: true,
+        primaryNaceSector: true,
+        challenges: true,
+        filieresS3: true,
+        stages: true,
         needs: true,
+        deliveries: { include: { service: true } }
       },
     });
 
-    if (!company) {
-      res.status(404).json({ error: 'Entreprise non trouvée' });
+    if (!beneficiary) {
+      res.status(404).json({ error: 'Bénéficiaire non trouvé' });
       return;
     }
 
-    const companyVcIds = company.belongsToValueChain.map(vc => vc.id);
-    const companyStageIds = company.participatesInStage.map(s => s.id);
-    const expressedNeedIds = company.needs.map(n => n.id);
+    const beneficiaryChallengeIds = beneficiary.challenges.map(c => c.id);
+    const beneficiaryFiliereIds = beneficiary.filieresS3.map(f => f.id);
+    const beneficiaryStageIds = beneficiary.stages.map(s => s.id);
+    const expressedNeedIds = beneficiary.needs.map(n => n.id);
+    const consumedServiceIds = beneficiary.deliveries.filter(d => d.status === 'COMPLETED').map(d => d.serviceId);
 
-    // Fonction d'évaluation des règles logiques dynamiques pour le Besoin Builder
-    const evaluateRule = (rule: any, comp: any): boolean => {
-      if (!rule || !rule.conditions || !Array.isArray(rule.conditions)) {
-        return false;
-      }
+    // Évaluation des règles logiques pour le Besoin Builder
+    const evaluateRule = (rule: any, b: any): boolean => {
+      if (!rule || !rule.conditions || !Array.isArray(rule.conditions)) return false;
       const operator = rule.operator || 'AND';
       const results = rule.conditions.map((cond: any) => {
         const { field, operator: condOp, value } = cond;
-        const companyValue = comp[field];
-        if (companyValue === undefined || companyValue === null) {
-          return false;
+        // On résout les champs (y compris NACE principal par code)
+        let bValue: any = b[field];
+        if (field === 'sector' && b.primaryNaceSector) {
+          bValue = b.primaryNaceSector.name;
         }
+        if (bValue === undefined || bValue === null) return false;
         switch (condOp) {
-          case '==': return companyValue == value;
-          case '!=': return companyValue != value;
-          case '<':  return companyValue < value;
-          case '>':  return companyValue > value;
-          case '<=': return companyValue <= value;
-          case '>=': return companyValue >= value;
+          case '==': return bValue == value;
+          case '!=': return bValue != value;
+          case '<':  return bValue < value;
+          case '>':  return bValue > value;
+          case '<=': return bValue <= value;
+          case '>=': return bValue >= value;
           default: return false;
         }
       });
-      if (operator === 'OR') {
-        return results.some((r: boolean) => r === true);
-      }
-      return results.every((r: boolean) => r === true);
+      return operator === 'OR' ? results.some((r: boolean) => r === true) : results.every((r: boolean) => r === true);
     };
 
-    // Charger l'ensemble des besoins de la base
+    // Charger les besoins
     const allNeeds = await prisma.businessNeed.findMany({
       include: {
         valueChains: true,
         valueChainStages: true,
-        services: {
-          include: {
-            organization: true,
-          }
-        },
-        journeys: {
-          include: {
-            steps: {
-              orderBy: { position: 'asc' },
-              include: {
-                service: true
-              }
-            }
-          }
-        }
+        services: { include: { organization: true, challenges: true, filieresS3: true } },
+        journeys: { include: { stages: { include: { services: true } } } }
       }
     });
 
-    // Filtrer sémantiquement les besoins correspondants
+    // Besoins correspondants
     const matchedNeeds = allNeeds.filter(need => {
-      // 1. S'il est exprimé explicitement
-      if (expressedNeedIds.includes(need.id)) {
-        return true;
-      }
-      // 2. Si une règle dynamique valide le besoin
+      if (expressedNeedIds.includes(need.id)) return true;
       if (need.rule) {
         try {
           const ruleObj = typeof need.rule === 'string' ? JSON.parse(need.rule) : need.rule;
-          if (evaluateRule(ruleObj, company)) {
-            return true;
-          }
+          if (evaluateRule(ruleObj, beneficiary)) return true;
         } catch (e) {
-          console.error(`Erreur d'évaluation pour le besoin ${need.id}:`, e);
+          console.error(`Erreur regle besoin ${need.id}:`, e);
         }
       }
-      // 3. Sinon, par croisement sémantique par défaut (filière ET maillon)
-      const hasVc = need.valueChains.some(vc => companyVcIds.includes(vc.id));
-      const hasStage = need.valueChainStages.some(st => companyStageIds.includes(st.id));
-      if (hasVc && hasStage) {
-        return true;
-      }
-      return false;
+      // Croisement sémantique : Si le besoin partage une filière et un maillon
+      const hasVc = need.valueChains.some(vc => beneficiaryFiliereIds.includes(vc.id));
+      const hasStage = need.valueChainStages.some(st => beneficiaryStageIds.includes(st.id));
+      return hasVc && hasStage;
     });
 
+    // Calcul des services recommandés
     const recommendedServices: any[] = [];
-    const recommendedJourneys: any[] = [];
     const serviceSet = new Set<number>();
-    const journeySet = new Set<number>();
 
+    // 1. Ajouter les services issus des besoins identifiés
     for (const need of matchedNeeds) {
       for (const service of need.services) {
         if (!serviceSet.has(service.id)) {
@@ -705,54 +1000,151 @@ app.get('/api/recommender/:companyId', async (req, res) => {
             code: service.code,
             uri: service.uri,
             organization: service.organization,
-            matchedReason: `Répond au besoin : "${need.name}"`
-          });
-        }
-      }
-      for (const journey of need.journeys) {
-        if (!journeySet.has(journey.id)) {
-          journeySet.add(journey.id);
-          recommendedJourneys.push({
-            id: journey.id,
-            name: journey.name,
-            provider: journey.provider,
-            objective: journey.objective,
-            steps: journey.steps,
-            matchedReason: `Parcours adapté au besoin : "${need.name}"`
+            challenges: service.challenges,
+            filieresS3: service.filieresS3,
+            matchedReason: `Répond à votre besoin : "${need.name}"`
           });
         }
       }
     }
 
+    // 2. Proposer des services selon les défis et filières directs de l'entreprise
+    const allServices = await prisma.publicService.findMany({
+      include: { organization: true, challenges: true, filieresS3: true }
+    });
+
+    for (const service of allServices) {
+      if (!serviceSet.has(service.id)) {
+        const matchesChallenge = service.challenges.some(c => beneficiaryChallengeIds.includes(c.id));
+        const matchesFiliere = service.filieresS3.some(f => beneficiaryFiliereIds.includes(f.id));
+        if (matchesChallenge || matchesFiliere) {
+          serviceSet.add(service.id);
+          recommendedServices.push({
+            id: service.id,
+            name: service.name,
+            code: service.code,
+            uri: service.uri,
+            organization: service.organization,
+            challenges: service.challenges,
+            filieresS3: service.filieresS3,
+            matchedReason: matchesChallenge
+              ? `Recommandé pour votre défi : "${service.challenges.find(c => beneficiaryChallengeIds.includes(c.id))?.name}"`
+              : `Recommandé pour votre filière S3 : "${service.filieresS3.find(f => beneficiaryFiliereIds.includes(f.id))?.name}"`
+          });
+        }
+      }
+    }
+
+    // Calcul des parcours recommandés
+    const recommendedJourneys: any[] = [];
+    const journeySet = new Set<number>();
+    const allJourneys = await prisma.journey.findMany({
+      include: {
+        challenges: true,
+        filieresS3: true,
+        stages: { orderBy: { position: 'asc' }, include: { services: { include: { organization: true } } } }
+      }
+    });
+
+    for (const journey of allJourneys) {
+      const matchChallenge = journey.challenges.some(c => beneficiaryChallengeIds.includes(c.id));
+      const matchFiliere = journey.filieresS3.some(f => beneficiaryFiliereIds.includes(f.id));
+      if (matchChallenge || matchFiliere) {
+        journeySet.add(journey.id);
+        recommendedJourneys.push({
+          id: journey.id,
+          name: journey.name,
+          provider: journey.provider,
+          objective: journey.objective,
+          description: journey.description,
+          stages: journey.stages,
+          matchedReason: matchChallenge
+            ? `Parcours aligné avec le défi : "${journey.challenges.find(c => beneficiaryChallengeIds.includes(c.id))?.name}"`
+            : `Parcours aligné avec la filière : "${journey.filieresS3.find(f => beneficiaryFiliereIds.includes(f.id))?.name}"`
+        });
+      }
+    }
+
+    // Recommandations d'écosystèmes
+    const recommendedEcosystems: any[] = [];
+    const allEcosystems = await prisma.ecosystem.findMany({
+      include: { actors: true, filieresS3: true, challenges: true }
+    });
+
+    for (const eco of allEcosystems) {
+      const matchFiliere = eco.filieresS3.some(f => beneficiaryFiliereIds.includes(f.id));
+      const matchChallenge = eco.challenges.some(c => beneficiaryChallengeIds.includes(c.id));
+      if (matchFiliere || matchChallenge) {
+        recommendedEcosystems.push({
+          id: eco.id,
+          name: eco.name,
+          description: eco.description,
+          mission: eco.mission,
+          actors: eco.actors,
+          matchedReason: matchFiliere 
+            ? `Hub régional couvrant la filière : "${eco.filieresS3.find(f => beneficiaryFiliereIds.includes(f.id))?.name}"`
+            : `Hub régional adressant le défi : "${eco.challenges.find(c => beneficiaryChallengeIds.includes(c.id))?.name}"`
+        });
+      }
+    }
+
+    // Recommandations d'acteurs (Organisations impliquées dans les recommandations)
+    const recommendedActors: any[] = [];
+    const actorSet = new Set<number>();
+    
+    // Extraire les acteurs des services et écosystèmes recommandés
+    for (const s of recommendedServices) {
+      if (s.organization && !actorSet.has(s.organization.id)) {
+        actorSet.add(s.organization.id);
+        recommendedActors.push(s.organization);
+      }
+    }
+    for (const e of recommendedEcosystems) {
+      for (const a of e.actors) {
+        if (!actorSet.has(a.id)) {
+          actorSet.add(a.id);
+          recommendedActors.push(a);
+        }
+      }
+    }
+
     res.json({
-      company,
+      beneficiary,
       matchedNeeds: matchedNeeds.map(n => ({ id: n.id, name: n.name, description: n.description })),
-      recommendedServices,
+      recommendedServices: recommendedServices.filter(s => !consumedServiceIds.includes(s.id)), // masquer les déjà consommés
       recommendedJourneys,
+      recommendedEcosystems,
+      recommendedActors
     });
   } catch (error: any) {
     console.error('Erreur lors du calcul des recommandations:', error);
     res.status(500).json({ error: 'Erreur lors du calcul des recommandations', details: error.message });
   }
-});
+};
+
+app.get('/api/recommender/:companyId', runRecommender);
+app.get('/api/recommender/beneficiary/:beneficiaryId', runRecommender);
 
 
 // --- KNOWLEDGE GRAPH (API) ---
 app.get('/api/graph', async (req, res) => {
   try {
-    const [companies, needs, journeys, services] = await Promise.all([
-      prisma.company.findMany({
-        include: { belongsToValueChain: true, participatesInStage: true, needs: true }
-      }),
-      prisma.businessNeed.findMany({
-        include: { journeys: true, services: true }
-      }),
-      prisma.journey.findMany({
-        include: { steps: { include: { service: true } } }
+    const [beneficiaries, services, journeys, ecosystems, organizations, challenges, valueChains] = await Promise.all([
+      prisma.beneficiary.findMany({
+        include: { challenges: true, filieresS3: true, stages: true, needs: true, enrolledJourneys: true, deliveries: true }
       }),
       prisma.publicService.findMany({
-        include: { organization: true }
-      })
+        include: { organization: true, challenges: true, filieresS3: true, stages: true }
+      }),
+      prisma.journey.findMany({
+        include: { challenges: true, filieresS3: true, stages: { include: { services: true } } }
+      }),
+      prisma.ecosystem.findMany({
+        include: { actors: true, services: true, journeys: true, filieresS3: true }
+      }),
+      prisma.organization.findMany(),
+      prisma.businessChallenge.findMany(),
+      prisma.strategicValueChain.findMany()
     ]);
 
     const nodes: any[] = [];
@@ -767,72 +1159,97 @@ app.get('/api/graph', async (req, res) => {
     };
 
     const addEdge = (source: string, target: string, label: string) => {
-      edges.push({ id: `e-${source}-${target}`, source, target, label });
+      edges.push({ id: `e-${source}-${target}-${label.replace(/\s+/g, '-')}`, source, target, label });
     };
 
-    // 1. Companies, ValueChains, Stages & Needs
-    for (const c of companies) {
-      const companyNodeId = `company-${c.id}`;
-      addNode(companyNodeId, c.name, 'company', { sector: c.sector, size: c.size, location: c.location });
+    // 1. Bénéficiaires
+    for (const b of beneficiaries) {
+      const bId = `beneficiary-${b.id}`;
+      addNode(bId, b.name, 'beneficiary', { size: b.size, province: b.province, location: b.location });
 
-      for (const vc of c.belongsToValueChain) {
-        const vcNodeId = `valuechain-${vc.id}`;
-        addNode(vcNodeId, vc.name, 'valuechain');
-        addEdge(companyNodeId, vcNodeId, 'belongsToValueChain');
+      for (const ch of b.challenges) {
+        addEdge(bId, `challenge-${ch.id}`, 'ADRESSE');
       }
-
-      for (const st of c.participatesInStage) {
-        const stNodeId = `stage-${st.id}`;
-        addNode(stNodeId, st.name, 'stage');
-        addEdge(companyNodeId, stNodeId, 'participatesInStage');
+      for (const f of b.filieresS3) {
+        addEdge(bId, `valuechain-${f.id}`, 'APPARTIENT_A');
       }
-
-      for (const n of c.needs) {
-        const needNodeId = `need-${n.id}`;
-        addNode(needNodeId, n.name, 'need');
-        addEdge(companyNodeId, needNodeId, 'hasNeed');
+      for (const st of b.enrolledJourneys) {
+        addEdge(bId, `journey-${st.id}`, 'PARTICIPE_A');
       }
-    }
-
-    // 2. Needs and relationships
-    for (const n of needs) {
-      const needNodeId = `need-${n.id}`;
-      addNode(needNodeId, n.name, 'need');
-
-      for (const s of n.services) {
-        const serviceNodeId = `service-${s.id}`;
-        addNode(serviceNodeId, s.name, 'service', { code: s.code });
-        addEdge(needNodeId, serviceNodeId, 'recommendsService');
-      }
-
-      for (const j of n.journeys) {
-        const journeyNodeId = `journey-${j.id}`;
-        addNode(journeyNodeId, j.name, 'journey');
-        addEdge(needNodeId, journeyNodeId, 'recommendsJourney');
-      }
-    }
-
-    // 3. Journeys & Steps
-    for (const j of journeys) {
-      const journeyNodeId = `journey-${j.id}`;
-      addNode(journeyNodeId, j.name, 'journey');
-
-      for (const step of j.steps) {
-        if (step.service) {
-          const serviceNodeId = `service-${step.service.id}`;
-          addNode(serviceNodeId, step.service.name, 'service', { code: step.service.code });
-          addEdge(journeyNodeId, serviceNodeId, `step ${step.position}: ${step.name}`);
+      // Suivi de l'utilisation réelle du service (UTILISE)
+      for (const del of b.deliveries) {
+        if (del.status === 'COMPLETED') {
+          addEdge(bId, `service-${del.serviceId}`, 'UTILISE');
         }
       }
     }
 
-    // 4. Services & Organizations
+    // 2. Services
     for (const s of services) {
-      const serviceNodeId = `service-${s.id}`;
+      const sId = `service-${s.id}`;
+      addNode(sId, s.name, 'service', { code: s.code });
+
       if (s.organization) {
-        const orgNodeId = `org-${s.organization.id}`;
-        addNode(orgNodeId, s.organization.name, 'organization', { code: s.organization.code });
-        addEdge(serviceNodeId, orgNodeId, 'operatedBy');
+        const orgId = `org-${s.organization.id}`;
+        addNode(orgId, s.organization.name, 'organization', { type: s.organization.type });
+        addEdge(orgId, sId, 'PROPOSE');
+      }
+      for (const ch of s.challenges) {
+        addEdge(sId, `challenge-${ch.id}`, 'ADRESSE');
+      }
+      for (const f of s.filieresS3) {
+        addEdge(sId, `valuechain-${f.id}`, 'APPARTIENT_A');
+      }
+    }
+
+    // 3. Défis
+    for (const ch of challenges) {
+      addNode(`challenge-${ch.id}`, ch.name, 'challenge');
+    }
+
+    // 4. Filières S3
+    for (const f of valueChains) {
+      addNode(`valuechain-${f.id}`, f.name, 'valuechain');
+    }
+
+    // 5. Parcours
+    for (const j of journeys) {
+      const jId = `journey-${j.id}`;
+      addNode(jId, j.name, 'journey');
+
+      for (const ch of j.challenges) {
+        addEdge(jId, `challenge-${ch.id}`, 'ADRESSE');
+      }
+      for (const f of j.filieresS3) {
+        addEdge(jId, `valuechain-${f.id}`, 'APPARTIENT_A');
+      }
+      for (const stage of j.stages) {
+        const stageNodeId = `journey-stage-${stage.id}`;
+        addNode(stageNodeId, `${stage.position}. ${stage.name}`, 'journeystage');
+        addEdge(stageNodeId, jId, 'FAIT_PARTIE_DE');
+        
+        for (const s of stage.services) {
+          addEdge(`service-${s.id}`, stageNodeId, 'FAIT_PARTIE_DE');
+        }
+      }
+    }
+
+    // 6. Écosystèmes
+    for (const e of ecosystems) {
+      const eId = `ecosystem-${e.id}`;
+      addNode(eId, e.name, 'ecosystem');
+
+      for (const a of e.actors) {
+        addEdge(`org-${a.id}`, eId, 'APPARTIENT_A');
+      }
+      for (const s of e.services) {
+        addEdge(eId, `service-${s.id}`, 'PROPOSE');
+      }
+      for (const j of e.journeys) {
+        addEdge(eId, `journey-${j.id}`, 'PROPOSE');
+      }
+      for (const f of e.filieresS3) {
+        addEdge(eId, `valuechain-${f.id}`, 'APPARTIENT_A');
       }
     }
 
@@ -847,5 +1264,4 @@ app.get('/api/graph', async (req, res) => {
 // Démarrer le serveur
 const server = app.listen(port, () => {
   console.log(`🚀 Serveur du Lab CPSV-AP lancé avec succès sur http://localhost:${port}`);
-  console.log(`🎨 L'interface d'arborescence et d'encodage est disponible à cette adresse.`);
 });

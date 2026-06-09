@@ -3,32 +3,63 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@/lib/utils"; // utility for classNames (we'll add later if missing)
-import { Home, BarChart2, Settings, File, Bell, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { 
+  Home, 
+  Users, 
+  FileText, 
+  Compass, 
+  Network, 
+  Share2, 
+  Sparkles, 
+  BarChart2, 
+  Settings,
+  Activity
+} from "lucide-react";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Home },
-  { name: "Services", href: "/services", icon: File },
-  { name: "Graph", href: "/graph", icon: BarChart2 },
+  { name: "Bénéficiaires", href: "/beneficiaries", icon: Users },
+  { name: "Activités", href: "/activities", icon: Activity },
+  { name: "Services (CPSV)", href: "/services", icon: FileText },
+  { name: "Parcours", href: "/journeys", icon: Compass },
+  { name: "Chaînes de valeur", href: "/value-chains", icon: Network },
+  { name: "Écosystèmes", href: "/ecosystems", icon: Share2 },
+  { name: "Recommandations", href: "/recommender", icon: Sparkles },
+  { name: "Graph Explorer", href: "/graph", icon: BarChart2 },
   { name: "Paramètres", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:block">
-      <nav className="space-y-2">
-        {navigation.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={cn(
-              "flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-glass hover:text-text transition-all",
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span>{item.name}</span>
-          </Link>
-        ))}
+    <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:flex flex-col h-screen sticky top-0">
+      <div className="flex items-center space-x-2 px-3 py-4 border-b border-muted mb-6">
+        <span className="text-xl font-bold bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">
+          PIT Wallonie v4.0
+        </span>
+      </div>
+      <nav className="space-y-1.5 flex-1 overflow-y-auto">
+        {navigation.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex items-center space-x-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                isActive 
+                  ? "bg-gradient-to-r from-primary/10 to-amber-500/10 border-l-2 border-primary text-text shadow-sm" 
+                  : "text-muted hover:bg-glass hover:text-text"
+              )}
+            >
+              <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted")} />
+              <span>{item.name}</span>
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );

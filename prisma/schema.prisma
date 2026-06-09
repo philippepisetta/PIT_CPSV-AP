@@ -7,48 +7,69 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// 1. Agent / Organisation (Competent Authority)
+// 1. Agent / Organisation (Competent Authority / Acteur)
 model Organization {
-  id          Int             @id @default(autoincrement())
-  uri         String?         @unique
-  name        String
-  description String?         @db.Text
-  code        String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  services    PublicService[]
+  id              Int               @id @default(autoincrement())
+  uri             String?           @unique
+  name            String
+  description     String?           @db.Text
+  code            String?
+  type            String?           // ex: Cluster, Pôle de compétitivité, Université, Centre de recherche, Administration, Opérateur public, Association, Financeur
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  services        PublicService[]
+  ecosystems      Ecosystem[]       @relation("EcosystemActors")
+  deliveries      ServiceDelivery[]
+  collectiveDeliveries CollectiveDelivery[]
+  leadMissions        SecondLineMission[]   @relation("SecondLineLead")
+  participatingMissions SecondLineMission[] @relation("SecondLineOperators")
 
   @@map("organizations")
 }
 
-// 2. Service Public (Core Concept)
+// 2. Service Public (Core Concept - CPSV-AP)
 model PublicService {
-  id              Int              @id @default(autoincrement())
-  uri             String?          @unique
-  name            String           // dct:title
-  description     String?          @db.Text // dct:description
-  code            String?          // Code métier unique (ex: S-DIGITAL-DIAG)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                Int                  @id @default(autoincrement())
+  uri               String?              @unique
+  name              String               // dct:title
+  description       String?              @db.Text // dct:description
+  code              String?              // Code métier unique (ex: S-DIGITAL-DIAG)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   // Relations
-  organizationId  Int
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId    Int
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  channels        Channel[]        @relation("ServiceChannels")
-  targetAudiences TargetAudience[] @relation("ServiceAudiences")
-  businessEvents  BusinessEvent[]  @relation("ServiceBusinessEvents")
-  lifeEvents      LifeEvent[]      @relation("ServiceLifeEvents")
-  requirements    Requirement[]
-  outputs         Output[]
-  costs           Cost[]
-  contactPoints   ContactPoint[]
-  rules           Rule[]
-  criterions      Criterion[]
-  catalogues      Catalogue[]      @relation("CatalogueServices")
-  supportsBusinessNeed BusinessNeed[]  @relation("ServiceNeeds")
-  journeySteps         JourneyStep[]
-  impacts              Json?
+  channels          Channel[]            @relation("ServiceChannels")
+  targetAudiences   TargetAudience[]     @relation("ServiceAudiences")
+  businessEvents    BusinessEvent[]      @relation("ServiceBusinessEvents")
+  lifeEvents        LifeEvent[]          @relation("ServiceLifeEvents")
+  requirements      Requirement[]
+  outputs           Output[]             // Livrables attendus (théoriques)
+  outcomes          Outcome[]            // Résultats attendus (théoriques)
+  costs             Cost[]
+  contactPoints     ContactPoint[]
+  rules             Rule[]
+  criterions        Criterion[]
+  catalogues        Catalogue[]          @relation("CatalogueServices")
+  supportsBusinessNeed BusinessNeed[]    @relation("ServiceNeeds")
+  
+  // Nouveaux Référentiels Relationnels
+  challenges        BusinessChallenge[]  @relation("ServiceChallenges")
+  filieresS3        StrategicValueChain[] @relation("ServiceValueChains")
+  impactedFunctions EnterpriseFunction[] @relation("ServiceFunctions")
+  stages            ValueChainStage[]    @relation("ServiceStages")
+  
+  journeyStages     JourneyStage[]       @relation("StageServices")
+  deliveries        ServiceDelivery[]
+  collectiveDeliveries CollectiveDelivery[]
+  secondLineMissions  SecondLineMission[]
+  ecosystems        Ecosystem[]          @relation("EcosystemServices")
+  impacts           Json?
+  
+  interventionLevelId Int?
+  interventionLevel   InterventionLevel?  @relation(fields: [interventionLevelId], references: [id], onDelete: SetNull)
 
   @@map("public_services")
 }
@@ -100,7 +121,7 @@ model Evidence {
   @@map("evidences")
 }
 
-// 6. Résultat / Délivrable (Output)
+// 6. Livrable théorique attendu (Output)
 model Output {
   id              Int           @id @default(autoincrement())
   uri             String?       @unique
@@ -114,6 +135,22 @@ model Output {
   publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
 
   @@map("outputs")
+}
+
+// 6b. Résultat théorique attendu (Outcome)
+model Outcome {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String
+  description     String?       @db.Text
+  code            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("outcomes")
 }
 
 // 7. Événement professionnel (BusinessEvent)
@@ -238,119 +275,338 @@ model Catalogue {
   @@map("catalogues")
 }
 
-// 15. Entreprise / Bénéficiaire (Company)
-model Company {
-  id                  Int               @id @default(autoincrement())
+// 15. Bénéficiaire territorial (Beneficiary - Nouveau)
+model Beneficiary {
+  id                  Int                   @id @default(autoincrement())
   name                String
-  size                String
-  sector              String
+  bce                 String?               @unique
+  size                String                // ex: TPE, PME, Grande Entreprise, Commune...
+  employees           Int?
+  revenue             Float?
   location            String
-  demand              String?           @db.Text
-  digiscoreScore      Int?
-  digiscoreLevel      String?
-  digiscoreDate       DateTime?
-  belongsToValueChain ValueChain[]      @relation("CompanyValueChains")
-  participatesInStage ValueChainStage[] @relation("CompanyStages")
-  playsRole           EcosystemRole[]   @relation("CompanyRoles")
-  needs               BusinessNeed[]    @relation("CompanyNeeds")
-  enrolledJourneys    Journey[]         @relation("CompanyJourneys")
+  province            String?               // ex: Liège, Namur, Hainaut, Brabant Wallon, Luxembourg
+  arrondissement      String?
+  demand              String?               @db.Text
+  
+  // Secteurs NACE (Ajustement 1)
+  primaryNaceSectorId Int?
+  primaryNaceSector   NaceSector?           @relation("PrimaryNace", fields: [primaryNaceSectorId], references: [id], onDelete: SetNull)
+  secondaryNaceSectors NaceSector[]         @relation("SecondaryNace")
+  
+  // 5 dimensions de maturité (1 à 5)
+  maturityDigital     Int?                  @default(1)
+  maturityIa          Int?                  @default(1)
+  maturityCyber       Int?                  @default(1)
+  maturityExport      Int?                  @default(1)
+  maturityDurability  Int?                  @default(1)
+
+  // Relations
+  challenges          BusinessChallenge[]   @relation("BeneficiaryChallenges")
+  filieresS3          StrategicValueChain[] @relation("BeneficiaryValueChains")
+  stages              ValueChainStage[]     @relation("BeneficiaryStages")
+  playsRole           EcosystemRole[]       @relation("BeneficiaryRoles")
+  needs               BusinessNeed[]        @relation("BeneficiaryNeeds")
+  enrolledJourneys    Journey[]             @relation("BeneficiaryJourneys")
+  deliveries          ServiceDelivery[]
+  collectiveDeliveries CollectiveDelivery[] @relation("CollectiveDeliveryCompanies")
   roadmapLogs         Json?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
-  @@map("companies")
+  @@map("beneficiaries")
 }
 
-// 16. Filière Économique (ValueChain)
-model ValueChain {
-  id          Int            @id @default(autoincrement())
-  uri         String?        @unique
-  name        String
-  description String?        @db.Text
-  companies   Company[]      @relation("CompanyValueChains")
-  needs       BusinessNeed[] @relation("NeedValueChains")
-  journeys    Journey[]      @relation("JourneyValueChains")
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+// 16. Secteur NACE (NaceSector - Nouveau)
+model NaceSector {
+  id                   Int           @id @default(autoincrement())
+  uri                  String?       @unique
+  code                 String        // ex: "24.10"
+  name                 String        // ex: "Fabrication métallique"
+  description          String?       @db.Text
+  primaryBeneficiaries Beneficiary[] @relation("PrimaryNace")
+  secondaryBeneficiaries Beneficiary[] @relation("SecondaryNace")
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  @@map("value_chains")
+  @@map("nace_sectors")
 }
 
-// 17. Maillon de la Chaîne de Valeur (ValueChainStage)
+// 17. Défi d'affaires (BusinessChallenge - Nouveau)
+model BusinessChallenge {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String          // ex: Digitalisation, IA, Cybersécurité, Export, Décarbonation...
+  description    String?         @db.Text
+  code           String?
+  beneficiaries  Beneficiary[]   @relation("BeneficiaryChallenges")
+  services       PublicService[] @relation("ServiceChallenges")
+  journeys       Journey[]       @relation("JourneyChallenges")
+  ecosystems     Ecosystem[]     @relation("EcosystemChallenges")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("business_challenges")
+}
+
+// 18. Filière Stratégique S3 (StrategicValueChain - Nouveau)
+model StrategicValueChain {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String          // ex: Industrie du Futur, Santé, Biotech, Hydrogène...
+  description    String?         @db.Text
+  code           String?
+  beneficiaries  Beneficiary[]   @relation("BeneficiaryValueChains")
+  services       PublicService[] @relation("ServiceValueChains")
+  journeys       Journey[]       @relation("JourneyValueChains")
+  ecosystems     Ecosystem[]     @relation("EcosystemValueChains")
+  needs          BusinessNeed[]  @relation("NeedValueChains")
+  secondLineMissions SecondLineMission[] @relation("MissionValueChains")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("strategic_value_chains")
+}
+
+// 19. Fonction d'entreprise (EnterpriseFunction - Nouveau)
+model EnterpriseFunction {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String          // ex: Marketing, Vente, RH, Production, R&D, IT...
+  description    String?         @db.Text
+  code           String?
+  services       PublicService[] @relation("ServiceFunctions")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("enterprise_functions")
+}
+
+// 20. Maillon Transverse (ValueChainStage)
 model ValueChainStage {
-  id          Int            @id @default(autoincrement())
-  uri         String?        @unique
-  name        String
-  description String?        @db.Text
-  companies   Company[]      @relation("CompanyStages")
-  needs       BusinessNeed[] @relation("NeedStages")
-  journeys    Journey[]      @relation("JourneyStages")
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String          // ex: Recherche appliquée, Conception, Production, Maintenance
+  category       String          // ex: Innovation, Industrialisation, Production, Go-To-Market, Exploitation, Circularité
+  description    String?         @db.Text
+  beneficiaries  Beneficiary[]   @relation("BeneficiaryStages")
+  services       PublicService[] @relation("ServiceStages")
+  journeys       Journey[]       @relation("JourneyStages")
+  needs          BusinessNeed[]  @relation("NeedStages")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@map("value_chain_stages")
 }
 
-// 18. Rôle dans l'Écosystème (EcosystemRole)
+// 21. Rôle Écosystémique (EcosystemRole)
 model EcosystemRole {
-  id          Int       @id @default(autoincrement())
-  uri         String?   @unique
+  id          Int           @id @default(autoincrement())
+  uri         String?       @unique
   name        String
-  description String?   @db.Text
-  companies   Company[] @relation("CompanyRoles")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  description String?       @db.Text
+  companies   Beneficiary[] @relation("BeneficiaryRoles")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@map("ecosystem_roles")
 }
 
-// 19. Besoin Métier (BusinessNeed)
+// 22. Besoin Métier (BusinessNeed)
 model BusinessNeed {
-  id               Int               @id @default(autoincrement())
-  uri              String?           @unique
+  id               Int                   @id @default(autoincrement())
+  uri              String?               @unique
   name             String
-  description      String?           @db.Text
-  companies        Company[]         @relation("CompanyNeeds")
-  valueChains      ValueChain[]      @relation("NeedValueChains")
-  valueChainStages ValueChainStage[] @relation("NeedStages")
-  journeys         Journey[]         @relation("JourneyNeeds")
-  services         PublicService[]   @relation("ServiceNeeds")
+  description      String?               @db.Text
+  beneficiaries    Beneficiary[]         @relation("BeneficiaryNeeds")
+  valueChains      StrategicValueChain[] @relation("NeedValueChains")
+  valueChainStages ValueChainStage[]     @relation("NeedStages")
+  journeys         Journey[]             @relation("JourneyNeeds")
+  services         PublicService[]       @relation("ServiceNeeds")
   rule             Json?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@map("business_needs")
 }
 
-// 20. Parcours Type (Journey)
+// 23. Écosystème Régional (Ecosystem - Nouveau)
+model Ecosystem {
+  id             Int                   @id @default(autoincrement())
+  uri            String?               @unique
+  name           String                // ex: EDIH Wallonia, BioWin
+  description    String?               @db.Text
+  mission        String?               @db.Text
+  territory      String?               // ex: Wallonie
+  
+  actors         Organization[]        @relation("EcosystemActors")
+  services       PublicService[]       @relation("EcosystemServices")
+  journeys       Journey[]             @relation("EcosystemJourneys")
+  filieresS3     StrategicValueChain[] @relation("EcosystemValueChains")
+  challenges     BusinessChallenge[]   @relation("EcosystemChallenges")
+  secondLineMissions SecondLineMission[] @relation("MissionEcosystems")
+  
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@map("ecosystems")
+}
+
+// 24. Parcours de Transformation (Journey)
 model Journey {
-  id               Int               @id @default(autoincrement())
-  uri              String?           @unique
+  id               Int                   @id @default(autoincrement())
+  uri              String?               @unique
   name             String
   provider         String
-  objective        String?           @db.Text
-  companies        Company[]         @relation("CompanyJourneys")
-  needs            BusinessNeed[]    @relation("JourneyNeeds")
-  valueChains      ValueChain[]      @relation("JourneyValueChains")
-  valueChainStages ValueChainStage[] @relation("JourneyStages")
-  steps            JourneyStep[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  objective        String?               @db.Text
+  description      String?               @db.Text
+  targetAudience   String[]              // ex: ["PME", "Startup"]
+  
+  stages           JourneyStage[]
+  companies        Beneficiary[]         @relation("BeneficiaryJourneys")
+  filieresS3       StrategicValueChain[] @relation("JourneyValueChains")
+  challenges       BusinessChallenge[]   @relation("JourneyChallenges")
+  stagesTransverses ValueChainStage[]    @relation("JourneyStages")
+  needs            BusinessNeed[]        @relation("JourneyNeeds")
+  ecosystems       Ecosystem[]           @relation("EcosystemJourneys")
+  deliveries       ServiceDelivery[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@map("journeys")
 }
 
-// 21. Étape de Parcours Type (JourneyStep)
-model JourneyStep {
-  id              Int            @id @default(autoincrement())
-  name            String
+// 25. Étape de Parcours (JourneyStage)
+model JourneyStage {
+  id              Int               @id @default(autoincrement())
+  name            String            // ex: Sensibilisation, Diagnostic, Financement...
   position        Int
   journeyId       Int
-  journey         Journey        @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  serviceId       Int?
-  service         PublicService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  journey         Journey           @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  services        PublicService[]   @relation("StageServices")
+  deliveries      ServiceDelivery[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  @@map("journey_steps")
+  @@map("journey_stages")
+}
+
+enum ServiceDeliveryStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CollectiveDeliveryStatus {
+  PLANNED
+  OPEN_FOR_REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SecondLineMissionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SUSPENDED
+  CANCELLED
+}
+
+model InterventionLevel {
+  id          Int             @id @default(autoincrement())
+  code        String          @unique // INDIVIDUAL, COLLECTIVE, SECOND_LINE
+  name        String
+  description String?         @db.Text
+  services    PublicService[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("intervention_levels")
+}
+
+// 26. Réalisation réelle de service (ServiceDelivery - Nouveau)
+model ServiceDelivery {
+  id             Int                   @id @default(autoincrement())
+  beneficiaryId  Int
+  beneficiary    Beneficiary           @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  serviceId      Int
+  service        PublicService         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  journeyId      Int?
+  journey        Journey?              @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  journeyStageId Int?
+  journeyStage   JourneyStage?         @relation(fields: [journeyStageId], references: [id], onDelete: SetNull)
+  
+  status         ServiceDeliveryStatus @default(PLANNED)
+  date           DateTime              @default(now())
+  operatorId     Int
+  operator       Organization          @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  outputReal     String?               @db.Text
+  outcomeReal    String?               @db.Text
+  impact         String?               @db.Text
+  maturityBefore Json?                 // ex: {"digital": 1, "ia": 1}
+  maturityAfter  Json?                 // ex: {"digital": 1, "ia": 2}
+  maturityDelta  Json?                 // ex: {"ia": {"before": 1, "after": 2}}
+  evidenceFiles  Json?                 // Documents/preuves associés
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@map("service_deliveries")
+}
+
+// 27. Réalisation collective / animation (CollectiveDelivery)
+model CollectiveDelivery {
+  id                Int                      @id @default(autoincrement())
+  serviceId         Int
+  service           PublicService            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title             String
+  date              DateTime                 @default(now())
+  operatorId        Int
+  operator          Organization             @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  status            CollectiveDeliveryStatus @default(PLANNED)
+  
+  // KPIs Collectifs
+  participantsCount Int                      @default(0)
+  companiesCount    Int                      @default(0)
+  satisfactionScore Float?                   // Échelle unique de 0 à 5
+  leadsCount        Int?                     @default(0)
+  nextSteps         String?                  @db.Text
+  
+  // Relations
+  companies         Beneficiary[]            @relation("CollectiveDeliveryCompanies")
+  
+  notes             String?                  @db.Text
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@map("collective_deliveries")
+}
+
+// 28. Mission de deuxième ligne / écosystème (SecondLineMission)
+model SecondLineMission {
+  id                  Int                    @id @default(autoincrement())
+  serviceId           Int
+  service             PublicService          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title               String
+  startDate           DateTime               @default(now())
+  endDate             DateTime?
+  status              SecondLineMissionStatus @default(PLANNED)
+  
+  leadOperatorId      Int
+  leadOperator        Organization           @relation("SecondLineLead", fields: [leadOperatorId], references: [id], onDelete: Cascade)
+  
+  // KPIs Deuxième ligne
+  operatorsMobilized  Organization[]         @relation("SecondLineOperators")
+  collaborationsCount Int                    @default(0)
+  deliverables        String?                @db.Text
+  territoryCovered    String?
+  
+  ecosystems          Ecosystem[]            @relation("MissionEcosystems")
+  valueChains         StrategicValueChain[]  @relation("MissionValueChains")
+  
+  notes               String?                @db.Text
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@map("second_line_missions")
 }

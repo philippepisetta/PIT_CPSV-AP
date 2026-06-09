@@ -79,7 +79,15 @@ app.get('/api/meta', async (req, res) => {
       ecosystems,
       interventionLevels,
       collectiveDeliveries,
-      secondLineMissions
+      secondLineMissions,
+      interventionTypes,
+      ecosystemTypes,
+      territories,
+      eventResources,
+      datasets,
+      knowledgeAssets,
+      actionInstances,
+      journeyEnrollments
     ] = await Promise.all([
       prisma.organization.findMany({ orderBy: { name: 'asc' } }),
       prisma.channel.findMany({ orderBy: { name: 'asc' } }),
@@ -108,6 +116,29 @@ app.get('/api/meta', async (req, res) => {
         include: { service: true, leadOperator: true, operatorsMobilized: true, ecosystems: true, valueChains: true },
         orderBy: { startDate: 'desc' }
       }),
+      prisma.interventionType.findMany({ orderBy: { name: 'asc' } }),
+      prisma.ecosystemType.findMany({ orderBy: { name: 'asc' } }),
+      prisma.territory.findMany({ orderBy: { name: 'asc' } }),
+      prisma.eventResource.findMany({
+        include: { ecosystems: true, publicServices: true },
+        orderBy: { startDate: 'desc' }
+      }),
+      prisma.dataset.findMany({
+        include: { ownerOrganization: true },
+        orderBy: { title: 'asc' }
+      }),
+      prisma.knowledgeAsset.findMany({
+        include: { publicServices: true, ecosystems: true, eventResources: true },
+        orderBy: { title: 'asc' }
+      }),
+      prisma.actionInstance.findMany({
+        include: { beneficiary: true, journey: true, ecosystem: true, deliveries: true },
+        orderBy: { startDate: 'desc' }
+      }),
+      prisma.journeyEnrollment.findMany({
+        include: { beneficiary: true, journey: true, currentStage: true },
+        orderBy: { startDate: 'desc' }
+      })
     ]);
 
     res.json({
@@ -128,7 +159,15 @@ app.get('/api/meta', async (req, res) => {
       ecosystems,
       interventionLevels,
       collectiveDeliveries,
-      secondLineMissions
+      secondLineMissions,
+      interventionTypes,
+      ecosystemTypes,
+      territories,
+      eventResources,
+      datasets,
+      knowledgeAssets,
+      actionInstances,
+      journeyEnrollments
     });
   } catch (error: any) {
     console.error('Erreur lors de la récupération des métadonnées:', error);
@@ -1130,7 +1169,7 @@ app.get('/api/recommender/beneficiary/:beneficiaryId', runRecommender);
 // --- KNOWLEDGE GRAPH (API) ---
 app.get('/api/graph', async (req, res) => {
   try {
-    const [beneficiaries, services, journeys, ecosystems, organizations, challenges, valueChains] = await Promise.all([
+    const [beneficiaries, services, journeys, ecosystems, organizations, challenges, valueChains, datasets, knowledgeAssets, eventResources, actionInstances] = await Promise.all([
       prisma.beneficiary.findMany({
         include: { challenges: true, filieresS3: true, stages: true, needs: true, enrolledJourneys: true, deliveries: true }
       }),
@@ -1145,7 +1184,17 @@ app.get('/api/graph', async (req, res) => {
       }),
       prisma.organization.findMany(),
       prisma.businessChallenge.findMany(),
-      prisma.strategicValueChain.findMany()
+      prisma.strategicValueChain.findMany(),
+      prisma.dataset.findMany(),
+      prisma.knowledgeAsset.findMany({
+        include: { publicServices: true, ecosystems: true, eventResources: true }
+      }),
+      prisma.eventResource.findMany({
+        include: { ecosystems: true, publicServices: true }
+      }),
+      prisma.actionInstance.findMany({
+        include: { deliveries: true }
+      })
     ]);
 
     const nodes: any[] = [];
@@ -1254,10 +1303,321 @@ app.get('/api/graph', async (req, res) => {
       }
     }
 
+    // 7. Datasets
+    for (const d of datasets) {
+      const dId = `dataset-${d.id}`;
+      addNode(dId, d.title, 'dataset', { qualityScore: d.qualityScore, updateFrequency: d.updateFrequency });
+      addEdge(`org-${d.ownerOrganizationId}`, dId, 'PRODUIT');
+    }
+
+    // 8. Knowledge Assets
+    for (const ka of knowledgeAssets) {
+      const kaId = `knowledgeasset-${ka.id}`;
+      addNode(kaId, ka.title, 'knowledgeasset', { type: ka.type, url: ka.url });
+      for (const s of ka.publicServices) {
+        addEdge(kaId, `service-${s.id}`, 'DOCUMENTE');
+      }
+      for (const eco of ka.ecosystems) {
+        addEdge(kaId, `ecosystem-${eco.id}`, 'RATTACHE_A');
+      }
+      for (const evt of ka.eventResources) {
+        addEdge(kaId, `event-${evt.id}`, 'PRODUIT_PAR');
+      }
+    }
+
+    // 9. Event Resources
+    for (const er of eventResources) {
+      const erId = `event-${er.id}`;
+      addNode(erId, er.title, 'eventresource', { type: er.type, location: er.location, startDate: er.startDate });
+      for (const s of er.publicServices) {
+        addEdge(`service-${s.id}`, erId, 'MOBILISE');
+      }
+      for (const eco of er.ecosystems) {
+        addEdge(`ecosystem-${eco.id}`, erId, 'PORTE');
+      }
+    }
+
+    // 10. Action Instances (Engagements)
+    for (const ai of actionInstances) {
+      const aiId = `actioninstance-${ai.id}`;
+      addNode(aiId, ai.title, 'actioninstance', { status: ai.status, objective: ai.objective });
+      addEdge(`beneficiary-${ai.beneficiaryId}`, aiId, 'ENGAGE_DANS');
+      if (ai.journeyId) {
+        addEdge(aiId, `journey-${ai.journeyId}`, 'REALISE_DANS');
+      }
+      if (ai.ecosystemId) {
+        addEdge(aiId, `ecosystem-${ai.ecosystemId}`, 'ACCOMPAGNE_PAR');
+      }
+      for (const del of ai.deliveries) {
+        addEdge(aiId, `service-${del.serviceId}`, 'CONTIENT_SERVICE');
+      }
+    }
+
     res.json({ nodes, edges });
   } catch (error: any) {
     console.error('Erreur lors de la génération du graphe:', error);
     res.status(500).json({ error: 'Erreur interne lors de la génération du graphe', details: error.message });
+  }
+});
+
+// --- NEW CRUD API ENDPOINTS ---
+
+// Datasets
+app.get('/api/datasets', async (req, res) => {
+  try {
+    const items = await prisma.dataset.findMany({
+      include: { ownerOrganization: true },
+      orderBy: { title: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/datasets', async (req, res) => {
+  try {
+    const { title, description, themes, keywords, qualityScore, updateFrequency, ownerOrganizationId } = req.body;
+    const item = await prisma.dataset.create({
+      data: {
+        title,
+        description,
+        themes: themes || [],
+        keywords: keywords || [],
+        qualityScore: qualityScore ? parseFloat(qualityScore) : 5.0,
+        updateFrequency,
+        ownerOrganizationId: parseInt(ownerOrganizationId)
+      },
+      include: { ownerOrganization: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Knowledge Assets
+app.get('/api/knowledge-assets', async (req, res) => {
+  try {
+    const items = await prisma.knowledgeAsset.findMany({
+      include: { publicServices: true, ecosystems: true, eventResources: true },
+      orderBy: { title: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/knowledge-assets', async (req, res) => {
+  try {
+    const { title, type, description, file, url, serviceIds, ecosystemIds, eventResourceIds } = req.body;
+    const item = await prisma.knowledgeAsset.create({
+      data: {
+        title,
+        type,
+        description,
+        file,
+        url,
+        publicServices: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        ecosystems: ecosystemIds ? { connect: ecosystemIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        eventResources: eventResourceIds ? { connect: eventResourceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+      },
+      include: { publicServices: true, ecosystems: true, eventResources: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Event Resources
+app.get('/api/event-resources', async (req, res) => {
+  try {
+    const items = await prisma.eventResource.findMany({
+      include: { ecosystems: true, publicServices: true },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/event-resources', async (req, res) => {
+  try {
+    const { title, description, type, startDate, endDate, location, ecosystemIds, serviceIds } = req.body;
+    const item = await prisma.eventResource.create({
+      data: {
+        title,
+        description,
+        type,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        location,
+        ecosystems: ecosystemIds ? { connect: ecosystemIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        publicServices: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+      },
+      include: { ecosystems: true, publicServices: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Action Instances (Engagements)
+app.get('/api/action-instances', async (req, res) => {
+  try {
+    const items = await prisma.actionInstance.findMany({
+      include: { beneficiary: true, journey: true, ecosystem: true, deliveries: { include: { service: true } } },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/action-instances', async (req, res) => {
+  try {
+    const { title, objective, startDate, endDate, status, beneficiaryId, journeyId, ecosystemId } = req.body;
+    const item = await prisma.actionInstance.create({
+      data: {
+        title,
+        objective,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'PLANNED',
+        beneficiaryId: parseInt(beneficiaryId),
+        journeyId: journeyId ? parseInt(journeyId) : null,
+        ecosystemId: ecosystemId ? parseInt(ecosystemId) : null
+      },
+      include: { beneficiary: true, journey: true, ecosystem: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/action-instances/:id', async (req, res) => {
+  try {
+    const { title, objective, startDate, endDate, status, journeyId, ecosystemId } = req.body;
+    const item = await prisma.actionInstance.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        title,
+        objective,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        status,
+        journeyId: journeyId !== undefined ? (journeyId ? parseInt(journeyId) : null) : undefined,
+        ecosystemId: ecosystemId !== undefined ? (ecosystemId ? parseInt(ecosystemId) : null) : undefined
+      },
+      include: { beneficiary: true, journey: true, ecosystem: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Journey Enrollments (Suivi de parcours)
+app.get('/api/journey-enrollments', async (req, res) => {
+  try {
+    const items = await prisma.journeyEnrollment.findMany({
+      include: { beneficiary: true, journey: true, currentStage: true },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/journey-enrollments', async (req, res) => {
+  try {
+    const { startDate, endDate, status, completionRate, beneficiaryId, journeyId, currentStageId } = req.body;
+    const item = await prisma.journeyEnrollment.create({
+      data: {
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'ENROLLED',
+        completionRate: completionRate ? parseFloat(completionRate) : 0.0,
+        beneficiaryId: parseInt(beneficiaryId),
+        journeyId: parseInt(journeyId),
+        currentStageId: currentStageId ? parseInt(currentStageId) : null
+      },
+      include: { beneficiary: true, journey: true, currentStage: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/journey-enrollments/:id', async (req, res) => {
+  try {
+    const { startDate, endDate, status, completionRate, currentStageId } = req.body;
+    const item = await prisma.journeyEnrollment.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        status,
+        completionRate: completionRate ? parseFloat(completionRate) : undefined,
+        currentStageId: currentStageId !== undefined ? (currentStageId ? parseInt(currentStageId) : null) : undefined
+      },
+      include: { beneficiary: true, journey: true, currentStage: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Territories
+app.get('/api/territories', async (req, res) => {
+  try {
+    const items = await prisma.territory.findMany({
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Interventions
+app.get('/api/interventions', async (req, res) => {
+  try {
+    const items = await prisma.intervention.findMany({
+      include: { interventionType: true, ownerOrganization: true, publicService: true },
+      orderBy: { title: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/interventions', async (req, res) => {
+  try {
+    const { title, description, uri, interventionTypeId, ownerOrganizationId } = req.body;
+    const item = await prisma.intervention.create({
+      data: {
+        title,
+        description,
+        uri: uri || `https://pit.wallonie.be/id/intervention/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        interventionTypeId: parseInt(interventionTypeId),
+        ownerOrganizationId: parseInt(ownerOrganizationId)
+      },
+      include: { interventionType: true, ownerOrganization: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

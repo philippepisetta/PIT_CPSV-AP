@@ -7,12 +7,25 @@ async function main() {
 
   // Nettoyage de la base de données pour assurer la répétabilité du seed
   console.log('🧹 Nettoyage des anciennes données...');
+  await prisma.evidence.deleteMany({});
   await prisma.serviceDelivery.deleteMany({});
   await prisma.collectiveDelivery.deleteMany({});
   await prisma.secondLineMission.deleteMany({});
+  await prisma.actionInstance.deleteMany({});
+  await prisma.journeyEnrollment.deleteMany({});
+  await prisma.ecosystemMembership.deleteMany({});
+  await prisma.dataset.deleteMany({});
+  await prisma.knowledgeAsset.deleteMany({});
+  await prisma.eventResource.deleteMany({});
+  await prisma.publicService.deleteMany({});
+  await prisma.intervention.deleteMany({});
+  await prisma.interventionType.deleteMany({});
+  await prisma.ecosystem.deleteMany({});
+  await prisma.ecosystemType.deleteMany({});
+  await prisma.beneficiary.deleteMany({});
+  await prisma.territory.deleteMany({});
   await prisma.journeyStage.deleteMany({});
   await prisma.journey.deleteMany({});
-  await prisma.beneficiary.deleteMany({});
   await prisma.businessNeed.deleteMany({});
   await prisma.ecosystemRole.deleteMany({});
   await prisma.valueChainStage.deleteMany({});
@@ -21,13 +34,11 @@ async function main() {
   await prisma.enterpriseFunction.deleteMany({});
   await prisma.naceSector.deleteMany({});
   await prisma.interventionLevel.deleteMany({});
-  await prisma.ecosystem.deleteMany({});
   await prisma.catalogue.deleteMany({});
   await prisma.rule.deleteMany({});
   await prisma.criterion.deleteMany({});
   await prisma.contactPoint.deleteMany({});
   await prisma.cost.deleteMany({});
-  await prisma.evidence.deleteMany({});
   await prisma.requirement.deleteMany({});
   await prisma.output.deleteMany({});
   await prisma.outcome.deleteMany({});
@@ -35,7 +46,6 @@ async function main() {
   await prisma.targetAudience.deleteMany({});
   await prisma.businessEvent.deleteMany({});
   await prisma.lifeEvent.deleteMany({});
-  await prisma.publicService.deleteMany({});
   await prisma.organization.deleteMany({});
 
   // 1. Création des Canaux (Channels)
@@ -200,6 +210,34 @@ async function main() {
     }
   });
 
+  // 5c. Création des Types d'Intervention (InterventionType)
+  console.log('⚙️ Création des Types d\'Intervention...');
+  const itService = await prisma.interventionType.create({ data: { code: 'SERVICE', name: 'Service', description: 'Accompagnement, diagnostic ou prestation de service public.' } });
+  const itFunding = await prisma.interventionType.create({ data: { code: 'FUNDING', name: 'Financement', description: 'Prêt, subvention, chèque ou aide financière.' } });
+  const itProject = await prisma.interventionType.create({ data: { code: 'PROJECT', name: 'Projet', description: 'Projet de R&D ou collaboration territoriale.' } });
+  const itEvent = await prisma.interventionType.create({ data: { code: 'EVENT', name: 'Événement', description: 'Conférence, atelier, salon.' } });
+  const itAsset = await prisma.interventionType.create({ data: { code: 'KNOWLEDGE_ASSET', name: 'Actif de connaissance', description: 'Livre blanc, étude, guide de référence.' } });
+  const itMission = await prisma.interventionType.create({ data: { code: 'MISSION', name: 'Mission', description: 'Mission d\'écosystème de deuxième ligne.' } });
+
+  // 5d. Création des Types d'Écosystèmes (EcosystemType)
+  console.log('🌐 Création des Types d\'Écosystèmes...');
+  const etEdih = await prisma.ecosystemType.create({ data: { code: 'EDIH', name: 'EDIH', description: 'European Digital Innovation Hub.' } });
+  const etCluster = await prisma.ecosystemType.create({ data: { code: 'CLUSTER', name: 'Cluster d\'innovation', description: 'Réseau d\'entreprises et partenaires.' } });
+  const etPole = await prisma.ecosystemType.create({ data: { code: 'POLE_COMPETITIVITE', name: 'Pôle de compétitivité', description: 'Pôle de croissance économique.' } });
+  const etLab = await prisma.ecosystemType.create({ data: { code: 'LIVING_LAB', name: 'Living Lab', description: 'Laboratoire d\'innovation ouverte.' } });
+  const etHub = await prisma.ecosystemType.create({ data: { code: 'HUB_INNOVATION', name: 'Hub d\'innovation', description: 'Structure locale de support.' } });
+  const etNetwork = await prisma.ecosystemType.create({ data: { code: 'NETWORK', name: 'Réseau', description: 'Réseau régional.' } });
+  const etCommunity = await prisma.ecosystemType.create({ data: { code: 'COMMUNITY', name: 'Communauté', description: 'Groupe d\'échange informel.' } });
+
+  // 5e. Création des Territoires (Territory)
+  console.log('📍 Création des Territoires...');
+  const tWall = await prisma.territory.create({ data: { code: 'WAL', name: 'Wallonie', type: 'Wallonie' } });
+  const tLiege = await prisma.territory.create({ data: { code: 'BE-WLG', name: 'Liège', type: 'Province' } });
+  const tNamur = await prisma.territory.create({ data: { code: 'BE-WNM', name: 'Namur', type: 'Province' } });
+  const tHainaut = await prisma.territory.create({ data: { code: 'BE-WHT', name: 'Hainaut', type: 'Province' } });
+  const tBrabant = await prisma.territory.create({ data: { code: 'BE-WBR', name: 'Brabant Wallon', type: 'Province' } });
+  const tLux = await prisma.territory.create({ data: { code: 'BE-WLX', name: 'Luxembourg', type: 'Province' } });
+
   // 6. Création des Organisations / Acteurs de l'écosystème typés
   console.log('🏢 Création des Organisations typées...');
   const orgAdn = await prisma.organization.create({
@@ -334,6 +372,7 @@ async function main() {
       description: 'European Digital Innovation Hub pour le déploiement de l’IA et des technologies de pointe.',
       mission: 'Accompagner la numérisation et l’adoption de l’IA par les entreprises wallonnes.',
       territory: 'Wallonie',
+      typeId: etEdih.id,
       actors: { connect: [{ id: orgAdn.id }, { id: orgWe.id }, { id: orgUcm.id }, { id: orgSirris.id }] },
       filieresS3: { connect: [{ id: svcNum.id }, { id: svcIndus.id }] },
       challenges: { connect: [{ id: bcIa.id }, { id: bcDigital.id }] }
@@ -346,10 +385,29 @@ async function main() {
       description: 'La stratégie numérique de la Wallonie et son écosystème d’acteurs technologiques.',
       mission: 'Faire du numérique un moteur de croissance économique régionale.',
       territory: 'Wallonie',
+      typeId: etNetwork.id,
       actors: { connect: [{ id: orgAdn.id }] },
       filieresS3: { connect: [{ id: svcNum.id }] },
       challenges: { connect: [{ id: bcDigital.id }] }
     }
+  });
+
+  console.log('🤝 Création des Écosystèmes Memberships...');
+  await prisma.ecosystemMembership.create({
+    data: { ecosystemId: ecoEdih.id, organizationId: orgAdn.id, role: 'Coordinateur', status: 'ACTIVE' }
+  });
+  await prisma.ecosystemMembership.create({
+    data: { ecosystemId: ecoEdih.id, organizationId: orgSirris.id, role: 'Expert', status: 'ACTIVE' }
+  });
+  await prisma.ecosystemMembership.create({
+    data: { ecosystemId: ecoEdih.id, organizationId: orgWe.id, role: 'Financeur', status: 'ACTIVE' }
+  });
+  await prisma.ecosystemMembership.create({
+    data: { ecosystemId: ecoEdih.id, organizationId: orgUcm.id, role: 'Partenaire', status: 'ACTIVE' }
+  });
+
+  await prisma.ecosystemMembership.create({
+    data: { ecosystemId: ecoDw.id, organizationId: orgAdn.id, role: 'Coordinateur', status: 'ACTIVE' }
   });
 
 
@@ -357,6 +415,16 @@ async function main() {
   console.log('🛠️ Création des Services Publics & relations...');
 
   // --- SERVICE 1: Diagnostic IA (AdN) ---
+  const intDiagIa = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/diagnostic-ia',
+      title: 'Diagnostic IA',
+      description: 'Audit et identification des cas d’usages concrets de l’intelligence artificielle dans votre processus de production.',
+      interventionTypeId: itService.id,
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
   const sDiagIa = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/diagnostic-ia',
@@ -365,6 +433,7 @@ async function main() {
       code: 'S-IA-DIAG',
       organizationId: orgAdn.id,
       interventionLevelId: ilIndiv.id,
+      interventionId: intDiagIa.id,
       channels: { connect: [{ id: chRdv.id }] },
       targetAudiences: { connect: [{ id: taPme.id }, { id: taStartup.id }] },
       businessEvents: { connect: [{ id: beDigitalTrans.id }] },
@@ -401,6 +470,16 @@ async function main() {
 
 
   // --- SERVICE 2: Chèque Cybersécurité (AdN) ---
+  const intCyberCheck = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/cheque-cybersecurite',
+      title: 'Chèque Cybersécurité',
+      description: 'Subvention pour réaliser un audit de sécurité de vos infrastructures IT et former vos équipes.',
+      interventionTypeId: itFunding.id, // Type Financement
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
   const sCyberCheck = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/cheque-cybersecurite',
@@ -409,6 +488,7 @@ async function main() {
       code: 'S-CYBER-CHECK',
       organizationId: orgAdn.id,
       interventionLevelId: ilIndiv.id,
+      interventionId: intCyberCheck.id,
       channels: { connect: [{ id: chWeb.id }] },
       targetAudiences: { connect: [{ id: taPme.id }, { id: taStartup.id }, { id: taIndependant.id }] },
       businessEvents: { connect: [{ id: beDigitalTrans.id }] },
@@ -432,6 +512,16 @@ async function main() {
 
 
   // --- SERVICE 3: Coaching Export (AWEX) ---
+  const intExportCoach = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/coaching-export',
+      title: 'Coaching Export',
+      description: 'Accompagnement individuel par un conseiller AWEX pour définir sa stratégie de développement international.',
+      interventionTypeId: itService.id,
+      ownerOrganizationId: orgAwex.id
+    }
+  });
+
   const sExportCoach = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/coaching-export',
@@ -440,6 +530,7 @@ async function main() {
       code: 'S-EXPORT-COACH',
       organizationId: orgAwex.id,
       interventionLevelId: ilIndiv.id,
+      interventionId: intExportCoach.id,
       channels: { connect: [{ id: chRdv.id }] },
       targetAudiences: { connect: [{ id: taPme.id }, { id: taStartup.id }] },
       businessEvents: { connect: [{ id: beInternational.id }] },
@@ -453,6 +544,16 @@ async function main() {
 
 
   // --- SERVICE 4: Diagnostic de maturité numérique (AdN) ---
+  const intDiagNum = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/diagnostic-maturite-numerique',
+      title: 'Diagnostic de maturité numérique',
+      description: 'Évaluation globale du niveau de maturité digitale (outils, infrastructures, compétences) de l’entreprise.',
+      interventionTypeId: itService.id,
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
   const sDiagNum = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/diagnostic-maturite-numerique',
@@ -461,6 +562,7 @@ async function main() {
       code: 'S-DIGITAL-DIAG',
       organizationId: orgAdn.id,
       interventionLevelId: ilIndiv.id,
+      interventionId: intDiagNum.id,
       channels: { connect: [{ id: chWeb.id }, { id: chRdv.id }] },
       targetAudiences: { connect: [{ id: taPme.id }, { id: taStartup.id }, { id: taIndependant.id }] },
       businessEvents: { connect: [{ id: beDigitalTrans.id }] },
@@ -475,6 +577,16 @@ async function main() {
 
 
   // --- SERVICE 5: Accompagnement à la transformation digitale (WE) ---
+  const intAccompDigital = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/accompagnement-transformation-digitale',
+      title: 'Accompagnement à la transformation digitale',
+      description: 'Soutien par un coach WE agréé pour la réalisation et le suivi de projets de digitalisation complexes.',
+      interventionTypeId: itService.id,
+      ownerOrganizationId: orgWe.id
+    }
+  });
+
   const sAccompDigital = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/accompagnement-transformation-digitale',
@@ -483,6 +595,7 @@ async function main() {
       code: 'S-DIGITAL-COACH',
       organizationId: orgWe.id,
       interventionLevelId: ilIndiv.id,
+      interventionId: intAccompDigital.id,
       channels: { connect: [{ id: chRdv.id }, { id: chGuichet.id }] },
       targetAudiences: { connect: [{ id: taPme.id }, { id: taStartup.id }] },
       businessEvents: { connect: [{ id: beDigitalTrans.id }] },
@@ -494,6 +607,16 @@ async function main() {
   });
 
   // --- SERVICE 6: Workshop IA & PME (AdN) - COLLECTIVE ---
+  const intWorkshopIa = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/workshop-ia',
+      title: 'Workshop IA & PME manufacturières',
+      description: 'Session collective de sensibilisation et de co-conception de cas d’usage IA.',
+      interventionTypeId: itService.id,
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
   const sWorkshopIa = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/workshop-ia',
@@ -502,6 +625,7 @@ async function main() {
       code: 'S-IA-WORKSHOP',
       organizationId: orgAdn.id,
       interventionLevelId: ilColl.id,
+      interventionId: intWorkshopIa.id,
       channels: { connect: [{ id: chGuichet.id }] },
       targetAudiences: { connect: [{ id: taPme.id }] },
       businessEvents: { connect: [{ id: beDigitalTrans.id }] },
@@ -515,6 +639,16 @@ async function main() {
   });
 
   // --- SERVICE 7: Coordination EDIH Wallonia (AdN) - SECOND_LINE ---
+  const intCoordHub = await prisma.intervention.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/intervention/coordination-edih',
+      title: 'Coordination EDIH Wallonia',
+      description: 'Mission de coordination et d’animation de l’écosystème d’opérateurs et d’acteurs de la transition numérique.',
+      interventionTypeId: itMission.id, // Type Mission
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
   const sCoordHub = await prisma.publicService.create({
     data: {
       uri: 'https://pit.wallonie.be/id/public-service/coordination-edih',
@@ -523,6 +657,7 @@ async function main() {
       code: 'S-EDIH-COORD',
       organizationId: orgAdn.id,
       interventionLevelId: ilSecLine.id,
+      interventionId: intCoordHub.id,
       channels: { connect: [{ id: chRdv.id }] },
       targetAudiences: { connect: [{ id: taResearcher.id }] },
       catalogues: { connect: [{ id: cataloguePIT.id }] },
@@ -679,6 +814,7 @@ async function main() {
       arrondissement: 'Namur',
       demand: 'Nous souhaitons automatiser le contrôle qualité de nos biscuits en fin de ligne de cuisson.',
       primaryNaceSectorId: nsAgro.id,
+      territoryId: tNamur.id,
       maturityDigital: 2,
       maturityIa: 1,
       maturityCyber: 2,
@@ -709,6 +845,7 @@ async function main() {
       arrondissement: 'Liège',
       demand: 'Nous voulons intégrer le BIM pour mieux collaborer sur nos chantiers de construction.',
       primaryNaceSectorId: nsConst.id,
+      territoryId: tLiege.id,
       maturityDigital: 1,
       maturityIa: 1,
       maturityCyber: 1,
@@ -725,15 +862,93 @@ async function main() {
     }
   });
 
+  console.log('🎬 Création des Engagements (ActionInstance)...');
+  const actIaDupont = await prisma.actionInstance.create({
+    data: {
+      title: "Plan de transition IA Biscuit",
+      objective: "Déployer de la vision par IA pour le tri automatique de biscuits.",
+      status: "IN_PROGRESS",
+      beneficiaryId: bDupont.id,
+      journeyId: jIa.id,
+      ecosystemId: ecoEdih.id
+    }
+  });
+
+  console.log('📈 Création des Enrôlements de parcours (JourneyEnrollment)...');
+  await prisma.journeyEnrollment.create({
+    data: {
+      beneficiaryId: bDupont.id,
+      journeyId: jIa.id,
+      currentStageId: jsDiagIa.id,
+      status: "IN_PROGRESS",
+      completionRate: 33.3,
+      startDate: new Date('2026-06-05T09:00:00Z')
+    }
+  });
+
+  console.log('📅 Création des Événements Territoriaux (EventResource)...');
+  const evtIaAtelier = await prisma.eventResource.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/event/atelier-ia-manufacturier',
+      title: "Workshop IA & PME manufacturières (Session physique)",
+      description: "Session collective d'initiation et de prototypage rapide d'intelligence artificielle.",
+      type: "atelier",
+      startDate: new Date('2026-06-05T09:30:00Z'),
+      location: "Maison de la Microélectronique, Charleroi",
+      ecosystems: { connect: [{ id: ecoEdih.id }] },
+      publicServices: { connect: [{ id: sWorkshopIa.id }] }
+    }
+  });
+
+  await prisma.eventResource.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/event/forum-cyber-wallonie',
+      title: "Forum Cyber-Résilience Wallonie 2026",
+      description: "Grand rassemblement annuel sur la sécurité des PME.",
+      type: "conférence",
+      startDate: new Date('2026-06-10T09:00:00Z'),
+      location: "Namur Expo",
+      ecosystems: { connect: [{ id: ecoEdih.id }, { id: ecoDw.id }] },
+      publicServices: { connect: [{ id: sCyberCheck.id }] }
+    }
+  });
+
+  console.log('📂 Création des Catalogues de Données (Dataset)...');
+  await prisma.dataset.create({
+    data: {
+      title: "Répertoire PIT des Profils PME Wallonnes",
+      description: "Dataset contenant les variables d'analyse de maturité numérique, IA, cyber, export et S3 des entreprises.",
+      themes: ["Numérique", "Économie"],
+      keywords: ["PME", "Maturité", "S3"],
+      qualityScore: 4.8,
+      updateFrequency: "Mensuel",
+      ownerOrganizationId: orgAdn.id
+    }
+  });
+
+  console.log('📘 Création des Actifs de Connaissance (KnowledgeAsset)...');
+  await prisma.knowledgeAsset.create({
+    data: {
+      title: "Livre blanc : L'IA dans le secteur manufacturier wallon",
+      type: "Livre blanc",
+      description: "Guide méthodologique complet présentant 15 cas réels d'implémentation de vision industrielle.",
+      url: "https://www.digitalwallonia.be/fr/publications/ia-manufacturier",
+      publicServices: { connect: [{ id: sDiagIa.id }] },
+      ecosystems: { connect: [{ id: ecoEdih.id }] },
+      eventResources: { connect: [{ id: evtIaAtelier.id }] }
+    }
+  });
+
 
   // 14. Création des Réalisations de Service (ServiceDelivery)
   console.log('📦 Création d’une Réalisation de Service (ServiceDelivery)...');
-  await prisma.serviceDelivery.create({
+  const sdDupont = await prisma.serviceDelivery.create({
     data: {
       beneficiaryId: bDupont.id,
       serviceId: sDiagIa.id,
       journeyId: jIa.id,
       journeyStageId: jsDiagIa.id,
+      actionInstanceId: actIaDupont.id,
       status: 'COMPLETED',
       date: new Date('2026-06-12T10:00:00Z'),
       operatorId: orgAdn.id,
@@ -751,9 +966,10 @@ async function main() {
 
   // 15. Création des Réalisations Collectives (CollectiveDelivery)
   console.log('👥 Création d’une Réalisation Collective (CollectiveDelivery)...');
-  await prisma.collectiveDelivery.create({
+  const cdWorkshop = await prisma.collectiveDelivery.create({
     data: {
       serviceId: sWorkshopIa.id,
+      eventResourceId: evtIaAtelier.id,
       title: 'Workshop IA & Optimisation de Production Manufacturière',
       date: new Date('2026-06-05T09:30:00Z'),
       operatorId: orgAdn.id,
@@ -770,7 +986,7 @@ async function main() {
 
   // 16. Création des Missions de Deuxième Ligne (SecondLineMission)
   console.log('⚙️ Création d’une Mission de Deuxième Ligne (SecondLineMission)...');
-  await prisma.secondLineMission.create({
+  const slmCoord = await prisma.secondLineMission.create({
     data: {
       serviceId: sCoordHub.id,
       title: 'Animation & Reporting de l’EDIH Wallonia',
@@ -784,6 +1000,43 @@ async function main() {
       ecosystems: { connect: [{ id: ecoEdih.id }] },
       valueChains: { connect: [{ id: svcNum.id }, { id: svcIndus.id }] },
       notes: 'Reporting trimestriel à la Commission Européenne en cours de préparation.'
+    }
+  });
+
+  console.log('📄 Création des Preuves (Evidence)...');
+  await prisma.evidence.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/evidence/diag-dupont-pdf',
+      name: 'Rapport Diagnostic IA Dupont',
+      description: 'Preuve de réalisation du diagnostic individuel de maturité IA.',
+      type: 'PDF',
+      file: 'diagnostic_ia_dupont.pdf',
+      url: 'https://storage.vercel.com/pit-wallonie/diagnostic_ia_dupont.pdf',
+      serviceDeliveryId: sdDupont.id
+    }
+  });
+
+  await prisma.evidence.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/evidence/workshop-invitation',
+      name: 'Invitation & Liste d\'émargement Workshop IA',
+      description: 'Preuve de tenue de l\'atelier collectif à Charleroi.',
+      type: 'Rapport',
+      file: 'presence_workshop_ia_20260605.pdf',
+      url: 'https://storage.vercel.com/pit-wallonie/presence_workshop_ia_20260605.pdf',
+      collectiveDeliveryId: cdWorkshop.id
+    }
+  });
+
+  await prisma.evidence.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/evidence/edih-reporting-q1',
+      name: 'Livrable EDIH Wallonia Q1 2026',
+      description: 'Rapport d\'activité officiel soumis à la Commission Européenne.',
+      type: 'Rapport',
+      file: 'edih_reporting_q1_2026.pdf',
+      url: 'https://storage.vercel.com/pit-wallonie/edih_reporting_q1_2026.pdf',
+      secondLineMissionId: slmCoord.id
     }
   });
 

@@ -15,7 +15,9 @@ import {
   Sparkles, 
   BarChart2, 
   Settings,
-  Activity
+  Activity,
+  Database,
+  BookOpen
 } from "lucide-react";
 
 const navigation = [
@@ -26,6 +28,8 @@ const navigation = [
   { name: "Parcours", href: "/journeys", icon: Compass },
   { name: "Chaînes de valeur", href: "/value-chains", icon: Network },
   { name: "Écosystèmes", href: "/ecosystems", icon: Share2 },
+  { name: "Données (DCAT-AP)", href: "/datasets", icon: Database },
+  { name: "Actifs de connaissance", href: "/knowledge-assets", icon: BookOpen },
   { name: "Recommandations", href: "/recommender", icon: Sparkles },
   { name: "Graph Explorer", href: "/graph", icon: BarChart2 },
   { name: "Paramètres", href: "/settings", icon: Settings },

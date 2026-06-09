@@ -1,0 +1,166 @@
+# 📊 RÉFÉRENTIELS ET TAXONOMIES D'ALIGNEMENT SÉMANTIQUES (PIT WALLONIE - CPSV-AP)
+# Date de mise à jour : Juin 2026
+# Version du modèle : CPSV-AP v3.0 adapté au contexte wallon
+
+Ce document liste l'ensemble des référentiels et taxonomies d'alignement sémantiques utilisés au sein de la Plateforme d'Intelligence Territoriale (PIT) en Wallonie pour classifier les services publics (CPSV-AP), caractériser les entreprises et évaluer automatiquement leurs besoins d'affaires.
+
+Chaque élément possède une URI sémantique unique (pour l'export en graphe RDF / JSON-LD) et un code métier standardisé.
+
+---
+
+## 🏛️ 1. ORGANISATIONS / AGENTS (Competent Authorities)
+Représente les institutions publiques wallonnes compétentes qui fournissent ou financent les services d'accompagnement et d'aides financières aux entreprises.
+
+*   **Agence du Numérique (AdN)**
+    *   URI : `https://pit.wallonie.be/id/organization/adn`
+    *   Code : `ORG-ADN`
+    *   Description : Organisme public wallon chargé de définir, mettre en œuvre et piloter la stratégie numérique de la Wallonie (Digital Wallonia).
+*   **Wallonie Entreprendre (WE)**
+    *   URI : `https://pit.wallonie.be/id/organization/we`
+    *   Code : `ORG-WE`
+    *   Description : Outil financier et d'accompagnement économique au service des entreprises wallonnes (création, croissance, transition).
+*   **AWEX (Agence Wallonne à l'Exportation et aux Investissements Étrangers)**
+    *   URI : `https://pit.wallonie.be/id/organization/awex`
+    *   Code : `ORG-AWEX`
+    *   Description : Agence chargée de soutenir le développement international des entreprises wallonnes à l'étranger.
+*   **UCM (Union des Classes Moyennes)**
+    *   URI : `https://pit.wallonie.be/id/organization/ucm`
+    *   Code : `ORG-UCM`
+    *   Description : Mouvement patronal francophone de représentation et d'accompagnement des indépendants et PME (guichet d'entreprise).
+
+---
+
+## 📥 2. CANAUX D'ACCÈS (Channels)
+Définit les canaux de délivrance des services publics par lesquels un usager ou une entreprise peut initier des démarches ou être accompagné.
+
+*   **Plateforme Web**
+    *   URI : `https://pit.wallonie.be/id/channel/plateforme-web`
+    *   Code : `CH-WEB`
+    *   Description : Portail en ligne accessible 24/7 pour les démarches en ligne des PME.
+*   **Guichet Partenaire**
+    *   URI : `https://pit.wallonie.be/id/channel/guichet-partenaire`
+    *   Code : `CH-GUICHET`
+    *   Description : Bureau physique ou point d'accueil d'un partenaire de proximité.
+*   **Rendez-vous individuel**
+    *   URI : `https://pit.wallonie.be/id/channel/rdv-individuel`
+    *   Code : `CH-RDV`
+    *   Description : Entretien en face à face ou par visioconférence avec un conseiller spécialisé.
+*   **Support Téléphonique**
+    *   URI : `https://pit.wallonie.be/id/channel/telephone`
+    *   Code : `CH-PHONE`
+    *   Description : Ligne directe d'assistance téléphonique pour les entrepreneurs.
+
+---
+
+## 👥 3. PUBLICS CIBLES (Target Audiences)
+Représente les bénéficiaires éligibles aux services publics territoriaux.
+
+*   **PME wallonne**
+    *   URI : `https://pit.wallonie.be/id/target-audience/pme`
+    *   Code : `TA-PME`
+    *   Description : Petites et moyennes entreprises établies en Région wallonne (moins de 250 ETP).
+*   **Startup**
+    *   URI : `https://pit.wallonie.be/id/target-audience/startup`
+    *   Code : `TA-STARTUP`
+    *   Description : Jeunes entreprises innovantes à fort potentiel de croissance.
+*   **Indépendant**
+    *   URI : `https://pit.wallonie.be/id/target-audience/independant`
+    *   Code : `TA-INDEPENDANT`
+    *   Description : Personnes physiques exerçant une activité professionnelle sans contrat de travail.
+*   **Centre de recherche**
+    *   URI : `https://pit.wallonie.be/id/target-audience/centre-recherche`
+    *   Code : `TA-RESEARCH`
+    *   Description : Centres de recherche agréés et universités wallonnes.
+
+---
+
+## 💼 4. ÉVÉNEMENTS PROFESSIONNELS (Business Events)
+Événements ou jalons clés de la vie d'une entreprise qui déclenchent ou justifient le recours à des aides ou à des services d'accompagnement publics.
+
+*   **Transformation digitale d’une PME**
+    *   URI : `https://pit.wallonie.be/id/business-event/transformation-digitale`
+    *   Code : `BE-DIGITAL`
+    *   Description : Processus de numérisation des processus, des outils et de la culture d'entreprise.
+*   **Recherche de financement**
+    *   URI : `https://pit.wallonie.be/id/business-event/recherche-financement`
+    *   Code : `BE-FUNDING`
+    *   Description : Recherche d'aides publiques, de subventions, de prêts ou de levées de fonds.
+*   **Développement international**
+    *   URI : `https://pit.wallonie.be/id/business-event/developpement-international`
+    *   Code : `BE-EXPORT`
+    *   Description : Exportation de produits/services ou implantation commerciale sur des marchés étrangers.
+*   **Création d'entreprise**
+    *   URI : `https://pit.wallonie.be/id/business-event/creation-entreprise`
+    *   Code : `BE-CREATION`
+    *   Description : Lancement d'une nouvelle activité économique ou constitution juridique d'une société.
+
+---
+
+## 🧬 5. ÉVÉNEMENTS DE VIE (Life Events)
+Événements juridiques ou existentiels affectant la structure légale ou la continuité d'une entreprise.
+
+*   **Reprise / Transmission d'entreprise**
+    *   URI : `https://pit.wallonie.be/id/life-event/reprise-entreprise`
+    *   Code : `LE-TRANSFER`
+    *   Description : Cession d'une entreprise existante ou rachat d'une activité par un nouveau repreneur.
+
+---
+
+## 🌱 6. FILIÈRES ÉCONOMIQUES (Value Chains)
+Secteurs économiques et filières industrielles stratégiques de la Wallonie (en adéquation avec la stratégie de spécialisation intelligente S3).
+
+1.  **Agroalimentaire**
+    *   URI : `https://pit.wallonie.be/id/value-chain/agroalimentaire`
+    *   Description : Production agricole, transformation et distribution de produits alimentaires.
+2.  **Construction**
+    *   URI : `https://pit.wallonie.be/id/value-chain/construction`
+    *   Description : Bâtiment, travaux publics, éco-construction et infrastructures.
+3.  **Industrie 4.0**
+    *   URI : `https://pit.wallonie.be/id/value-chain/industrie-4-0`
+4.  **Biotech**
+    *   URI : `https://pit.wallonie.be/id/value-chain/biotech`
+5.  **Santé**
+    *   URI : `https://pit.wallonie.be/id/value-chain/sante`
+6.  **Hydrogène**
+    *   URI : `https://pit.wallonie.be/id/value-chain/hydrogene`
+7.  **Énergie**
+    *   URI : `https://pit.wallonie.be/id/value-chain/energie`
+8.  **Numérique**
+    *   URI : `https://pit.wallonie.be/id/value-chain/numerique`
+9.  **Logistique**
+    *   URI : `https://pit.wallonie.be/id/value-chain/logistique`
+10. **Tourisme**
+    *   URI : `https://pit.wallonie.be/id/value-chain/tourisme`
+
+---
+
+## ⚙️ 7. MAILLONS DE LA CHAÎNE DE VALEUR (Value Chain Stages)
+Découpage technique et fonctionnel des différentes phases opérationnelles d'une filière économique.
+
+*   **Recherche** (URI : `https://pit.wallonie.be/id/stage/recherche`)
+*   **Conception** (URI : `https://pit.wallonie.be/id/stage/conception`)
+*   **Production** (URI : `https://pit.wallonie.be/id/stage/production`)
+*   **Transformation** (URI : `https://pit.wallonie.be/id/stage/transformation`)
+*   **Assemblage** (URI : `https://pit.wallonie.be/id/stage/assemblage`)
+*   **Stockage** (URI : `https://pit.wallonie.be/id/stage/stockage`)
+*   **Distribution** (URI : `https://pit.wallonie.be/id/stage/distribution`)
+*   **Commercialisation** (URI : `https://pit.wallonie.be/id/stage/commercialisation`)
+*   **Export** (URI : `https://pit.wallonie.be/id/stage/export`)
+*   **Service après-vente** (URI : `https://pit.wallonie.be/id/stage/service-apres-vente`)
+*   **Recyclage** (URI : `https://pit.wallonie.be/id/stage/recyclage`)
+
+---
+
+## 🎭 8. RÔLES DANS L'ÉCOSYSTÈME (Ecosystem Roles)
+Positions fonctionnelles qu'une entreprise ou un acteur peut occuper au sein de son écosystème d'affaires.
+
+*   **Producteur** (URI : `https://pit.wallonie.be/id/role/producteur`)
+*   **Transformateur** (URI : `https://pit.wallonie.be/id/role/transformateur`)
+*   **Distributeur** (URI : `https://pit.wallonie.be/id/role/distributeur`)
+*   **Sous-traitant** (URI : `https://pit.wallonie.be/id/role/sous-traitant`)
+*   **Intégrateur** (URI : `https://pit.wallonie.be/id/role/integrateur`)
+*   **Centre de recherche** (URI : `https://pit.wallonie.be/id/role/centre-recherche`)
+*   **Cluster** (URI : `https://pit.wallonie.be/id/role/cluster`)
+*   **Financeur** (URI : `https://pit.wallonie.be/id/role/financeur`)
+*   **Accompagnateur** (URI : `https://pit.wallonie.be/id/role/accompagnateur`)
+*   **Pouvoir public** (URI : `https://pit.wallonie.be/id/role/pouvoir-public`)

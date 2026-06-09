@@ -95,3 +95,8 @@ Le script de seed injecte automatiquement un ensemble complet de relations inter
 2.  **Wallonie Entreprendre (WE)** ➡️ Offre l'accompagnement d'un coach numérique (co-financé à 150 €) et le service *« Recherche de financement innovation »* lié à l'événement *« Recherche de financement »*, produisant un *« Dossier de financement structuré »*.
 3.  **AWEX** ➡️ Offre le service de *« Support à l'internationalisation digitale »* ciblant l'événement *« Développement international »* et menant à une décision d'octroi de subsides pour l'export.
 4.  **UCM** ➡️ Offre l' *« Assistant administratif PME »* facilitant les formalités BCE lors de la création d'entreprise ou de la reprise (Life Event).
+
+---
+
+## 🚀 Modifications de Test
+- Modification de test pour GitHub Desktop effectuée le 9 juin 2026.

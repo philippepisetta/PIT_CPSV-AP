@@ -206,14 +206,14 @@ export default function ValueChainsPage() {
                         {catStages.map(stage => {
                           // Filtrer les services publics associés à ce maillon pour cette filière
                           const stageServices = services.filter(s => 
-                            s.stages.some(st => st.id === stage.id) &&
-                            s.filieresS3.some(f => f.id === selectedChain.id)
+                            s.stages?.some(st => st.id === stage.id) &&
+                            s.filieresS3?.some(f => f.id === selectedChain.id)
                           );
 
                           // Filtrer les entreprises associées à ce maillon pour cette filière
                           const stageBeneficiaries = beneficiaries.filter(b => 
-                            b.stages.some(st => st.id === stage.id) &&
-                            b.filieresS3.some(f => f.id === selectedChain.id)
+                            b.stages?.some(st => st.id === stage.id) &&
+                            b.filieresS3?.some(f => f.id === selectedChain.id)
                           );
 
                           return (

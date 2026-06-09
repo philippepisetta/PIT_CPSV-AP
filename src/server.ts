@@ -44,6 +44,7 @@ app.get('/api/services', async (req, res) => {
         },
         challenges: { select: { id: true, name: true } },
         filieresS3: { select: { id: true, name: true } },
+        stages: { select: { id: true } },
         interventionLevel: true,
       },
       orderBy: {
@@ -91,7 +92,7 @@ app.get('/api/meta', async (req, res) => {
       prisma.ecosystemRole.findMany({ orderBy: { name: 'asc' } }),
       prisma.businessNeed.findMany({ orderBy: { name: 'asc' } }),
       prisma.publicService.findMany({
-        include: { interventionLevel: true, challenges: true, filieresS3: true },
+        include: { interventionLevel: true, challenges: true, filieresS3: true, stages: true },
         orderBy: { name: 'asc' }
       }),
       prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } }),

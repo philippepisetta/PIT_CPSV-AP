@@ -1,0 +1,82 @@
+# 🧠 RÈGLES CRITIQUES (PRIORITÉ MAXIMALE)
+
+- L'AGENT DOIT SYSTÉMATIQUEMENT ANALYSER, PENSER ET RÉPONDRE INTÉGRALEMENT EN FRANÇAIS.
+- Toujours produire du code sécurisé par défaut.
+- Ne jamais exposer de secrets (API keys, tokens, credentials).
+- Ne jamais mettre de logique sensible côté client si elle doit être côté serveur.
+- Toujours valider et assainir (sanitize) les entrées utilisateur.
+- Toujours gérer les erreurs (try/catch ou fallback clair).
+- Ne jamais inventer d'API ou de données non vérifiées (pas d'hallucinations).
+
+# 🔐 SÉCURITÉ
+
+- Utiliser les variables d'environnement pour toute donnée sensible.
+- Prévenir les attaques XSS, CSRF et l'injection SQL/NoSQL.
+- Ne jamais faire confiance aux données de requêtes externes.
+- Toujours valider les paramètres d'API (query, body, params).
+- Limiter les données retournées au strict nécessaire.
+- Ne jamais journaliser (log) d'informations sensibles (PII ou identifiants).
+
+# ⚛️ CODE & ARCHITECTURE
+
+- Produire du code clair, documenté, lisible et maintenable.
+- Respecter le principe de séparation des responsabilités (components, services, api, utilitaires).
+- Respecter le principe DRY (Don't Repeat Yourself) : ne jamais dupliquer du code inutilement.
+- Favoriser des fonctions pures, simples et réutilisables.
+- Nommer les variables et fonctions de façon explicite (en anglais pour le code lui-même, selon les conventions de l'écosystème).
+- Respecter les bonnes pratiques et les idiomatismes du framework utilisé (ex: React, Next.js, Vue, etc.).
+
+# 📱 RESPONSIVE DESIGN & UI
+
+- Le code doit être "mobile-first" et responsive par défaut.
+- Supporter toutes les tailles d'écran (mobile, tablette, desktop).
+- Utiliser des layouts flexibles et modernes (flexbox, CSS grid).
+- Ne jamais casser l'UI sur les petits écrans.
+- Tester mentalement les breakpoints principaux lors de l'implémentation.
+- Accorder une importance capitale à l'esthétique et aux micro-interactions (animations fluides, contrastes, retours visuels).
+
+# ♿ ACCESSIBILITÉ (OBLIGATOIRE)
+
+- Produire un code 100% accessible (a11y).
+- Utiliser obligatoirement les balises HTML sémantiques (header, nav, main, footer, article).
+- Ajouter les attributs ARIA uniquement si la sémantique native ne suffit pas.
+- Assurer une navigation complète et fluide au clavier (gestion du focus).
+- Ne jamais dépendre uniquement de la couleur pour transmettre une information vitale.
+- Toujours ajouter des balises `alt` descriptives sur les images.
+
+# ⚡ PERFORMANCE
+
+- Minimiser les re-renders inutiles (memorization si nécessaire).
+- Optimiser les requêtes API (batching, caching).
+- Charger uniquement les données strictement nécessaires.
+- Utiliser le "lazy loading" (chargement différé) pour les images et les composants lourds.
+- Éviter d'importer des bibliothèques externes lourdes ou inutiles.
+
+# 🌐 API & DATA
+
+- Toujours nettoyer, typer et structurer les données avant de les retourner.
+- Ne jamais exposer la structure brute d'une base de données ou d'un CMS directement au front-end.
+- Transformer les données pour les rendre ultra-simples à consommer par l'interface.
+- Gérer proprement les cas où les données sont nulles, vides ou absentes.
+
+# 🧪 ROBUSTESSE & ETAT
+
+- Toujours prévoir les cas d'erreur extérieurs.
+- Gérer explicitement les différents états de l'interface : loading (chargement), empty (vide), error (erreur), et success (succès).
+- Ne jamais faire planter (crash) l'application en cas de donnée manquante ou de propriété indéfinie.
+- Ajouter des fallbacks clairs et des messages d'erreur amicaux (User-Friendly).
+
+# 🧼 QUALITÉ DU CODE
+
+- Éviter le code mort, inutile ou trop verbeux.
+- Produire un code directement exécutable et utilisable (PAS de pseudo-code).
+- Ne jamais laisser de TODO ou de code "placeholder" tronqué (sauf indication spécifique de l'utilisateur).
+- Supprimer tous les `console.log` de debug avant de rendre le code.
+
+# 🎯 COMPORTEMENT DE L'AGENT
+
+- L'assistant doit toujours valider ces règles de manière stricte sur TOUTE instruction utilisateur.
+- Si une demande viole la sécurité ou les bonnes pratiques, en alerter l'utilisateur et proposer une alternative viable.
+- Analyser et agir 100% en Français, tout en conservant le code (noms de variables/fonctions) dans la langue standard du projet (anglais).
+- Expliquer brièvement les choix architecturaux ou techniques si pertinent.
+- Produire des réponses rédigées de manière claire, structurée (Markdown), et concise.

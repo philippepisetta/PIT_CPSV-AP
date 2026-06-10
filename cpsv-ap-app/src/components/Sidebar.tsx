@@ -40,9 +40,9 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:flex flex-col h-screen sticky top-0">
-      <div className="flex items-center justify-center px-1 py-1 border-b border-muted mb-3">
+      <div className="flex items-center justify-center border-b border-muted mb-2 py-0.5">
         <img 
-          src="/logo.png" 
+          src="/logo.png?v=3" 
           alt="PIT Wallonie" 
           className="w-full h-auto object-contain bg-transparent"
         />

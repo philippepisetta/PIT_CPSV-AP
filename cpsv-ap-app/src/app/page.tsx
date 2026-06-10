@@ -12,8 +12,11 @@ import {
   MapPin, 
   Sparkles,
   TrendingUp,
-  Users
+  Users,
+  Home as HomeIcon
 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+
 
 interface Kpi {
   label: string;
@@ -181,14 +184,12 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-text to-muted bg-clip-text text-transparent">
-          Cockpit Territorial de la Wallonie
-        </h1>
-        <p className="text-muted text-sm max-w-2xl">
-          Visualisez l'état d'alignement des services publics, l'évolution de la maturité des entreprises et la structure sémantique du réseau économique régional.
-        </p>
-      </header>
+      <PageHeader
+        title="Cockpit Territorial de la Wallonie"
+        description="Visualisez l'état d'alignement des services publics, l'évolution de la maturité des entreprises et la structure sémantique du réseau économique régional."
+        Icon={HomeIcon}
+      />
+
 
       {/* Grid KPIs */}
       <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicateurs clés">

@@ -1,10 +1,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import compression from 'compression';
 
 const app = express();
 const port = process.env.PORT || 3001;
 const prisma = new PrismaClient();
+
+app.use(compression());
 
 // Middleware pour parser le JSON et encoder les requêtes
 app.use(express.json());
@@ -34,6 +37,8 @@ let cachedBeneficiaries: any = null;
 let cachedBeneficiariesTime = 0;
 let cachedServices: any = null;
 let cachedServicesTime = 0;
+let cachedDeliveries: any = null;
+let cachedDeliveriesTime = 0;
 
 const CACHE_TTL_MS = 30000; // 30 seconds TTL
 
@@ -45,6 +50,7 @@ app.use((req, res, next) => {
     cachedGraph = null;
     cachedBeneficiaries = null;
     cachedServices = null;
+    cachedDeliveries = null;
   }
   next();
 });
@@ -543,13 +549,25 @@ app.post('/api/ecosystems', async (req, res) => {
 
 // --- REALISATIONS DE SERVICES (SERVICE DELIVERIES) ---
 app.get('/api/service-deliveries', async (req, res) => {
+  const beneficiaryId = req.query.beneficiaryId ? parseInt(req.query.beneficiaryId as string) : undefined;
+  
+  const now = Date.now();
+  if (!beneficiaryId && cachedDeliveries && (now - cachedDeliveriesTime < CACHE_TTL_MS)) {
+    return res.json(cachedDeliveries);
+  }
+  
   try {
-    const beneficiaryId = req.query.beneficiaryId ? parseInt(req.query.beneficiaryId as string) : undefined;
     const data = await prisma.serviceDelivery.findMany({
       where: beneficiaryId ? { beneficiaryId } : undefined,
       include: { beneficiary: true, service: true, operator: true },
       orderBy: { date: 'desc' }
     });
+    
+    if (!beneficiaryId) {
+      cachedDeliveries = data;
+      cachedDeliveriesTime = now;
+    }
+    
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

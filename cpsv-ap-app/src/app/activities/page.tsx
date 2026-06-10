@@ -35,6 +35,7 @@ import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 import ReferenceSelector from "@/components/ui/ReferenceSelector";
 import MultiTagSelector from "@/components/ui/MultiTagSelector";
 import OutcomeEditor from "@/components/ui/OutcomeEditor";
+import { fetchWithCache, invalidateClientCache } from "@/lib/api";
 
 interface PublicService {
   id: number;
@@ -157,20 +158,16 @@ export default function ActivitiesPage() {
   const [secTerritory, setSecTerritory] = useState("Wallonie");
   const [secNotes, setSecNotes] = useState("");
 
-  async function loadData() {
+  async function loadData(bypassCache = false) {
     try {
-      setLoading(true);
-      const [metaRes, deliveryRes] = await Promise.all([
-        fetch("/api/meta"),
-        fetch("/api/service-deliveries")
-      ]);
-
-      if (!metaRes.ok || !deliveryRes.ok) {
-        throw new Error("Erreur lors de la récupération des activités.");
+      if (bypassCache) {
+        invalidateClientCache();
       }
-
-      const metaData = await metaRes.json();
-      const deliveriesData = await deliveryRes.json();
+      setLoading(true);
+      const [metaData, deliveriesData] = await Promise.all([
+        fetchWithCache<any>("/api/meta"),
+        fetchWithCache<ServiceDelivery[]>("/api/service-deliveries")
+      ]);
 
       setMeta({
         services: metaData.services || [],
@@ -248,7 +245,7 @@ export default function ActivitiesPage() {
       setColNotes("");
       setShowCollForm(false);
       
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err.message);
     }
@@ -292,11 +289,10 @@ export default function ActivitiesPage() {
       setSecSelectedOperatorIds([]);
       setSecCollabsCount("0");
       setSecDeliverables("");
-      setSecTerritory("Wallonie");
       setSecNotes("");
       setShowSecForm(false);
 
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err.message);
     }

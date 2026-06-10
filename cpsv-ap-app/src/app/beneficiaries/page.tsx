@@ -35,6 +35,7 @@ import MultiTagSelector from "@/components/ui/MultiTagSelector";
 import MaturitySelector from "@/components/ui/MaturitySelector";
 import OutcomeEditor from "@/components/ui/OutcomeEditor";
 import { cn } from "@/lib/utils";
+import { fetchWithCache, invalidateClientCache } from "@/lib/api";
 
 
 interface NaceSector {
@@ -178,18 +179,16 @@ export default function BeneficiariesPage() {
   const [delMaturityAfter, setDelMaturityAfter] = useState(2);
 
   // Charger les données
-  async function loadData() {
+  async function loadData(bypassCache = false) {
     try {
+      if (bypassCache) {
+        invalidateClientCache();
+      }
       setLoading(true);
-      const [bRes, mRes] = await Promise.all([
-        fetch("/api/beneficiaries"),
-        fetch("/api/meta")
+      const [bData, mData] = await Promise.all([
+        fetchWithCache<Beneficiary[]>("/api/beneficiaries"),
+        fetchWithCache<any>("/api/meta")
       ]);
-
-      if (!bRes.ok || !mRes.ok) throw new Error("Erreur de récupération des données.");
-      
-      const bData = await bRes.json();
-      const mData = await mRes.json();
 
       setBeneficiaries(bData);
       setMeta({
@@ -282,7 +281,7 @@ export default function BeneficiariesPage() {
       ]);
       setShowAddForm(false);
       
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err.message);
     }
@@ -332,7 +331,7 @@ export default function BeneficiariesPage() {
       setDelImpactText("");
       setShowDeliveryForm(false);
       
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err.message);
     }

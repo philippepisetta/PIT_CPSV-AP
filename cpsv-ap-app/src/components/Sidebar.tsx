@@ -40,7 +40,7 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:flex flex-col h-screen sticky top-0">
-      <div className="flex items-center justify-center px-1 py-4 border-b border-muted mb-6">
+      <div className="flex items-center justify-center px-1 py-1 border-b border-muted mb-3">
         <img 
           src="/logo.png" 
           alt="PIT Wallonie" 

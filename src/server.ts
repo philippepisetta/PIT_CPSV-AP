@@ -39,6 +39,10 @@ let cachedServices: any = null;
 let cachedServicesTime = 0;
 let cachedDeliveries: any = null;
 let cachedDeliveriesTime = 0;
+let cachedStrategies: any = null;
+let cachedStrategiesTime = 0;
+let cachedPilotage: any = null;
+let cachedPilotageTime = 0;
 
 const CACHE_TTL_MS = 30000; // 30 seconds TTL
 
@@ -51,6 +55,8 @@ app.use((req, res, next) => {
     cachedBeneficiaries = null;
     cachedServices = null;
     cachedDeliveries = null;
+    cachedStrategies = null;
+    cachedPilotage = null;
   }
   next();
 });
@@ -128,7 +134,16 @@ app.get('/api/meta', async (req, res) => {
       datasets,
       knowledgeAssets,
       actionInstances,
-      journeyEnrollments
+      journeyEnrollments,
+      strategies,
+      strategicPriorities,
+      programs,
+      measures,
+      initiatives,
+      beneficiaryEngagements,
+      outcomeIndicators,
+      impacts,
+      fundingInstruments
     ] = await Promise.all([
       prisma.organization.findMany({ orderBy: { name: 'asc' } }),
       prisma.channel.findMany({ orderBy: { name: 'asc' } }),
@@ -141,13 +156,16 @@ app.get('/api/meta', async (req, res) => {
       prisma.ecosystemRole.findMany({ orderBy: { name: 'asc' } }),
       prisma.businessNeed.findMany({ orderBy: { name: 'asc' } }),
       prisma.publicService.findMany({
-        include: { interventionLevel: true, challenges: true, filieresS3: true, stages: true },
+        include: { interventionLevel: true, challenges: true, filieresS3: true, stages: true, initiatives: true },
         orderBy: { name: 'asc' }
       }),
       prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } }),
       prisma.enterpriseFunction.findMany({ orderBy: { name: 'asc' } }),
       prisma.naceSector.findMany({ orderBy: { code: 'asc' } }),
-      prisma.ecosystem.findMany({ orderBy: { name: 'asc' } }),
+      prisma.ecosystem.findMany({
+        include: { actors: true, services: true, journeys: true, filieresS3: true, territories: true },
+        orderBy: { name: 'asc' }
+      }),
       prisma.interventionLevel.findMany({ orderBy: { id: 'asc' } }),
       prisma.collectiveDelivery.findMany({
         include: { service: true, operator: true, companies: true },
@@ -159,7 +177,10 @@ app.get('/api/meta', async (req, res) => {
       }),
       prisma.interventionType.findMany({ orderBy: { name: 'asc' } }),
       prisma.ecosystemType.findMany({ orderBy: { name: 'asc' } }),
-      prisma.territory.findMany({ orderBy: { name: 'asc' } }),
+      prisma.territory.findMany({
+        include: { parentTerritory: true },
+        orderBy: { name: 'asc' }
+      }),
       prisma.eventResource.findMany({
         include: { ecosystems: true, publicServices: true },
         orderBy: { startDate: 'desc' }
@@ -169,7 +190,7 @@ app.get('/api/meta', async (req, res) => {
         orderBy: { title: 'asc' }
       }),
       prisma.knowledgeAsset.findMany({
-        include: { publicServices: true, ecosystems: true, eventResources: true },
+        include: { publicServices: true, ecosystems: true, eventResources: true, programs: true, initiatives: true },
         orderBy: { title: 'asc' }
       }),
       prisma.actionInstance.findMany({
@@ -179,6 +200,40 @@ app.get('/api/meta', async (req, res) => {
       prisma.journeyEnrollment.findMany({
         include: { beneficiary: true, journey: true, currentStage: true },
         orderBy: { startDate: 'desc' }
+      }),
+      prisma.strategy.findMany({
+        include: { priorities: true, ownerOrganization: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.strategicPriority.findMany({
+        include: { strategy: true, programs: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.program.findMany({
+        include: { strategies: true, ownerOrganization: true, measures: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.measure.findMany({
+        include: { programs: true, initiatives: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.initiative.findMany({
+        include: { measure: true, leadOrganization: true, publicServices: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.beneficiaryEngagement.findMany({
+        include: { beneficiary: true, initiative: true, ecosystem: true, territory: true },
+        orderBy: { startDate: 'desc' }
+      }),
+      prisma.outcomeIndicator.findMany({
+        orderBy: { name: 'asc' }
+      }),
+      prisma.impact.findMany({
+        include: { beneficiary: true, indicator: true, territory: true, valueChain: true },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.fundingInstrument.findMany({
+        orderBy: { name: 'asc' }
       })
     ]);
 
@@ -208,7 +263,16 @@ app.get('/api/meta', async (req, res) => {
       datasets,
       knowledgeAssets,
       actionInstances,
-      journeyEnrollments
+      journeyEnrollments,
+      strategies,
+      strategicPriorities,
+      programs,
+      measures,
+      initiatives,
+      beneficiaryEngagements,
+      outcomeIndicators,
+      impacts,
+      fundingInstruments
     };
     cachedMeta = data;
     cachedMetaTime = now;
@@ -1241,31 +1305,81 @@ app.get('/api/graph', async (req, res) => {
     return res.json(cachedGraph);
   }
   try {
-    const [beneficiaries, services, journeys, ecosystems, organizations, challenges, valueChains, datasets, knowledgeAssets, eventResources, actionInstances] = await Promise.all([
+    const [
+      beneficiaries,
+      services,
+      journeys,
+      ecosystems,
+      organizations,
+      challenges,
+      valueChains,
+      datasets,
+      knowledgeAssets,
+      eventResources,
+      actionInstances,
+      strategies,
+      strategicPriorities,
+      programs,
+      measures,
+      initiatives,
+      beneficiaryEngagements,
+      outcomeIndicators,
+      impacts,
+      fundingInstruments,
+      territories
+    ] = await Promise.all([
       prisma.beneficiary.findMany({
         include: { challenges: true, filieresS3: true, stages: true, needs: true, enrolledJourneys: true, deliveries: true }
       }),
       prisma.publicService.findMany({
-        include: { organization: true, challenges: true, filieresS3: true, stages: true }
+        include: { organization: true, challenges: true, filieresS3: true, stages: true, initiatives: true }
       }),
       prisma.journey.findMany({
         include: { challenges: true, filieresS3: true, stages: { include: { services: true } } }
       }),
       prisma.ecosystem.findMany({
-        include: { actors: true, services: true, journeys: true, filieresS3: true }
+        include: { actors: true, services: true, journeys: true, filieresS3: true, territories: true }
       }),
       prisma.organization.findMany(),
       prisma.businessChallenge.findMany(),
       prisma.strategicValueChain.findMany(),
       prisma.dataset.findMany(),
       prisma.knowledgeAsset.findMany({
-        include: { publicServices: true, ecosystems: true, eventResources: true }
+        include: { publicServices: true, ecosystems: true, eventResources: true, programs: true, initiatives: true }
       }),
       prisma.eventResource.findMany({
         include: { ecosystems: true, publicServices: true }
       }),
       prisma.actionInstance.findMany({
         include: { deliveries: true }
+      }),
+      prisma.strategy.findMany({
+        include: { priorities: true, ownerOrganization: true }
+      }),
+      prisma.strategicPriority.findMany({
+        include: { strategy: true, programs: true, measures: true, initiatives: true }
+      }),
+      prisma.program.findMany({
+        include: { strategies: true, priorities: true, measures: true, territories: true }
+      }),
+      prisma.measure.findMany({
+        include: { programs: true, initiatives: true }
+      }),
+      prisma.initiative.findMany({
+        include: { measure: true, leadOrganization: true, publicServices: true, territories: true }
+      }),
+      prisma.beneficiaryEngagement.findMany({
+        include: { beneficiary: true, initiative: true, ecosystem: true, territory: true, filieresS3: true }
+      }),
+      prisma.outcomeIndicator.findMany(),
+      prisma.impact.findMany({
+        include: { beneficiary: true, indicator: true, territory: true, valueChain: true }
+      }),
+      prisma.fundingInstrument.findMany({
+        include: { strategies: true, programs: true, measures: true, initiatives: true, services: true, beneficiaries: true }
+      }),
+      prisma.territory.findMany({
+        include: { parentTerritory: true }
       })
     ]);
 
@@ -1303,6 +1417,9 @@ app.get('/api/graph', async (req, res) => {
         if (del.status === 'COMPLETED') {
           addEdge(bId, `service-${del.serviceId}`, 'UTILISE');
         }
+      }
+      if (b.territoryId) {
+        addEdge(bId, `territory-${b.territoryId}`, 'SITUE_DANS');
       }
     }
 
@@ -1373,6 +1490,9 @@ app.get('/api/graph', async (req, res) => {
       for (const f of e.filieresS3) {
         addEdge(eId, `valuechain-${f.id}`, 'APPARTIENT_A');
       }
+      for (const t of e.territories) {
+        addEdge(eId, `territory-${t.id}`, 'COUVERTURE_TERRITORIALE');
+      }
     }
 
     // 7. Datasets
@@ -1395,6 +1515,12 @@ app.get('/api/graph', async (req, res) => {
       for (const evt of ka.eventResources) {
         addEdge(kaId, `event-${evt.id}`, 'PRODUIT_PAR');
       }
+      for (const prog of ka.programs) {
+        addEdge(kaId, `program-${prog.id}`, 'DOCUMENTE_PROGRAMME');
+      }
+      for (const init of ka.initiatives) {
+        addEdge(kaId, `initiative-${init.id}`, 'DOCUMENTE_INITIATIVE');
+      }
     }
 
     // 9. Event Resources
@@ -1409,7 +1535,7 @@ app.get('/api/graph', async (req, res) => {
       }
     }
 
-    // 10. Action Instances (Engagements)
+    // 10. Action Instances (Engagements Rétrocompatibilité)
     for (const ai of actionInstances) {
       const aiId = `actioninstance-${ai.id}`;
       addNode(aiId, ai.title, 'actioninstance', { status: ai.status, objective: ai.objective });
@@ -1423,6 +1549,121 @@ app.get('/api/graph', async (req, res) => {
       for (const del of ai.deliveries) {
         addEdge(aiId, `service-${del.serviceId}`, 'CONTIENT_SERVICE');
       }
+    }
+
+    // 11. Stratégies
+    for (const st of strategies) {
+      const stId = `strategy-${st.id}`;
+      addNode(stId, st.name, 'strategy', { code: st.code, status: st.status });
+      if (st.ownerOrganizationId) {
+        addEdge(stId, `org-${st.ownerOrganizationId}`, 'PORTE_PAR');
+      }
+    }
+
+    // 12. Priorités Stratégiques
+    for (const p of strategicPriorities) {
+      const pId = `priority-${p.id}`;
+      addNode(pId, p.name, 'strategicpriority', { code: p.code });
+      addEdge(pId, `strategy-${p.strategyId}`, 'CONTIENT_PRIORITE');
+      for (const prog of p.programs) {
+        addEdge(pId, `program-${prog.id}`, 'PREVOIT_PROGRAMME');
+      }
+    }
+
+    // 13. Programmes
+    for (const prog of programs) {
+      const progId = `program-${prog.id}`;
+      addNode(progId, prog.name, 'program', { code: prog.code, budget: prog.budget, status: prog.status });
+      for (const strat of prog.strategies) {
+        addEdge(progId, `strategy-${strat.id}`, 'APPARTIENT_A');
+      }
+      for (const prio of prog.priorities) {
+        addEdge(progId, `priority-${prio.id}`, 'APPARTIENT_A');
+      }
+      for (const t of prog.territories) {
+        addEdge(progId, `territory-${t.id}`, 'COUVERTURE_TERRITORIALE');
+      }
+    }
+
+    // 14. Mesures
+    for (const m of measures) {
+      const mId = `measure-${m.id}`;
+      addNode(mId, m.name, 'measure', { code: m.code, budget: m.budget });
+      for (const prog of m.programs) {
+        addEdge(`program-${prog.id}`, mId, 'CONTIENT_MESURE');
+      }
+    }
+
+    // 15. Initiatives
+    for (const init of initiatives) {
+      const initId = `initiative-${init.id}`;
+      addNode(initId, init.name, 'initiative', { code: init.code, status: init.status });
+      addEdge(initId, `measure-${init.measureId}`, 'CONTIENT_INITIATIVE');
+      if (init.leadOrganizationId) {
+        addEdge(initId, `org-${init.leadOrganizationId}`, 'PILOTE_PAR');
+      }
+      for (const s of init.publicServices) {
+        addEdge(initId, `service-${s.id}`, 'SOUTIENT_SERVICE');
+      }
+      for (const t of init.territories) {
+        addEdge(initId, `territory-${t.id}`, 'COUVERTURE_TERRITORIALE');
+      }
+    }
+
+    // 16. Territoires
+    for (const t of territories) {
+      const tId = `territory-${t.id}`;
+      addNode(tId, t.name, 'territory', { code: t.code, type: t.type });
+      if (t.parentTerritoryId) {
+        addEdge(tId, `territory-${t.parentTerritoryId}`, 'SOUS_TERRITOIRE_DE');
+      }
+    }
+
+    // 17. Engagements Bénéficiaires (Nouveau modèle)
+    for (const eng of beneficiaryEngagements) {
+      const engId = `engagement-${eng.id}`;
+      addNode(engId, eng.title, 'beneficiaryengagement', { status: eng.status, objective: eng.objective });
+      addEdge(`beneficiary-${eng.beneficiaryId}`, engId, 'ENGAGE_BENEFICIAIRE');
+      if (eng.initiativeId) {
+        addEdge(engId, `initiative-${eng.initiativeId}`, 'REALISE_INITIATIVE');
+      }
+      if (eng.ecosystemId) {
+        addEdge(engId, `ecosystem-${eng.ecosystemId}`, 'ACCOMPAGNE_PAR');
+      }
+      if (eng.territoryId) {
+        addEdge(engId, `territory-${eng.territoryId}`, 'SITUE_DANS');
+      }
+    }
+
+    // 18. Indicateurs & Impacts Réels
+    for (const ind of outcomeIndicators) {
+      addNode(`indicator-${ind.id}`, ind.name, 'outcomeindicator', { unit: ind.unit });
+    }
+
+    for (const imp of impacts) {
+      const impId = `impact-${imp.id}`;
+      const label = imp.numericValue !== null ? `${imp.numericValue} ${imp.indicator.unit}` : (imp.textValue || 'Impact');
+      addNode(impId, label, 'impact', { textValue: imp.textValue, numericValue: imp.numericValue });
+      addEdge(impId, `beneficiary-${imp.beneficiaryId}`, 'CONSTATE_SUR');
+      addEdge(impId, `indicator-${imp.indicatorId}`, 'MESURE_PAR');
+      if (imp.territoryId) {
+        addEdge(impId, `territory-${imp.territoryId}`, 'LIE_AU_TERRITOIRE');
+      }
+      if (imp.valueChainId) {
+        addEdge(impId, `valuechain-${imp.valueChainId}`, 'ORIENTE_FILIERE');
+      }
+    }
+
+    // 19. Instruments de Financement
+    for (const fi of fundingInstruments) {
+      const fiId = `funding-${fi.id}`;
+      addNode(fiId, fi.name, 'fundinginstrument', { type: fi.type });
+      for (const strat of fi.strategies) addEdge(fiId, `strategy-${strat.id}`, 'FINANCE_STRATEGIE');
+      for (const prog of fi.programs) addEdge(fiId, `program-${prog.id}`, 'FINANCE_PROGRAMME');
+      for (const m of fi.measures) addEdge(fiId, `measure-${m.id}`, 'FINANCE_MESURE');
+      for (const init of fi.initiatives) addEdge(fiId, `initiative-${init.id}`, 'FINANCE_INITIATIVE');
+      for (const s of fi.services) addEdge(fiId, `service-${s.id}`, 'FINANCE_SERVICE');
+      for (const b of fi.beneficiaries) addEdge(fiId, `beneficiary-${b.id}`, 'ATTRIBUE_A');
     }
 
     const data = { nodes, edges };
@@ -1656,9 +1897,47 @@ app.patch('/api/journey-enrollments/:id', async (req, res) => {
 app.get('/api/territories', async (req, res) => {
   try {
     const items = await prisma.territory.findMany({
+      include: { parentTerritory: true, childTerritories: true },
       orderBy: { name: 'asc' }
     });
     res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/territories', async (req, res) => {
+  try {
+    const { name, type, code, parentTerritoryId, description } = req.body;
+    const item = await prisma.territory.create({
+      data: {
+        name,
+        type,
+        code,
+        parentTerritoryId: parentTerritoryId ? parseInt(parentTerritoryId) : null,
+        description
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/territories/:id', async (req, res) => {
+  try {
+    const { name, type, code, parentTerritoryId, description } = req.body;
+    const item = await prisma.territory.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name,
+        type,
+        code,
+        parentTerritoryId: parentTerritoryId !== undefined ? (parentTerritoryId ? parseInt(parentTerritoryId) : null) : undefined,
+        description
+      }
+    });
+    res.json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -1696,6 +1975,692 @@ app.post('/api/interventions', async (req, res) => {
   }
 });
 
+// --- STRATEGIES ---
+app.get('/api/strategies', async (req, res) => {
+  const now = Date.now();
+  if (cachedStrategies && (now - cachedStrategiesTime < CACHE_TTL_MS)) {
+    return res.json(cachedStrategies);
+  }
+  try {
+    const items = await prisma.strategy.findMany({
+      include: {
+        ownerOrganization: true,
+        priorities: {
+          include: {
+            programs: true,
+            measures: true
+          }
+        },
+        programs: {
+          include: {
+            measures: {
+              include: {
+                initiatives: true
+              }
+            }
+          }
+        },
+        filieresS3: true,
+        fundingInstruments: true
+      },
+      orderBy: { name: 'asc' }
+    });
+    cachedStrategies = items;
+    cachedStrategiesTime = now;
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/strategies/:id', async (req, res) => {
+  try {
+    const item = await prisma.strategy.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        ownerOrganization: true,
+        priorities: {
+          include: {
+            programs: true,
+            measures: true,
+            initiatives: true
+          }
+        },
+        programs: {
+          include: {
+            measures: {
+              include: {
+                initiatives: true
+              }
+            },
+            participations: {
+              include: { organization: true }
+            }
+          }
+        },
+        filieresS3: true,
+        fundingInstruments: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Stratégie non trouvée' });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/strategies', async (req, res) => {
+  try {
+    const { name, code, description, ownerOrganizationId, startDate, endDate, status, website, filiereS3Ids, fundingIds } = req.body;
+    const item = await prisma.strategy.create({
+      data: {
+        name,
+        code,
+        description,
+        ownerOrganizationId: ownerOrganizationId ? parseInt(ownerOrganizationId) : null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'ACTIVE',
+        website,
+        filieresS3: filiereS3Ids ? { connect: filiereS3Ids.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        fundingInstruments: fundingIds ? { connect: fundingIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        uri: `https://pit.wallonie.be/id/strategy/${(code || name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+      },
+      include: { ownerOrganization: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/strategies/:id', async (req, res) => {
+  try {
+    const { name, code, description, ownerOrganizationId, startDate, endDate, status, website, filiereS3Ids, fundingIds } = req.body;
+    const item = await prisma.strategy.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name,
+        code,
+        description,
+        ownerOrganizationId: ownerOrganizationId !== undefined ? (ownerOrganizationId ? parseInt(ownerOrganizationId) : null) : undefined,
+        startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        status,
+        website,
+        filieresS3: filiereS3Ids ? { set: filiereS3Ids.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        fundingInstruments: fundingIds ? { set: fundingIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { ownerOrganization: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- STRATEGIC PRIORITIES ---
+app.post('/api/strategic-priorities', async (req, res) => {
+  try {
+    const { strategyId, code, name, description, status } = req.body;
+    const item = await prisma.strategicPriority.create({
+      data: {
+        strategyId: parseInt(strategyId),
+        code,
+        name,
+        description,
+        status: status || 'ACTIVE'
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/strategic-priorities/:id', async (req, res) => {
+  try {
+    const { code, name, description, status } = req.body;
+    const item = await prisma.strategicPriority.update({
+      where: { id: parseInt(req.params.id) },
+      data: { code, name, description, status }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- PROGRAMS ---
+app.get('/api/programs', async (req, res) => {
+  try {
+    const items = await prisma.program.findMany({
+      include: { strategies: true, priorities: true, ownerOrganization: true, measures: true, territories: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/programs', async (req, res) => {
+  try {
+    const { name, code, description, ownerOrganizationId, startDate, endDate, budget, status, strategyIds, priorityIds, territoryIds } = req.body;
+    const item = await prisma.program.create({
+      data: {
+        name,
+        code,
+        description,
+        ownerOrganizationId: ownerOrganizationId ? parseInt(ownerOrganizationId) : null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        budget: budget ? parseFloat(budget) : null,
+        status: status || 'PLANNED',
+        strategies: strategyIds ? { connect: strategyIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        priorities: priorityIds ? { connect: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        territories: territoryIds ? { connect: territoryIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { ownerOrganization: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/programs/:id', async (req, res) => {
+  try {
+    const { name, code, description, ownerOrganizationId, startDate, endDate, budget, status, strategyIds, priorityIds, territoryIds } = req.body;
+    const item = await prisma.program.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name,
+        code,
+        description,
+        ownerOrganizationId: ownerOrganizationId !== undefined ? (ownerOrganizationId ? parseInt(ownerOrganizationId) : null) : undefined,
+        startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        budget: budget !== undefined ? (budget ? parseFloat(budget) : null) : undefined,
+        status,
+        strategies: strategyIds ? { set: strategyIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        priorities: priorityIds ? { set: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        territories: territoryIds ? { set: territoryIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { ownerOrganization: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- MEASURES ---
+app.get('/api/measures', async (req, res) => {
+  try {
+    const items = await prisma.measure.findMany({
+      include: { programs: true, priorities: true, initiatives: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/measures', async (req, res) => {
+  try {
+    const { name, code, description, budget, status, programIds, priorityIds } = req.body;
+    const item = await prisma.measure.create({
+      data: {
+        name,
+        code,
+        description,
+        budget: budget ? parseFloat(budget) : null,
+        status: status || 'ACTIVE',
+        programs: programIds ? { connect: programIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        priorities: priorityIds ? { connect: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/measures/:id', async (req, res) => {
+  try {
+    const { name, code, description, budget, status, programIds, priorityIds } = req.body;
+    const item = await prisma.measure.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name,
+        code,
+        description,
+        budget: budget !== undefined ? (budget ? parseFloat(budget) : null) : undefined,
+        status,
+        programs: programIds ? { set: programIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        priorities: priorityIds ? { set: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- INITIATIVES ---
+app.get('/api/initiatives', async (req, res) => {
+  try {
+    const items = await prisma.initiative.findMany({
+      include: { measure: true, leadOrganization: true, publicServices: true, territories: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/initiatives', async (req, res) => {
+  try {
+    const { measureId, name, code, description, leadOrganizationId, startDate, endDate, status, priorityIds, ecosystemIds, filiereIds, territoryIds, serviceIds } = req.body;
+    const item = await prisma.initiative.create({
+      data: {
+        measureId: parseInt(measureId),
+        name,
+        code,
+        description,
+        leadOrganizationId: leadOrganizationId ? parseInt(leadOrganizationId) : null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'PLANNED',
+        priorities: priorityIds ? { connect: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        ecosystems: ecosystemIds ? { connect: ecosystemIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieresS3: filiereIds ? { connect: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        territories: territoryIds ? { connect: territoryIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        publicServices: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { leadOrganization: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/initiatives/:id', async (req, res) => {
+  try {
+    const { name, code, description, leadOrganizationId, startDate, endDate, status, priorityIds, ecosystemIds, filiereIds, territoryIds, serviceIds } = req.body;
+    const item = await prisma.initiative.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name,
+        code,
+        description,
+        leadOrganizationId: leadOrganizationId !== undefined ? (leadOrganizationId ? parseInt(leadOrganizationId) : null) : undefined,
+        startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        status,
+        priorities: priorityIds ? { set: priorityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        ecosystems: ecosystemIds ? { set: ecosystemIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieresS3: filiereIds ? { set: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        territories: territoryIds ? { set: territoryIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        publicServices: serviceIds ? { set: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { leadOrganization: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- PARTICIPATIONS ---
+app.post('/api/program-participations', async (req, res) => {
+  try {
+    const { programId, organizationId, role, startDate, endDate, status } = req.body;
+    const item = await prisma.programParticipation.create({
+      data: {
+        programId: parseInt(programId),
+        organizationId: parseInt(organizationId),
+        role,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'ACTIVE'
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/initiative-participations', async (req, res) => {
+  try {
+    const { initiativeId, organizationId, role, startDate, endDate, status } = req.body;
+    const item = await prisma.initiativeParticipation.create({
+      data: {
+        initiativeId: parseInt(initiativeId),
+        organizationId: parseInt(organizationId),
+        role,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'ACTIVE'
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- BENEFICIARY ENGAGEMENTS ---
+app.get('/api/beneficiary-engagements', async (req, res) => {
+  try {
+    const items = await prisma.beneficiaryEngagement.findMany({
+      include: { beneficiary: true, initiative: true, ecosystem: true, territory: true, filieresS3: true },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/beneficiary-engagements', async (req, res) => {
+  try {
+    const { beneficiaryId, journeyId, initiativeId, ecosystemId, territoryId, title, objective, status, startDate, endDate, filiereIds } = req.body;
+    const item = await prisma.beneficiaryEngagement.create({
+      data: {
+        beneficiaryId: parseInt(beneficiaryId),
+        journeyId: journeyId ? parseInt(journeyId) : null,
+        initiativeId: initiativeId ? parseInt(initiativeId) : null,
+        ecosystemId: ecosystemId ? parseInt(ecosystemId) : null,
+        territoryId: territoryId ? parseInt(territoryId) : null,
+        title,
+        objective,
+        status: status || 'PLANNED',
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        filieresS3: filiereIds ? { connect: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { beneficiary: true, initiative: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/beneficiary-engagements/:id', async (req, res) => {
+  try {
+    const { title, objective, status, startDate, endDate, initiativeId, ecosystemId, territoryId, filiereIds } = req.body;
+    const item = await prisma.beneficiaryEngagement.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        title,
+        objective,
+        status,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+        initiativeId: initiativeId !== undefined ? (initiativeId ? parseInt(initiativeId) : null) : undefined,
+        ecosystemId: ecosystemId !== undefined ? (ecosystemId ? parseInt(ecosystemId) : null) : undefined,
+        territoryId: territoryId !== undefined ? (territoryId ? parseInt(territoryId) : null) : undefined,
+        filieresS3: filiereIds ? { set: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      },
+      include: { beneficiary: true, initiative: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- OUTCOME INDICATORS ---
+app.get('/api/outcome-indicators', async (req, res) => {
+  try {
+    const items = await prisma.outcomeIndicator.findMany({
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/outcome-indicators', async (req, res) => {
+  try {
+    const { name, unit, description } = req.body;
+    const item = await prisma.outcomeIndicator.create({
+      data: { name, unit, description }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- IMPACTS ---
+app.get('/api/impacts', async (req, res) => {
+  try {
+    const items = await prisma.impact.findMany({
+      include: { beneficiary: true, indicator: true, territory: true, valueChain: true },
+      orderBy: { date: 'desc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/impacts', async (req, res) => {
+  try {
+    const { beneficiaryId, indicatorId, numericValue, textValue, territoryId, valueChainId, date, evidence } = req.body;
+    const item = await prisma.impact.create({
+      data: {
+        beneficiaryId: parseInt(beneficiaryId),
+        indicatorId: parseInt(indicatorId),
+        numericValue: numericValue ? parseFloat(numericValue) : null,
+        textValue,
+        territoryId: territoryId ? parseInt(territoryId) : null,
+        valueChainId: valueChainId ? parseInt(valueChainId) : null,
+        date: date ? new Date(date) : new Date(),
+        evidence
+      },
+      include: { beneficiary: true, indicator: true }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/impacts/:id', async (req, res) => {
+  try {
+    const { numericValue, textValue, territoryId, valueChainId, date, evidence } = req.body;
+    const item = await prisma.impact.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        numericValue: numericValue !== undefined ? (numericValue ? parseFloat(numericValue) : null) : undefined,
+        textValue,
+        territoryId: territoryId !== undefined ? (territoryId ? parseInt(territoryId) : null) : undefined,
+        valueChainId: valueChainId !== undefined ? (valueChainId ? parseInt(valueChainId) : null) : undefined,
+        date: date ? new Date(date) : undefined,
+        evidence
+      },
+      include: { beneficiary: true, indicator: true }
+    });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- FUNDING INSTRUMENTS ---
+app.get('/api/funding-instruments', async (req, res) => {
+  try {
+    const items = await prisma.fundingInstrument.findMany({
+      include: { strategies: true, programs: true, measures: true, initiatives: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/funding-instruments', async (req, res) => {
+  try {
+    const { name, type, description, strategyIds, programIds, measureIds, initiativeIds } = req.body;
+    const item = await prisma.fundingInstrument.create({
+      data: {
+        name,
+        type,
+        description,
+        strategies: strategyIds ? { connect: strategyIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        programs: programIds ? { connect: programIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        measures: measureIds ? { connect: measureIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        initiatives: initiativeIds ? { connect: initiativeIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      }
+    });
+    res.status(201).json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- PILOTAGE DASHBOARD (ANALYTICS) ---
+app.get('/api/pilotage', async (req, res) => {
+  const filiereId = req.query.filiereS3Id ? parseInt(req.query.filiereS3Id as string) : undefined;
+  const territoryId = req.query.territoryId ? parseInt(req.query.territoryId as string) : undefined;
+
+  const now = Date.now();
+  if (!filiereId && !territoryId && cachedPilotage && (now - cachedPilotageTime < CACHE_TTL_MS)) {
+    return res.json(cachedPilotage);
+  }
+
+  try {
+    const beneficiaryWhere: any = {};
+    const impactWhere: any = {};
+    const initiativeWhere: any = {};
+
+    if (filiereId) {
+      beneficiaryWhere.filieresS3 = { some: { id: filiereId } };
+      impactWhere.valueChainId = filiereId;
+      initiativeWhere.filieresS3 = { some: { id: filiereId } };
+    }
+
+    if (territoryId) {
+      beneficiaryWhere.territoryId = territoryId;
+      impactWhere.territoryId = territoryId;
+      initiativeWhere.territories = { some: { id: territoryId } };
+    }
+
+    const [
+      strategiesCount,
+      programsCount,
+      measuresCount,
+      initiativesCount,
+      totalBudgetAgg,
+      beneficiariesCount,
+      impactsCount,
+      allImpacts,
+      allBeneficiaries,
+      allValueChains,
+      allIndicators
+    ] = await Promise.all([
+      prisma.strategy.count(),
+      prisma.program.count(),
+      prisma.measure.count(),
+      prisma.initiative.count({ where: initiativeWhere }),
+      prisma.program.aggregate({ _sum: { budget: true } }),
+      prisma.beneficiary.count({ where: beneficiaryWhere }),
+      prisma.impact.count({ where: impactWhere }),
+      prisma.impact.findMany({
+        where: impactWhere,
+        include: { beneficiary: true, indicator: true, territory: true, valueChain: true },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.beneficiary.findMany({
+        where: beneficiaryWhere,
+        include: { territory: true, primaryNaceSector: true, filieresS3: true }
+      }),
+      prisma.strategicValueChain.findMany({
+        include: { _count: { select: { beneficiaries: true, services: true, impacts: true } } }
+      }),
+      prisma.outcomeIndicator.findMany()
+    ]);
+
+    const indicatorSummary = allIndicators.map(ind => {
+      const relatedImpacts = allImpacts.filter(imp => imp.indicatorId === ind.id);
+      const totalNumeric = relatedImpacts.reduce((sum, imp) => sum + (imp.numericValue || 0), 0);
+      const qualitativeText = relatedImpacts.filter(imp => imp.textValue).map(imp => `${imp.beneficiary.name}: ${imp.textValue}`);
+      return {
+        id: ind.id,
+        name: ind.name,
+        unit: ind.unit,
+        totalValue: totalNumeric,
+        impactsCount: relatedImpacts.length,
+        examples: qualitativeText.slice(0, 5)
+      };
+    });
+
+    const provinceDistribution: Record<string, { beneficiaries: number, impacts: number }> = {};
+    allBeneficiaries.forEach(b => {
+      const prov = b.province || 'Non localisé';
+      if (!provinceDistribution[prov]) provinceDistribution[prov] = { beneficiaries: 0, impacts: 0 };
+      provinceDistribution[prov].beneficiaries++;
+    });
+    allImpacts.forEach(imp => {
+      const prov = imp.territory?.name || 'Wallonie';
+      if (!provinceDistribution[prov]) provinceDistribution[prov] = { beneficiaries: 0, impacts: 0 };
+      provinceDistribution[prov].impacts++;
+    });
+
+    const valueChainStats = allValueChains.map(vc => ({
+      id: vc.id,
+      name: vc.name,
+      beneficiariesCount: vc._count.beneficiaries,
+      servicesCount: vc._count.services,
+      impactsCount: vc._count.impacts
+    }));
+
+    const result = {
+      kpis: {
+        strategiesCount,
+        programsCount,
+        measuresCount,
+        initiativesCount,
+        totalBudget: totalBudgetAgg._sum.budget || 0,
+        beneficiariesCount,
+        impactsCount
+      },
+      indicatorSummary,
+      provinceDistribution,
+      valueChainStats,
+      latestImpacts: allImpacts.slice(0, 10).map(imp => ({
+        id: imp.id,
+        beneficiaryName: imp.beneficiary.name,
+        indicatorName: imp.indicator.name,
+        value: imp.numericValue !== null ? `${imp.numericValue} ${imp.indicator.unit}` : imp.textValue,
+        territoryName: imp.territory?.name || 'Wallonie',
+        valueChainName: imp.valueChain?.name || 'Transverse',
+        date: imp.date
+      }))
+    };
+
+    if (!filiereId && !territoryId) {
+      cachedPilotage = result;
+      cachedPilotageTime = now;
+    }
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('Erreur API pilotage:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Démarrer le serveur
 const server = app.listen(port, () => {

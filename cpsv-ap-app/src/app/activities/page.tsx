@@ -199,6 +199,17 @@ export default function ActivitiesPage() {
 
   useEffect(() => {
     loadData();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get("action");
+      if (action === "new-collective") {
+        setActiveTab("collective");
+        setShowCollForm(true);
+      } else if (action === "new-mission") {
+        setActiveTab("secondline");
+        setShowSecForm(true);
+      }
+    }
   }, []);
 
   // Soumettre CollectiveDelivery

@@ -24,7 +24,8 @@ import {
   TrendingUp,
   MapPin,
   CheckCircle,
-  FileCheck
+  FileCheck,
+  Target
 } from "lucide-react";
 
 import SplitLayout from "@/components/ui/SplitLayout";
@@ -73,7 +74,7 @@ export default function GraphViewer() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Perspective states
-  const [perspective, setPerspective] = useState<"all" | "beneficiary" | "ecosystem" | "valuechain">("all");
+  const [perspective, setPerspective] = useState<"all" | "beneficiary" | "ecosystem" | "valuechain" | "strategy" | "program" | "territory">("all");
   const [targetEntityId, setTargetEntityId] = useState<string>("");
 
   useEffect(() => {
@@ -112,49 +113,79 @@ export default function GraphViewer() {
 
   // Map of X positions per node type for a clean layered layout
   const typeXMap: Record<string, number> = {
-    beneficiary: 20,
-    actioninstance: 180,
-    challenge: 340,
-    valuechain: 500,
-    ecosystem: 660,
-    journey: 820,
-    journeystage: 980,
-    service: 1140,
-    organization: 1300,
-    dataset: 1460,
-    knowledgeasset: 1620,
-    eventresource: 1780,
+    strategy: 20,
+    strategicpriority: 160,
+    program: 300,
+    measure: 440,
+    initiative: 580,
+    service: 720,
+    journeystage: 860,
+    journey: 1000,
+    ecosystem: 1140,
+    valuechain: 1280,
+    beneficiary: 1420,
+    beneficiaryengagement: 1560,
+    actioninstance: 1560,
+    impact: 1700,
+    outcomeindicator: 1840,
+    fundinginstrument: 1980,
+    territory: 2120,
+    organization: 2260,
+    dataset: 2400,
+    knowledgeasset: 2540,
+    eventresource: 2680,
+    challenge: 2820,
   };
 
   // Harmonious theme matching user requests
   const typeColorMap: Record<string, string> = {
-    beneficiary: "#d946ef",      // Fuchsia
-    actioninstance: "#ec4899",   // Pink
-    challenge: "#ef4444",        // Red
-    valuechain: "#8b5cf6",       // Purple
-    ecosystem: "#a855f7",        // Light Purple
+    strategy: "#f43f5e",          // Rose
+    strategicpriority: "#fb7185",  // Light Rose
+    program: "#3b82f6",          // Blue
+    measure: "#06b6d4",          // Cyan
+    initiative: "#14b8a6",       // Teal
+    service: "#6366f1",          // Indigo
+    journeystage: "#2dd4bf",     // Light Teal
     journey: "#10b981",          // Emerald
-    journeystage: "#14b8a6",     // Teal
-    service: "#3b82f6",          // Blue
+    ecosystem: "#a855f7",        // Light Purple
+    valuechain: "#8b5cf6",       // Purple
+    beneficiary: "#d946ef",      // Fuchsia
+    beneficiaryengagement: "#ec4899", // Pink
+    actioninstance: "#f472b6",   // Light Pink
+    impact: "#059669",           // Dark Emerald
+    outcomeindicator: "#eab308",  // Yellow
+    fundinginstrument: "#22c55e", // Green
+    territory: "#f97316",        // Orange
     organization: "#64748b",     // Slate
     dataset: "#06b6d4",          // Cyan
     knowledgeasset: "#f59e0b",   // Amber
-    eventresource: "#10b981",    // Emerald (Green)
+    eventresource: "#84cc16",    // Lime
+    challenge: "#ef4444",        // Red
   };
 
   const typeLabelMap: Record<string, string> = {
-    beneficiary: "Bénéficiaire",
-    actioninstance: "Engagement",
-    challenge: "Défi d'affaires",
-    valuechain: "Filière S3",
-    ecosystem: "Écosystème",
-    journey: "Parcours",
-    journeystage: "Étape parcours",
+    strategy: "Stratégie",
+    strategicpriority: "Priorité stratégique",
+    program: "Programme",
+    measure: "Mesure",
+    initiative: "Initiative",
     service: "Service CPSV",
+    journeystage: "Étape parcours",
+    journey: "Parcours",
+    ecosystem: "Écosystème",
+    valuechain: "Filière S3",
+    beneficiary: "Bénéficiaire",
+    beneficiaryengagement: "Engagement",
+    actioninstance: "Action / Engagement",
+    impact: "Impact constaté",
+    outcomeindicator: "Indicateur",
+    fundinginstrument: "Financement",
+    territory: "Territoire",
     organization: "Opérateur",
     dataset: "Données (DCAT-AP)",
     knowledgeasset: "Actif de connaissance",
     eventresource: "Événement",
+    challenge: "Défi d'affaires",
   };
 
   // Get list of targets for selectors
@@ -268,6 +299,36 @@ export default function GraphViewer() {
       } else if (type === "valuechain") {
         const found = meta?.strategicValueChains?.find((v: any) => v.id === id);
         setSelectedEntityDetails(found || { id, name: "Filière S3 " + id });
+      } else if (type === "strategy") {
+        const found = meta?.strategies?.find((s: any) => s.id === id);
+        setSelectedEntityDetails(found || { id, name: "Stratégie " + id });
+      } else if (type === "strategicpriority") {
+        const found = meta?.strategicPriorities?.find((p: any) => p.id === id);
+        setSelectedEntityDetails(found || { id, name: "Priorité Stratégique " + id });
+      } else if (type === "program") {
+        const found = meta?.programs?.find((p: any) => p.id === id);
+        setSelectedEntityDetails(found || { id, name: "Programme " + id });
+      } else if (type === "measure") {
+        const found = meta?.measures?.find((m: any) => m.id === id);
+        setSelectedEntityDetails(found || { id, name: "Mesure " + id });
+      } else if (type === "initiative") {
+        const found = meta?.initiatives?.find((i: any) => i.id === id);
+        setSelectedEntityDetails(found || { id, name: "Initiative " + id });
+      } else if (type === "territory") {
+        const found = meta?.territories?.find((t: any) => t.id === id);
+        setSelectedEntityDetails(found || { id, name: "Territoire " + id });
+      } else if (type === "beneficiaryengagement") {
+        const found = meta?.beneficiaryEngagements?.find((e: any) => e.id === id);
+        setSelectedEntityDetails(found || { id, title: "Engagement " + id });
+      } else if (type === "impact") {
+        const found = meta?.impacts?.find((i: any) => i.id === id);
+        setSelectedEntityDetails(found || { id, textValue: "Impact " + id });
+      } else if (type === "outcomeindicator") {
+        const found = meta?.outcomeIndicators?.find((i: any) => i.id === id);
+        setSelectedEntityDetails(found || { id, name: "Indicateur " + id });
+      } else if (type === "fundinginstrument") {
+        const found = meta?.fundingInstruments?.find((f: any) => f.id === id);
+        setSelectedEntityDetails(found || { id, name: "Instrument de Financement " + id });
       } else {
         setSelectedEntityDetails({ id, name: nodeId });
       }
@@ -578,7 +639,7 @@ export default function GraphViewer() {
       title = item.title || item.name || "";
       overviewTab = (
         <div className="space-y-4 text-xs">
-          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
             {item.description}
           </div>
           {item.ownerOrganization && (
@@ -591,13 +652,12 @@ export default function GraphViewer() {
       );
       relationsTab = (
         <div className="space-y-2 text-xs">
-          <p>Format de distribution : <span className="font-bold">{item.distributionFormat || "Non renseigné"}</span></p>
-          <p>Qualité/Conformité : <span className="font-bold text-teal-600">{item.qualityScore ? `${item.qualityScore}/5` : "N/A"}</span></p>
+          <p>Fréquence de mise à jour : <span className="font-bold">{item.updateFrequency}</span></p>
+          <p>Qualité / Conformité : <span className="font-bold text-teal-500">{item.qualityScore ? `${item.qualityScore}/5` : "N/A"}</span></p>
         </div>
       );
       metadataTab = (
         <div className="text-xs space-y-2">
-          <p>URI : <span className="font-mono text-teal-500 break-all">{item.uri || "N/A"}</span></p>
           <p>Classe : <span className="font-mono bg-glass px-1 rounded">dcat:Dataset</span></p>
         </div>
       );
@@ -606,30 +666,316 @@ export default function GraphViewer() {
       title = item.title || item.name || "";
       overviewTab = (
         <div className="space-y-4 text-xs">
-          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed">
-            {item.description}
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description || "Aucun résumé descriptif."}
           </div>
-          <p>Format : <span className="font-bold">{item.format}</span></p>
+          <p>Type d'actif : <span className="font-bold">{item.type}</span></p>
         </div>
       );
       relationsTab = (
         <div className="space-y-3">
           <span className="text-[10px] text-muted uppercase block font-bold">Services Documentés</span>
-          {item.publicServices?.map((s: any) => (
+          {item.publicServices?.length > 0 ? (
+            item.publicServices.map((s: any) => (
+              <RelationshipCard
+                key={s.id}
+                title={s.name}
+                relationType="Service"
+                Icon={FileText}
+              />
+            ))
+          ) : (
+            <p className="text-xs text-muted italic">Aucun service public directement lié.</p>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:KnowledgeAsset</span></p>
+        </div>
+      );
+    }
+    else if (type === "strategy") {
+      title = item.name || "";
+      subtitle = `Code : ${item.code || "N/A"}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description}
+          </div>
+          {item.website && (
+            <p>Site Web : <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold font-mono">{item.website}</a></p>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Priorités Stratégiques</span>
+          {item.priorities?.map((p: any) => (
+            <div key={p.id} className="p-2.5 bg-glass/20 border border-muted/10 rounded-lg text-xs font-semibold">
+              {p.name}
+            </div>
+          ))}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Strategy</span></p>
+          <p>Opérateur porteur : <span className="font-semibold">{item.ownerOrganization?.name || "Wallonie"}</span></p>
+        </div>
+      );
+    }
+    else if (type === "program") {
+      title = item.name || "";
+      subtitle = `Budget : ${item.budget ? new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.budget) : 'N/A'}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description}
+          </div>
+          <div className="bg-glass/10 p-2 rounded-lg border border-muted/10 flex items-center justify-between">
+            <span className="text-muted">Statut</span>
+            <span className="font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 uppercase text-[10px]">{item.status}</span>
+          </div>
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Mesures Financées</span>
+          {item.measures?.length > 0 ? (
+            item.measures.map((m: any) => (
+              <RelationshipCard
+                key={m.id}
+                title={m.name}
+                relationType="Mesure"
+                Icon={TrendingUp}
+              />
+            ))
+          ) : (
+            <p className="text-xs text-muted italic">Aucune mesure déclarée.</p>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Program</span></p>
+          <p>Opérateur : <span className="font-semibold">{item.ownerOrganization?.name || "Non renseigné"}</span></p>
+        </div>
+      );
+    }
+    else if (type === "measure") {
+      title = item.name || "";
+      subtitle = `Budget estimé : ${item.budget ? new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.budget) : 'N/A'}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description}
+          </div>
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Initiatives</span>
+          {item.initiatives?.map((i: any) => (
             <RelationshipCard
-              key={s.id}
-              title={s.name}
-              relationType="Service"
-              Icon={FileText}
-              onClick={() => handleNodeSelection(`service-${s.id}`)}
+              key={i.id}
+              title={i.name}
+              relationType="Initiative"
+              Icon={CheckCircle}
             />
           ))}
         </div>
       );
       metadataTab = (
         <div className="text-xs space-y-2">
-          <p>URI : <span className="font-mono text-teal-500 break-all">{item.uri || "N/A"}</span></p>
-          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:KnowledgeAsset</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Measure</span></p>
+        </div>
+      );
+    }
+    else if (type === "initiative") {
+      title = item.name || "";
+      subtitle = `Statut de l'action : ${item.status}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description}
+          </div>
+          {item.leadOrganization && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10">
+              <span className="text-[10px] text-muted uppercase block">Organisation Chef de file</span>
+              <span className="font-bold text-text">{item.leadOrganization.name}</span>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Services Publics d'Accompagnement</span>
+          {item.publicServices?.map((s: any) => (
+            <RelationshipCard
+              key={s.id}
+              title={s.name}
+              relationType="Service"
+              Icon={FileText}
+            />
+          ))}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Initiative</span></p>
+        </div>
+      );
+    }
+    else if (type === "territory") {
+      title = item.name || "";
+      subtitle = `Type : ${item.type}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          {item.description && (
+            <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+              {item.description}
+            </div>
+          )}
+          {item.parentTerritory && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10">
+              <span className="text-[10px] text-muted uppercase block">Territoire Parent</span>
+              <span className="font-bold text-text">{item.parentTerritory.name}</span>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-2 text-xs">
+          <p>Identifiant / Code ISO : <span className="font-mono">{item.code}</span></p>
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Territory</span></p>
+        </div>
+      );
+    }
+    else if (type === "beneficiaryengagement") {
+      title = item.title || "";
+      subtitle = `Statut : ${item.status}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.objective || "Aucun objectif détaillé."}
+          </div>
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          {item.beneficiary && (
+            <RelationshipCard
+              title={item.beneficiary.name}
+              relationType="Bénéficiaire"
+              Icon={Users}
+            />
+          )}
+          {item.initiative && (
+            <RelationshipCard
+              title={item.initiative.name}
+              relationType="Initiative de rattachement"
+              Icon={CheckCircle}
+            />
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:BeneficiaryEngagement</span></p>
+        </div>
+      );
+    }
+    else if (type === "impact") {
+      title = item.indicator?.name || "Impact";
+      subtitle = item.numericValue !== null ? `${item.numericValue} ${item.indicator?.unit || ""}` : "Impact Qualitatif";
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-bold italic">
+            "{item.textValue || "Impact constaté sur le terrain"}"
+          </div>
+          {item.evidence && (
+            <p className="text-xs bg-glass/10 p-2 rounded border border-muted/10">Preuve : <span className="font-medium text-text">{item.evidence}</span></p>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          {item.beneficiary && (
+            <RelationshipCard
+              title={item.beneficiary.name}
+              relationType="Bénéficiaire"
+              Icon={Users}
+            />
+          )}
+          {item.territory && (
+            <RelationshipCard
+              title={item.territory.name}
+              relationType="Territoire d'impact"
+              Icon={MapPin}
+            />
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:Impact</span></p>
+        </div>
+      );
+    }
+    else if (type === "fundinginstrument") {
+      title = item.name || "";
+      subtitle = `Type de financement : ${item.type}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description || "Aucun descriptif."}
+          </div>
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Programmes co-financés</span>
+          {item.programs?.length > 0 ? (
+            item.programs.map((prog: any) => (
+              <RelationshipCard
+                key={prog.id}
+                title={prog.name}
+                relationType="Programme"
+                Icon={TrendingUp}
+              />
+            ))
+          ) : (
+            <p className="text-xs text-muted italic">Aucun lien direct de programme.</p>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:FundingInstrument</span></p>
+        </div>
+      );
+    }
+    else if (type === "outcomeindicator") {
+      title = item.name || "";
+      subtitle = `Unité : ${item.unit}`;
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed font-medium">
+            {item.description || "Indicateur de mesure d'impact."}
+          </div>
+        </div>
+      );
+      relationsTab = (
+        <p className="text-xs text-muted italic">Pour voir les impacts, consultez les fiches des entreprises.</p>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">pit:OutcomeIndicator</span></p>
         </div>
       );
     }
@@ -733,6 +1079,26 @@ export default function GraphViewer() {
           </button>
 
           <button 
+            onClick={() => setPerspective("strategy")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
+              perspective === "strategy" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
+            )}
+          >
+            <Target className="h-3.5 w-3.5" /> Stratégie
+          </button>
+
+          <button 
+            onClick={() => setPerspective("program")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
+              perspective === "program" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
+            )}
+          >
+            <TrendingUp className="h-3.5 w-3.5" /> Programme
+          </button>
+
+          <button 
             onClick={() => setPerspective("beneficiary")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
@@ -760,6 +1126,16 @@ export default function GraphViewer() {
             )}
           >
             <Layers className="h-3.5 w-3.5" /> Filière S3
+          </button>
+
+          <button 
+            onClick={() => setPerspective("territory")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
+              perspective === "territory" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
+            )}
+          >
+            <MapPin className="h-3.5 w-3.5" /> Territoire
           </button>
         </div>
 

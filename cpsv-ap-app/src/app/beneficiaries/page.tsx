@@ -216,6 +216,15 @@ export default function BeneficiariesPage() {
 
   useEffect(() => {
     loadData();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get("action");
+      if (action === "new-beneficiary") {
+        setShowAddForm(true);
+      } else if (action === "new-delivery") {
+        setShowDeliveryForm(true);
+      }
+    }
   }, []);
 
   // Soumettre un nouveau Bénéficiaire

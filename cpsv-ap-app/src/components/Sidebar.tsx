@@ -17,11 +17,15 @@ import {
   Settings,
   Activity,
   Database,
-  BookOpen
+  BookOpen,
+  Target,
+  LineChart
 } from "lucide-react";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Home },
+  { name: "Stratégies", href: "/strategies", icon: Target },
+  { name: "Pilotage territorial", href: "/pilotage", icon: LineChart },
   { name: "Bénéficiaires", href: "/beneficiaries", icon: Users },
   { name: "Activités", href: "/activities", icon: Activity },
   { name: "Services (CPSV)", href: "/services", icon: FileText },
@@ -32,6 +36,7 @@ const navigation = [
   { name: "Actifs de connaissance", href: "/knowledge-assets", icon: BookOpen },
   { name: "Recommandations", href: "/recommender", icon: Sparkles },
   { name: "Graph Explorer", href: "/graph", icon: BarChart2 },
+  { name: "Guide interactif", href: "/guide", icon: Compass },
   { name: "Paramètres", href: "/settings", icon: Settings },
 ];
 

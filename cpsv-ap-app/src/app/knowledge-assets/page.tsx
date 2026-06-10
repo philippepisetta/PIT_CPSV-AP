@@ -1,4 +1,5 @@
 // src/app/knowledge-assets/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,8 +14,16 @@ import {
   Calendar, 
   ExternalLink,
   Filter,
-  Info
+  Info,
+  Building2
 } from "lucide-react";
+
+import PageHeader from "@/components/ui/PageHeader";
+import PageToolbar from "@/components/ui/PageToolbar";
+import SplitLayout from "@/components/ui/SplitLayout";
+import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
+import RelationshipCard from "@/components/ui/RelationshipCard";
+import MultiTagSelector from "@/components/ui/MultiTagSelector";
 
 interface PublicService {
   id: number;
@@ -128,7 +137,6 @@ export default function KnowledgeAssetsPage() {
 
       if (!response.ok) throw new Error("Erreur lors de la création de l'actif de connaissance.");
       
-      // Reset form
       setNewTitle("");
       setNewType("Guide");
       setNewDescription("");
@@ -145,7 +153,6 @@ export default function KnowledgeAssetsPage() {
     }
   }
 
-  // Filter assets
   const filteredAssets = assets.filter(a => {
     const matchesSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           a.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -163,243 +170,208 @@ export default function KnowledgeAssetsPage() {
     "Livre blanc"
   ];
 
-  if (loading) {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <p className="text-muted text-sm font-medium animate-pulse">Chargement des actifs de connaissance...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-text to-muted bg-clip-text text-transparent">
-            Actifs de Connaissance (Knowledge Assets)
-          </h1>
-          <p className="text-muted text-sm">
-            Gérez les guides méthodologiques, études sectorielles et livrables d'écosystèmes produits pour le territoire.
-          </p>
-        </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-semibold shadow-md hover:bg-primary/95 transition-all text-sm shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Nouvel Actif
-        </button>
-      </header>
-
-      {/* Stats Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="relative overflow-hidden rounded-2xl bg-surface border border-muted p-5 group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary to-teal-500 opacity-[0.03] blur-xl" />
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Actifs répertoriés</span>
-              <p className="text-2xl font-extrabold text-text tracking-tight mt-1">{assets.length}</p>
-            </div>
-            <div className="rounded-lg p-2.5 bg-primary/10 text-primary">
-              <BookOpen className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl bg-surface border border-muted p-5 group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500 to-green-500 opacity-[0.03] blur-xl" />
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Services documentés</span>
-              <p className="text-2xl font-extrabold text-text tracking-tight mt-1">
-                {Array.from(new Set(assets.flatMap(a => a.publicServices.map(s => s.id)))).length}
-              </p>
-            </div>
-            <div className="rounded-lg p-2.5 bg-emerald-500/10 text-emerald-500">
-              <FileText className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl bg-surface border border-muted p-5 group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-500 opacity-[0.03] blur-xl" />
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Liaisons écosystèmes</span>
-              <p className="text-2xl font-extrabold text-text tracking-tight mt-1">
-                {Array.from(new Set(assets.flatMap(a => a.ecosystems.map(e => e.id)))).length}
-              </p>
-            </div>
-            <div className="rounded-lg p-2.5 bg-blue-500/10 text-blue-500">
-              <Share2 className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Toolbar Search / Filter */}
-      <section className="flex flex-col sm:flex-row gap-4 bg-surface border border-muted p-4 rounded-2xl">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4.5 w-4.5 text-muted" />
-          <input 
-            type="text"
-            placeholder="Rechercher un livrable (titre, description)..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-glass border border-muted rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary text-text placeholder-muted"
-          />
-        </div>
-        <div className="flex items-center gap-2 min-w-[200px]">
-          <Filter className="h-4 w-4 text-muted shrink-0" />
-          <select 
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
-            className="w-full bg-glass border border-muted rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary text-text"
-          >
-            <option value="">Tous les types</option>
-            {assetTypes.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      {/* Main Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left List Pane (5/12 col) */}
-        <section className="lg:col-span-5 rounded-2xl bg-surface border border-muted p-4 space-y-4 max-h-[60vh] overflow-y-auto" aria-label="Liste des actifs">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2">Actifs disponibles</h2>
-          <div className="space-y-1.5">
-            {filteredAssets.map((a) => {
-              const isSelected = selectedAsset?.id === a.id;
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => setSelectedAsset(a)}
-                  className={`w-full text-left flex items-start space-x-3 p-3 rounded-xl transition-all duration-200 ${
-                    isSelected 
-                      ? "bg-gradient-to-r from-primary/10 to-amber-500/10 border-l-4 border-primary text-text shadow-sm" 
-                      : "hover:bg-glass text-muted hover:text-text"
-                  }`}
-                >
-                  <BookOpen className={`h-5 w-5 shrink-0 mt-0.5 ${isSelected ? "text-primary" : "text-muted"}`} />
-                  <div className="truncate flex-1">
-                    <p className="font-bold text-sm truncate">{a.title}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-glass border border-muted/50 rounded text-primary uppercase tracking-wide">
-                        {a.type}
-                      </span>
-                      {a.url && (
-                        <span className="text-[10px] text-muted flex items-center gap-0.5">
-                          <LinkIcon className="h-3 w-3" /> En ligne
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-            {filteredAssets.length === 0 && (
-              <div className="text-center py-8 text-xs text-muted italic">
-                Aucun livrable ne correspond à la recherche.
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Right Detail Pane (7/12 col) */}
-        <section className="lg:col-span-7" aria-label="Détail de l'actif">
-          {selectedAsset ? (
-            <div className="space-y-6 bg-surface border border-muted rounded-2xl p-6 animate-in fade-in duration-300">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
-                  {selectedAsset.type}
+  // --- PANNEAU GAUCHE : LISTE DES ACTIFS ---
+  const leftPane = (
+    <div className="rounded-2xl bg-glass border border-muted/20 p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2 flex items-center gap-1.5">
+        <BookOpen className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+        Actifs de Connaissance ({filteredAssets.length})
+      </h3>
+      <div className="space-y-1.5">
+        {filteredAssets.map((a) => {
+          const isSelected = selectedAsset?.id === a.id;
+          return (
+            <button
+              key={a.id}
+              onClick={() => setSelectedAsset(a)}
+              className={`w-full text-left flex items-start space-x-3 p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
+                isSelected 
+                  ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" 
+                  : "hover:bg-glass text-muted hover:text-text"
+              }`}
+            >
+              <BookOpen className={`h-5 w-5 shrink-0 mt-0.5 ${isSelected ? "text-primary" : "text-muted"}`} />
+              <div className="truncate flex-1">
+                <p className="font-bold text-sm truncate">{a.title}</p>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded mt-2 inline-block uppercase tracking-wider">
+                  {a.type}
                 </span>
-                <h2 className="text-xl font-black text-text tracking-tight mt-2">{selectedAsset.title}</h2>
-                
-                {selectedAsset.url && (
-                  <a 
-                    href={selectedAsset.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline mt-2"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Consulter la ressource
-                  </a>
-                )}
               </div>
+            </button>
+          );
+        })}
+        {filteredAssets.length === 0 && (
+          <div className="text-center py-8 text-xs text-muted italic">
+            Aucun livrable ne correspond.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
-              <div className="space-y-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Présentation / Résumé</h3>
-                <p className="text-sm text-text leading-relaxed bg-glass p-4 rounded-xl border border-muted/50">
-                  {selectedAsset.description || "Aucune description de l'actif de connaissance."}
-                </p>
-              </div>
+  // --- PANNEAU DROIT : DETAILS ET TABS ---
+  const renderDetailPanel = () => {
+    if (!selectedAsset) {
+      return (
+        <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">
+          Sélectionnez un livrable ou actif de connaissance dans la liste.
+        </div>
+      );
+    }
 
-              {/* Connected relations */}
-              <div className="space-y-5 border-t border-muted/50 pt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Liaisons du Territorial Knowledge Graph</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  {/* Public Services */}
-                  <div className="space-y-2 rounded-xl bg-glass border border-muted/30 p-3">
-                    <p className="font-bold text-muted flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-primary" /> Services liés</p>
-                    <div className="space-y-1 mt-1.5">
-                      {selectedAsset.publicServices.map(s => (
-                        <div key={s.id} className="p-1 rounded bg-surface border border-muted/30 font-semibold truncate" title={s.name}>
-                          {s.name}
-                        </div>
-                      ))}
-                      {selectedAsset.publicServices.length === 0 && <p className="italic text-muted/60">Aucun service public</p>}
-                    </div>
-                  </div>
+    const a = selectedAsset;
 
-                  {/* Ecosystems */}
-                  <div className="space-y-2 rounded-xl bg-glass border border-muted/30 p-3">
-                    <p className="font-bold text-muted flex items-center gap-1.5"><Share2 className="h-3.5 w-3.5 text-amber-500" /> Écosystèmes</p>
-                    <div className="space-y-1 mt-1.5">
-                      {selectedAsset.ecosystems.map(eco => (
-                        <div key={eco.id} className="p-1 rounded bg-surface border border-muted/30 font-semibold truncate" title={eco.name}>
-                          {eco.name}
-                        </div>
-                      ))}
-                      {selectedAsset.ecosystems.length === 0 && <p className="italic text-muted/60">Aucun écosystème</p>}
-                    </div>
-                  </div>
+    const overviewTab = (
+      <div className="space-y-6">
+        <div className="bg-glass/20 border border-muted/10 rounded-xl p-4 text-xs text-text/95 leading-relaxed">
+          {a.description || "Aucune description de l'actif de connaissance."}
+        </div>
 
-                  {/* Events */}
-                  <div className="space-y-2 rounded-xl bg-glass border border-muted/30 p-3">
-                    <p className="font-bold text-muted flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-emerald-500" /> Événements</p>
-                    <div className="space-y-1 mt-1.5">
-                      {selectedAsset.eventResources.map(evt => (
-                        <div key={evt.id} className="p-1 rounded bg-surface border border-muted/30 font-semibold truncate" title={evt.title}>
-                          {evt.title}
-                        </div>
-                      ))}
-                      {selectedAsset.eventResources.length === 0 && <p className="italic text-muted/60">Aucun événement lié</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted border-dashed rounded-2xl bg-glass p-6 text-muted italic">
-              Veuillez sélectionner ou ajouter un actif de connaissance.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          {a.file && (
+            <div className="space-y-2 bg-glass/20 border border-muted/10 p-3 rounded-xl">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">Fichier associé</span>
+              <span className="font-mono text-text flex items-center gap-1.5 mt-1 font-bold">
+                <FileText className="h-4 w-4 text-primary" />
+                {a.file}
+              </span>
             </div>
           )}
-        </section>
-      </div>
 
-      {/* Modal Add Knowledge Asset */}
+          {a.url && (
+            <div className="space-y-2 bg-glass/20 border border-muted/10 p-3 rounded-xl">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">Consultation externe</span>
+              <a 
+                href={a.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-teal-600 dark:text-teal-400 font-bold hover:underline mt-1"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Accéder au document
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    const relationsTab = (
+      <div className="space-y-6">
+        {/* Public Services */}
+        {a.publicServices && a.publicServices.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Services documentés ou liés</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {a.publicServices.map(s => (
+                <RelationshipCard
+                  key={s.id}
+                  title={s.name}
+                  relationType={`Code : ${s.code}`}
+                  Icon={FileText}
+                  onClick={() => window.location.href = `/services?id=${s.id}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ecosystems */}
+        {a.ecosystems && a.ecosystems.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Écosystèmes valorisés</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {a.ecosystems.map(eco => (
+                <RelationshipCard
+                  key={eco.id}
+                  title={eco.name}
+                  relationType="Écosystème"
+                  Icon={Share2}
+                  onClick={() => window.location.href = `/ecosystems?id=${eco.id}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Events */}
+        {a.eventResources && a.eventResources.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Événements territoriaux liés</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {a.eventResources.map(evt => (
+                <RelationshipCard
+                  key={evt.id}
+                  title={evt.title}
+                  relationType="Événement"
+                  Icon={Calendar}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+    const metadataTab = (
+      <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
+        <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/knowledge-asset/{a.id}</span></p>
+        <p className="text-text">Classe sémantique : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:KnowledgeAsset</span></p>
+      </div>
+    );
+
+    return (
+      <EntityDetailPanel
+        title={a.title}
+        subtitle={`Type de ressource : ${a.type}`}
+        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded">Actif de Connaissance</span>}
+        overviewTab={overviewTab}
+        relationsTab={relationsTab}
+        metadataTab={metadataTab}
+      />
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Actifs de Connaissance (Knowledge Assets)"
+        description="Gérez les guides méthodologiques, études sectorielles et livrables d'écosystèmes produits pour le territoire."
+        Icon={BookOpen}
+        actions={
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
+          >
+            <Plus className="h-4 w-4" />
+            Nouvel Actif
+          </button>
+        }
+      />
+
+      <PageToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Rechercher un actif de connaissance par nom ou description..."
+        filterValue={typeFilter}
+        onFilterChange={setTypeFilter}
+        filterLabel="Tous les types"
+        filterOptions={assetTypes.map(t => ({ value: t, label: t }))}
+      />
+
+      <SplitLayout
+        leftPane={leftPane}
+        rightPane={renderDetailPanel()}
+        leftColSpan={4}
+      />
+
+      {/* MODAL AJOUT KNOWLEDGE ASSET */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-surface border border-muted rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-muted pb-4">
-              <h3 className="text-lg font-bold text-text">Ajouter un Actif de Connaissance</h3>
-              <button onClick={() => setShowAddModal(false)} className="p-1 rounded hover:bg-glass text-muted hover:text-text">
+            <div className="flex items-center justify-between border-b border-muted/20 pb-4">
+              <h3 className="text-lg font-bold text-text">Déclarer un Actif de Connaissance</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1 rounded hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -407,12 +379,12 @@ export default function KnowledgeAssetsPage() {
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted">Titre de la ressource *</label>
-                  <input required value={newTitle} onChange={e => setNewTitle(e.target.value)} type="text" placeholder="ex: Méthodologie IA sectorielle" className="w-full bg-glass border border-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-text" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Titre de la ressource *</label>
+                  <input required value={newTitle} onChange={e => setNewTitle(e.target.value)} type="text" placeholder="ex: Méthodologie IA sectorielle" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted">Type d'actif</label>
-                  <select value={newType} onChange={e => setNewType(e.target.value)} className="w-full bg-glass border border-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-text">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Type d'actif</label>
+                  <select value={newType} onChange={e => setNewType(e.target.value)} className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text">
                     {assetTypes.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
@@ -421,94 +393,51 @@ export default function KnowledgeAssetsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted">Description / Résumé</label>
-                <textarea value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Décrivez l'apport ou le contenu de ce document..." className="w-full bg-glass border border-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-text h-20" />
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted block">Description / Résumé</label>
+                <textarea value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Décrivez l'apport ou le contenu de ce document..." className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text h-20" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted">Fichier local (nom)</label>
-                  <input value={newFile} onChange={e => setNewFile(e.target.value)} type="text" placeholder="ex: guide_ia_manufacture.pdf" className="w-full bg-glass border border-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-text" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Fichier local (nom)</label>
+                  <input value={newFile} onChange={e => setNewFile(e.target.value)} type="text" placeholder="ex: guide_ia_manufacture.pdf" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted">URL externe</label>
-                  <input value={newUrl} onChange={e => setNewUrl(e.target.value)} type="url" placeholder="https://example.com/guide.pdf" className="w-full bg-glass border border-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-text" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">URL externe</label>
+                  <input value={newUrl} onChange={e => setNewUrl(e.target.value)} type="url" placeholder="https://example.com/guide.pdf" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
                 </div>
               </div>
 
-              {/* Relations links */}
-              <div className="space-y-3 pt-2 border-t border-muted">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted">Liaisons Sémantiques</h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  {/* Select Services */}
-                  <div className="space-y-1">
-                    <label className="font-semibold text-muted">Services CPSV</label>
-                    <div className="border border-muted rounded-lg p-2 max-h-24 overflow-y-auto space-y-1 bg-glass">
-                      {services.map(s => (
-                        <label key={s.id} className="flex items-center space-x-1.5 text-[11px]">
-                          <input 
-                            type="checkbox"
-                            checked={selectedServiceIds.includes(s.id)}
-                            onChange={e => {
-                              if (e.target.checked) setSelectedServiceIds([...selectedServiceIds, s.id]);
-                              else setSelectedServiceIds(selectedServiceIds.filter(id => id !== s.id));
-                            }}
-                          />
-                          <span className="truncate">{s.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Select Ecosystems */}
-                  <div className="space-y-1">
-                    <label className="font-semibold text-muted">Écosystèmes</label>
-                    <div className="border border-muted rounded-lg p-2 max-h-24 overflow-y-auto space-y-1 bg-glass">
-                      {ecosystems.map(eco => (
-                        <label key={eco.id} className="flex items-center space-x-1.5 text-[11px]">
-                          <input 
-                            type="checkbox"
-                            checked={selectedEcosystemIds.includes(eco.id)}
-                            onChange={e => {
-                              if (e.target.checked) setSelectedEcosystemIds([...selectedEcosystemIds, eco.id]);
-                              else setSelectedEcosystemIds(selectedEcosystemIds.filter(id => id !== eco.id));
-                            }}
-                          />
-                          <span className="truncate">{eco.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Select Events */}
-                  <div className="space-y-1">
-                    <label className="font-semibold text-muted">Événements</label>
-                    <div className="border border-muted rounded-lg p-2 max-h-24 overflow-y-auto space-y-1 bg-glass">
-                      {events.map(evt => (
-                        <label key={evt.id} className="flex items-center space-x-1.5 text-[11px]">
-                          <input 
-                            type="checkbox"
-                            checked={selectedEventIds.includes(evt.id)}
-                            onChange={e => {
-                              if (e.target.checked) setSelectedEventIds([...selectedEventIds, evt.id]);
-                              else setSelectedEventIds(selectedEventIds.filter(id => id !== evt.id));
-                            }}
-                          />
-                          <span className="truncate">{evt.title}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-muted/20">
+                <MultiTagSelector
+                  label="Services liés"
+                  options={services}
+                  selectedIds={selectedServiceIds}
+                  onChange={setSelectedServiceIds}
+                  color="teal"
+                />
+                <MultiTagSelector
+                  label="Écosystèmes"
+                  options={ecosystems}
+                  selectedIds={selectedEcosystemIds}
+                  onChange={setSelectedEcosystemIds}
+                  color="blue"
+                />
+                <MultiTagSelector
+                  label="Événements"
+                  options={events.map(ev => ({ id: ev.id, name: ev.title }))}
+                  selectedIds={selectedEventIds}
+                  onChange={setSelectedEventIds}
+                  color="purple"
+                />
               </div>
 
-              <div className="border-t border-muted pt-4 flex justify-end gap-3 text-sm">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-muted hover:bg-glass rounded-xl font-semibold text-muted hover:text-text transition-all">
+              <div className="border-t border-muted/20 pt-4 flex justify-end gap-3 text-sm">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-muted hover:bg-glass rounded-xl font-semibold text-muted hover:text-text transition-all cursor-pointer bg-transparent">
                   Annuler
                 </button>
-                <button type="submit" className="px-5 py-2 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary/95 transition-all">
-                  Sauvegarder
+                <button type="submit" className="px-5 py-2 bg-teal-600 text-white rounded-xl font-bold shadow-md hover:bg-teal-750 transition-all cursor-pointer border-0">
+                  Enregistrer
                 </button>
               </div>
             </form>

@@ -11,10 +11,11 @@ module.exports = {
       colors: {
         primary: '#0f766e', // teal-700
         accent: '#3b82f6', // blue-500
-        background: '#ffffff',
-        surface: '#f3f4f6', // gray-100
-        text: '#1f2937', // gray-800
-        muted: '#9ca3af', // gray-400
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        text: 'var(--text)',
+        muted: 'var(--muted)',
+        border: 'var(--border)',
       },
       boxShadow: {
         card: '0 4px 12px rgba(0,0,0,0.1)',

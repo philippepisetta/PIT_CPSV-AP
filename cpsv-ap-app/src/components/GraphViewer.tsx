@@ -6,7 +6,32 @@ import { useEffect, useState, useMemo } from "react";
 import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap, Node, Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
-import { Filter, Users, Share2, Layers, Globe } from "lucide-react";
+import { 
+  Filter, 
+  Users, 
+  Share2, 
+  Layers, 
+  Globe, 
+  X, 
+  Search, 
+  FileText, 
+  Building2, 
+  Compass, 
+  Database, 
+  Activity, 
+  Sparkles, 
+  HelpCircle,
+  TrendingUp,
+  MapPin,
+  CheckCircle,
+  FileCheck
+} from "lucide-react";
+
+import SplitLayout from "@/components/ui/SplitLayout";
+import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
+import RelationshipCard from "@/components/ui/RelationshipCard";
+import StatCard from "@/components/ui/StatCard";
+import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 
 interface GraphNode {
   id: string;
@@ -35,17 +60,46 @@ export default function GraphViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // References cache
+  const [meta, setMeta] = useState<any>(null);
+  const [beneficiaries, setBeneficiaries] = useState<any[]>([]);
+
+  // Selection states
+  const [selectedEntityDetails, setSelectedEntityDetails] = useState<any>(null);
+  const [selectedNodeType, setSelectedNodeType] = useState<string>("");
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Search query
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Perspective states
   const [perspective, setPerspective] = useState<"all" | "beneficiary" | "ecosystem" | "valuechain">("all");
   const [targetEntityId, setTargetEntityId] = useState<string>("");
 
   useEffect(() => {
-    async function loadGraph() {
+    async function loadGraphAndRefs() {
       try {
-        const res = await fetch("/api/graph");
-        if (!res.ok) throw new Error("Erreur de chargement du graphe sémantique");
-        const data = await res.json();
-        setGraphData(data);
+        setLoading(true);
+        const [graphRes, metaRes, benefRes] = await Promise.all([
+          fetch("/api/graph"),
+          fetch("/api/meta"),
+          fetch("/api/beneficiaries")
+        ]);
+
+        if (!graphRes.ok) throw new Error("Erreur de chargement du graphe sémantique");
+        
+        const gData = await graphRes.json();
+        setGraphData(gData);
+
+        if (metaRes.ok) {
+          const mData = await metaRes.json();
+          setMeta(mData);
+        }
+
+        if (benefRes.ok) {
+          const bData = await benefRes.json();
+          setBeneficiaries(bData);
+        }
       } catch (err: any) {
         console.error("Erreur graphe:", err);
         setError(err.message);
@@ -53,7 +107,7 @@ export default function GraphViewer() {
         setLoading(false);
       }
     }
-    loadGraph();
+    loadGraphAndRefs();
   }, []);
 
   // Map of X positions per node type for a clean layered layout
@@ -158,6 +212,81 @@ export default function GraphViewer() {
     return { nodes: filteredNodes, edges: filteredEdges };
   }, [graphData, perspective, targetEntityId]);
 
+  // Handle Node Selection Details
+  const handleNodeSelection = async (nodeId: string) => {
+    const parts = nodeId.split("-");
+    const id = parseInt(parts.pop() || "0");
+    const type = parts.join("-");
+
+    setSelectedNodeType(type);
+    setDetailLoading(true);
+
+    try {
+      if (type === "beneficiary") {
+        const found = beneficiaries.find((b: any) => b.id === id);
+        setSelectedEntityDetails(found || { id, name: "Bénéficiaire " + id });
+      } else if (type === "service") {
+        const res = await fetch(`/api/services/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSelectedEntityDetails(data);
+        } else {
+          const found = meta?.services?.find((s: any) => s.id === id);
+          setSelectedEntityDetails(found || { id, name: "Service " + id });
+        }
+      } else if (type === "journey") {
+        try {
+          const res = await fetch("/api/journeys");
+          if (res.ok) {
+            const journeysList = await res.json();
+            const j = journeysList.find((item: any) => item.id === id);
+            setSelectedEntityDetails(j || { id, name: "Parcours " + id });
+          } else {
+            setSelectedEntityDetails({ id, name: "Parcours " + id });
+          }
+        } catch {
+          setSelectedEntityDetails({ id, name: "Parcours " + id });
+        }
+      } else if (type === "ecosystem") {
+        const found = meta?.ecosystems?.find((e: any) => e.id === id);
+        setSelectedEntityDetails(found || { id, name: "Écosystème " + id });
+      } else if (type === "dataset") {
+        const found = meta?.datasets?.find((d: any) => d.id === id);
+        setSelectedEntityDetails(found || { id, title: "Dataset " + id });
+      } else if (type === "knowledgeasset") {
+        const found = meta?.knowledgeAssets?.find((k: any) => k.id === id);
+        setSelectedEntityDetails(found || { id, title: "Actif de connaissance " + id });
+      } else if (type === "eventresource") {
+        const found = meta?.eventResources?.find((e: any) => e.id === id);
+        setSelectedEntityDetails(found || { id, title: "Événement " + id });
+      } else if (type === "organization" || type === "org") {
+        const found = meta?.organizations?.find((o: any) => o.id === id);
+        setSelectedEntityDetails(found || { id, name: "Organisme " + id });
+      } else if (type === "challenge") {
+        const found = meta?.challenges?.find((c: any) => c.id === id);
+        setSelectedEntityDetails(found || { id, name: "Défi " + id });
+      } else if (type === "valuechain") {
+        const found = meta?.strategicValueChains?.find((v: any) => v.id === id);
+        setSelectedEntityDetails(found || { id, name: "Filière S3 " + id });
+      } else {
+        setSelectedEntityDetails({ id, name: nodeId });
+      }
+    } catch (err) {
+      console.error("Erreur lors de la sélection du nœud:", err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Search Results
+  const searchResults = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q || !graphData) return [];
+    return graphData.nodes
+      .filter(n => n.label.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [graphData, searchQuery]);
+
   const { flowNodes, flowEdges } = useMemo(() => {
     const { nodes: filteredNodes, edges: filteredEdges } = filteredData;
 
@@ -181,6 +310,9 @@ export default function GraphViewer() {
       const yOffset = (height - (count - 1) * ySpacing) / 2;
       const y = yOffset + idx * ySpacing;
 
+      const idNum = parseInt(n.id.split("-").pop() || "0");
+      const isSelected = selectedEntityDetails && selectedNodeType === n.type && selectedEntityDetails.id === idNum;
+
       return {
         id: n.id,
         type: "default",
@@ -201,12 +333,14 @@ export default function GraphViewer() {
           background: typeColorMap[n.type] || "#3b82f6",
           color: "white",
           borderRadius: "10px",
-          border: "none",
+          border: isSelected ? "3px solid #14b8a6" : "none",
           width: 175,
           padding: "12px",
           fontWeight: "500",
           fontSize: "12px",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+          boxShadow: isSelected 
+            ? "0 0 0 4px rgba(20, 184, 166, 0.5), 0 10px 15px -3px rgba(0, 0, 0, 0.2)"
+            : "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
           textAlign: "left",
         },
       };
@@ -225,39 +359,373 @@ export default function GraphViewer() {
     }));
 
     return { flowNodes: fNodes, flowEdges: fEdges };
-  }, [filteredData]);
+  }, [filteredData, selectedEntityDetails, selectedNodeType]);
 
-  if (loading) {
-    return (
-      <div className="flex h-[600px] items-center justify-center text-muted-foreground font-medium animate-pulse">
-        ⚡ Initialisation du graphe de connaissances territorial...
-      </div>
-    );
-  }
+  // Render detail panel for selected entity
+  const renderDetailPanel = () => {
+    if (detailLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-3 bg-glass border border-muted/20 rounded-2xl p-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          <p className="text-xs font-semibold text-muted animate-pulse">Chargement des détails sémantiques...</p>
+        </div>
+      );
+    }
 
-  if (error) {
+    if (!selectedEntityDetails) {
+      return (
+        <div className="flex flex-col items-center justify-center text-center py-20 bg-glass border border-muted/20 border-dashed rounded-2xl p-6 text-muted italic text-xs">
+          <Globe className="h-10 w-10 text-muted/50 mb-3 animate-pulse" />
+          <p>Cliquez sur un nœud dans le graphe ou recherchez une entité pour afficher ses détails structurés et ses relations sémantiques.</p>
+        </div>
+      );
+    }
+
+    const item = selectedEntityDetails;
+    const type = selectedNodeType;
+
+    let title = item.name || item.title || "";
+    let subtitle = "";
+    let badgeText = typeLabelMap[type] || type;
+    let overviewTab: React.ReactNode = null;
+    let relationsTab: React.ReactNode = null;
+    let metadataTab: React.ReactNode = null;
+
+    // Build specific detail views
+    if (type === "beneficiary") {
+      subtitle = item.primaryNaceSector ? `NACE : ${item.primaryNaceSector.code}` : `Localisation : ${item.location}`;
+      overviewTab = (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10">
+              <span className="text-[10px] text-muted uppercase block">Effectif</span>
+              <span className="font-bold text-text">{item.employees || 0} ETP</span>
+            </div>
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10">
+              <span className="text-[10px] text-muted uppercase block">CA Estimé</span>
+              <span className="font-bold text-text">
+                {item.revenue ? new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.revenue) : 'N/A'}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted uppercase block font-bold">Maturité Digitale</span>
+            <div className="h-1.5 w-full bg-glass rounded-full overflow-hidden">
+              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${(item.maturityDigital / 5) * 100}%` }} />
+            </div>
+            <span className="text-[10px] text-muted">{item.maturityDigital}/5</span>
+          </div>
+          {item.challenges && item.challenges.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] text-muted uppercase block font-bold">Défis d'affaires</span>
+              <div className="flex flex-wrap gap-1">
+                {item.challenges.map((c: any) => (
+                  <span key={c.id} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[9px] font-semibold border border-blue-500/10">{c.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Historique d'Interventions</span>
+          {item.deliveries && item.deliveries.length > 0 ? (
+            <div className="space-y-2">
+              {item.deliveries.map((del: any) => (
+                <RelationshipCard
+                  key={del.id}
+                  title={del.service?.name || "Service"}
+                  relationType={del.status}
+                  Icon={FileCheck}
+                  description={`Opérateur: ${del.operator?.name || "N/A"}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted italic">Aucun accompagnement enregistré.</p>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>N° BCE : <span className="font-mono">{item.bce || "N/A"}</span></p>
+          <p>Territoire : <span className="font-semibold">{item.location} ({item.province})</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:Beneficiary</span></p>
+        </div>
+      );
+    } 
+    else if (type === "service") {
+      subtitle = `Code : ${item.code || "N/A"}`;
+      overviewTab = (
+        <div className="space-y-4">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 text-xs text-text/95 leading-relaxed">
+            {item.description}
+          </div>
+          {item.organization && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10 text-xs">
+              <span className="text-[10px] text-muted uppercase block">Organisme Responsable</span>
+              <span className="font-bold text-text">{item.organization.name}</span>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          {item.outputs && item.outputs.length > 0 && (
+            <div>
+              <span className="text-[10px] text-muted uppercase block font-bold mb-1">Livrables (Outputs)</span>
+              <ul className="text-xs space-y-1 list-disc pl-4 text-text/90">
+                {item.outputs.map((o: any) => <li key={o.id}>{o.name}</li>)}
+              </ul>
+            </div>
+          )}
+          {item.outcomes && item.outcomes.length > 0 && (
+            <div className="pt-2 border-t border-muted/10">
+              <span className="text-[10px] text-muted uppercase block font-bold mb-1">Impacts (Outcomes)</span>
+              <ul className="text-xs space-y-1 list-disc pl-4 text-text/90">
+                {item.outcomes.map((o: any) => <li key={o.id}>{o.name}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>URI : <span className="font-mono text-teal-500 break-all">{item.uri}</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">cpsv:PublicService</span></p>
+        </div>
+      );
+    }
+    else if (type === "journey") {
+      subtitle = `Par : ${item.provider}`;
+      overviewTab = (
+        <div className="space-y-4">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 text-xs text-text/95 leading-relaxed">
+            {item.description || "Aucune description"}
+          </div>
+          {item.objective && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10 text-xs">
+              <span className="text-[10px] text-muted uppercase block">Objectif principal</span>
+              <p className="italic text-text/90">"{item.objective}"</p>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Étapes Types du Parcours</span>
+          {item.stages && item.stages.length > 0 ? (
+            <div className="space-y-3">
+              {item.stages.map((stage: any) => (
+                <div key={stage.id} className="p-2.5 bg-glass/20 rounded-lg border border-muted/10 text-xs">
+                  <span className="font-bold text-teal-600 dark:text-teal-400">Étape {stage.position} : {stage.name}</span>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {stage.services?.map((s: any) => (
+                      <span key={s.id} className="px-1.5 py-0.5 bg-background border border-muted/20 rounded text-[9px]">{s.name}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted italic">Aucune étape déclarée.</p>
+          )}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:Journey</span></p>
+        </div>
+      );
+    }
+    else if (type === "ecosystem") {
+      overviewTab = (
+        <div className="space-y-4">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 text-xs text-text/95 leading-relaxed">
+            {item.description}
+          </div>
+          {item.mission && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10 text-xs italic text-text/90">
+              "{item.mission}"
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Membres (Opérateurs)</span>
+          <div className="grid grid-cols-1 gap-2">
+            {item.actors?.map((actor: any) => (
+              <RelationshipCard
+                key={actor.id}
+                title={actor.name}
+                relationType={actor.type}
+                Icon={Building2}
+              />
+            ))}
+          </div>
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>Territoire : <span className="font-bold">{item.territory || "Wallonie"}</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:Ecosystem</span></p>
+        </div>
+      );
+    }
+    else if (type === "dataset") {
+      title = item.title || item.name || "";
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed">
+            {item.description}
+          </div>
+          {item.ownerOrganization && (
+            <div className="bg-glass/10 p-2.5 rounded-lg border border-muted/10">
+              <span className="text-[10px] text-muted uppercase block">Propriétaire</span>
+              <span className="font-bold text-text">{item.ownerOrganization.name}</span>
+            </div>
+          )}
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-2 text-xs">
+          <p>Format de distribution : <span className="font-bold">{item.distributionFormat || "Non renseigné"}</span></p>
+          <p>Qualité/Conformité : <span className="font-bold text-teal-600">{item.qualityScore ? `${item.qualityScore}/5` : "N/A"}</span></p>
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>URI : <span className="font-mono text-teal-500 break-all">{item.uri || "N/A"}</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">dcat:Dataset</span></p>
+        </div>
+      );
+    }
+    else if (type === "knowledgeasset") {
+      title = item.title || item.name || "";
+      overviewTab = (
+        <div className="space-y-4 text-xs">
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-3.5 leading-relaxed">
+            {item.description}
+          </div>
+          <p>Format : <span className="font-bold">{item.format}</span></p>
+        </div>
+      );
+      relationsTab = (
+        <div className="space-y-3">
+          <span className="text-[10px] text-muted uppercase block font-bold">Services Documentés</span>
+          {item.publicServices?.map((s: any) => (
+            <RelationshipCard
+              key={s.id}
+              title={s.name}
+              relationType="Service"
+              Icon={FileText}
+              onClick={() => handleNodeSelection(`service-${s.id}`)}
+            />
+          ))}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-2">
+          <p>URI : <span className="font-mono text-teal-500 break-all">{item.uri || "N/A"}</span></p>
+          <p>Classe : <span className="font-mono bg-glass px-1 rounded">d4wmo:KnowledgeAsset</span></p>
+        </div>
+      );
+    }
+    else {
+      // Default fallback rendering
+      overviewTab = (
+        <div className="text-xs p-4 bg-glass/10 rounded-lg">
+          <p>Nom : <strong className="text-text">{item.name || title}</strong></p>
+          {item.description && <p className="mt-2 text-muted leading-relaxed">{item.description}</p>}
+        </div>
+      );
+      metadataTab = (
+        <div className="text-xs space-y-1">
+          <p>Type de nœud : <span className="font-mono">{type}</span></p>
+          <p>ID interne : <span className="font-mono">{item.id}</span></p>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex h-[600px] flex-col items-center justify-center text-red-500 gap-2">
-        <span className="font-bold">❌ Erreur lors du chargement du graphe</span>
-        <span className="text-sm opacity-80">{error}</span>
-      </div>
+      <EntityDetailPanel
+        title={title}
+        subtitle={subtitle}
+        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded">{badgeText}</span>}
+        actions={
+          <button 
+            onClick={() => {
+              setSelectedEntityDetails(null);
+              setSelectedNodeType("");
+            }}
+            className="rounded-full p-1.5 hover:bg-glass hover:text-primary transition-colors cursor-pointer border-none bg-transparent"
+            aria-label="Fermer"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        }
+        overviewTab={overviewTab}
+        relationsTab={relationsTab}
+        metadataTab={metadataTab}
+      />
     );
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Perspective Control Toolbar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-4 bg-surface border border-muted rounded-2xl">
-        <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      {/* Search and Filter Control Toolbar */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-4 bg-surface border border-muted rounded-2xl relative">
+        <div className="flex items-center gap-2 shrink-0">
           <Filter className="h-4.5 w-4.5 text-primary" />
           <span className="text-sm font-bold text-text">Perspective Métier :</span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Search Panel inside Toolbar */}
+        <div className="relative flex-1 w-full md:max-w-xs">
+          <div className="flex items-center gap-2 border border-muted bg-glass/20 rounded-lg px-2.5 py-1 text-xs text-muted">
+            <Search className="h-4 w-4 shrink-0 text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Rechercher un nœud par son nom..."
+              className="bg-transparent border-none outline-none flex-1 text-text placeholder-muted focus:ring-0 text-xs py-0.5"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-muted hover:text-text cursor-pointer border-none bg-transparent">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          {/* Search Dropdown Results */}
+          {searchQuery && searchResults.length > 0 && (
+            <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-muted bg-surface p-2 shadow-lg scrollbar-thin">
+              {searchResults.map(node => (
+                <div
+                  key={node.id}
+                  onClick={() => {
+                    handleNodeSelection(node.id);
+                    setSearchQuery("");
+                  }}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-glass text-xs font-semibold text-text cursor-pointer"
+                >
+                  <span className="truncate flex-1 text-left">{node.label}</span>
+                  <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-muted/40 rounded text-muted shrink-0 ml-2">
+                    {typeLabelMap[node.type] || node.type}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2 shrink-0">
           <button 
             onClick={() => setPerspective("all")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
               perspective === "all" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
             )}
           >
@@ -267,7 +735,7 @@ export default function GraphViewer() {
           <button 
             onClick={() => setPerspective("beneficiary")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
               perspective === "beneficiary" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
             )}
           >
@@ -277,7 +745,7 @@ export default function GraphViewer() {
           <button 
             onClick={() => setPerspective("ecosystem")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
               perspective === "ecosystem" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
             )}
           >
@@ -287,7 +755,7 @@ export default function GraphViewer() {
           <button 
             onClick={() => setPerspective("valuechain")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer",
               perspective === "valuechain" ? "bg-primary text-white" : "bg-glass border border-muted/50 text-muted hover:text-text"
             )}
           >
@@ -297,7 +765,7 @@ export default function GraphViewer() {
 
         {/* Target Entity Selector */}
         {perspective !== "all" && selectorOptions.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-semibold text-muted">Cible :</span>
             <select 
               value={targetEntityId}
@@ -326,14 +794,25 @@ export default function GraphViewer() {
         ))}
       </div>
 
-      {/* ReactFlow Canvas */}
-      <div className={cn("h-[650px] w-full rounded-2xl bg-surface/50 border border-muted shadow-sm p-1 overflow-hidden relative")}>
-        <ReactFlow nodes={flowNodes} edges={flowEdges} fitView>
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#64748b" style={{ opacity: 0.1 }} />
-          <MiniMap nodeStrokeWidth={3} zoomable pannable />
-          <Controls />
-        </ReactFlow>
-      </div>
+      {/* Split Layout */}
+      <SplitLayout
+        leftPane={
+          <div className="h-[600px] w-full rounded-2xl bg-surface/50 border border-muted shadow-sm p-1 overflow-hidden relative">
+            <ReactFlow 
+              nodes={flowNodes} 
+              edges={flowEdges} 
+              onNodeClick={(event, node) => handleNodeSelection(node.id)}
+              fitView
+            >
+              <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#64748b" style={{ opacity: 0.1 }} />
+              <MiniMap nodeStrokeWidth={3} zoomable pannable />
+              <Controls />
+            </ReactFlow>
+          </div>
+        }
+        rightPane={renderDetailPanel()}
+        leftColSpan={8}
+      />
     </div>
   );
 }

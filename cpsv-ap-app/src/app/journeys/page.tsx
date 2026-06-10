@@ -11,8 +11,18 @@ import {
   Sparkles,
   Layers,
   Building2,
-  ExternalLink
+  ExternalLink,
+  HelpCircle,
+  Network,
+  FileText
 } from "lucide-react";
+
+import PageHeader from "@/components/ui/PageHeader";
+import PageToolbar from "@/components/ui/PageToolbar";
+import SplitLayout from "@/components/ui/SplitLayout";
+import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
+import RelationshipCard from "@/components/ui/RelationshipCard";
+import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 
 interface Organization {
   id: number;
@@ -62,6 +72,7 @@ export default function JourneysPage() {
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function loadJourneys() {
@@ -92,176 +103,232 @@ export default function JourneysPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] text-center p-6">
-        <div className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg p-6 max-w-md">
-          <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
-          <p className="text-sm">{error}</p>
+  // Filtrer les parcours
+  const filteredJourneys = journeys.filter(j => {
+    const term = searchQuery.toLowerCase();
+    return j.name.toLowerCase().includes(term) || 
+           j.provider.toLowerCase().includes(term) || 
+           j.objective.toLowerCase().includes(term);
+  });
+
+  // --- PANNEAU GAUCHE : LISTE DES PARCOURS ---
+  const leftPane = (
+    <div className="rounded-2xl bg-glass border border-muted/20 p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2 flex items-center gap-1.5">
+        <Map className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+        Parcours de référence ({filteredJourneys.length})
+      </h3>
+      <div className="space-y-1.5">
+        {filteredJourneys.map((j) => {
+          const isSelected = selectedJourney?.id === j.id;
+          return (
+            <button
+              key={j.id}
+              onClick={() => setSelectedJourney(j)}
+              className={`w-full text-left flex items-start space-x-3 p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
+                isSelected 
+                  ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" 
+                  : "hover:bg-glass text-muted hover:text-text"
+              }`}
+            >
+              <Compass className={`h-5 w-5 shrink-0 mt-0.5 ${isSelected ? "text-primary" : "text-muted"}`} />
+              <div className="truncate flex-1">
+                <p className="font-bold text-sm truncate">{j.name}</p>
+                <p className="text-xs text-muted/80 truncate mt-0.5">Fournisseur : {j.provider}</p>
+              </div>
+            </button>
+          );
+        })}
+        {filteredJourneys.length === 0 && (
+          <div className="text-center py-8 text-xs text-muted italic">
+            Aucun parcours ne correspond.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // --- PANNEAU DROIT : DETAILS EN ENTITYDETAILPANEL ---
+  const renderDetailPanel = () => {
+    if (!selectedJourney) {
+      return (
+        <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">
+          Sélectionnez un parcours pour afficher sa structure.
+        </div>
+      );
+    }
+
+    const j = selectedJourney;
+
+    // 1. Overview Tab : Objective, Description, and vertical Timeline of Stages
+    const timelineItems: TimelineItem[] = j.stages.map((stage) => {
+      const servicesContent = (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          {stage.services.map((service) => (
+            <div 
+              key={service.id} 
+              className="rounded-xl border border-muted/20 bg-glass/25 p-3.5 space-y-2 flex flex-col justify-between hover:border-teal-500/20 transition-all duration-200"
+            >
+              <div>
+                <div className="flex items-center justify-between text-[9px] text-muted">
+                  <span className="font-mono bg-muted/10 px-1.5 py-0.2 rounded font-bold uppercase">{service.code}</span>
+                  <span className="flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {service.organization.name}
+                  </span>
+                </div>
+                <h5 className="font-bold text-text text-[11px] mt-1.5 leading-snug">{service.name}</h5>
+                <p className="text-[10px] text-muted/80 line-clamp-2 mt-1 leading-normal">
+                  {service.description}
+                </p>
+              </div>
+              
+              <div className="pt-2 border-t border-muted/10 flex justify-end">
+                <a
+                  href={`/services?id=${service.id}`}
+                  className="text-[9px] font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1 hover:underline"
+                >
+                  Fiche service
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+
+      return {
+        id: stage.id,
+        title: stage.name,
+        subtitle: `Étape ${stage.position}`,
+        description: servicesContent,
+        Icon: Compass,
+        color: "teal",
+      };
+    });
+
+    const overviewTab = (
+      <div className="space-y-6">
+        {j.objective && (
+          <div className="bg-glass/20 border border-muted/10 rounded-xl p-4">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-1">Objectif métier</h4>
+            <p className="text-xs text-text italic">"{j.objective}"</p>
+          </div>
+        )}
+
+        {j.description && (
+          <div className="bg-glass/10 border border-muted/5 rounded-xl p-4 text-xs text-muted/95 leading-relaxed">
+            {j.description}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted border-b border-muted/10 pb-1.5">
+            Chemin de transformation
+          </h4>
+          <Timeline
+            items={timelineItems}
+            emptyMessage="Aucune étape n'est configurée pour ce parcours."
+          />
         </div>
       </div>
     );
-  }
+
+    // 2. Relations Tab : Challenges, S3 value chains, and all services involved
+    const relationsTab = (
+      <div className="space-y-6">
+        {/* Challenges */}
+        {j.challenges && j.challenges.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Défis d'affaires adressés</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {j.challenges.map(c => (
+                <RelationshipCard
+                  key={c.id}
+                  title={c.name}
+                  relationType="Défi"
+                  Icon={HelpCircle}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* S3 Value Chains */}
+        {j.filieresS3 && j.filieresS3.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Filières S3 couvertes</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {j.filieresS3.map(f => (
+                <RelationshipCard
+                  key={f.id}
+                  title={f.name}
+                  relationType="Filière S3"
+                  Icon={Network}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All included services */}
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Services de support inclus</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {j.stages.flatMap(st => st.services).map(s => (
+              <RelationshipCard
+                key={s.id}
+                title={s.name}
+                relationType={`Code : ${s.code}`}
+                Icon={FileText}
+                onClick={() => window.location.href = `/services?id=${s.id}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+
+    // 3. Metadata Tab
+    const metadataTab = (
+      <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
+        <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/journey/{j.id}</span></p>
+        <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:JourneyTemplate</span></p>
+        <p className="text-text">Propulsé par : <span className="font-bold">{j.provider}</span></p>
+      </div>
+    );
+
+    return (
+      <EntityDetailPanel
+        title={j.name}
+        subtitle={`Fournisseur de parcours : ${j.provider}`}
+        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded">Parcours type CPSV</span>}
+        overviewTab={overviewTab}
+        relationsTab={relationsTab}
+        metadataTab={metadataTab}
+      />
+    );
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-text to-muted bg-clip-text text-transparent">
-          Parcours de Transformation
-        </h1>
-        <p className="text-muted text-sm max-w-2xl">
-          Découvrez les chemins d'accompagnement thématiques inter-acteurs configurés pour guider les PME régionales de la sensibilisation jusqu'à l'industrialisation.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title="Parcours de Transformation"
+        description="Découvrez les chemins d'accompagnement thématiques inter-acteurs configurés pour guider les PME régionales de la sensibilisation jusqu'à l'industrialisation."
+        Icon={Compass}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Liste des parcours (4/12 col) */}
-        <section className="lg:col-span-4 rounded-2xl bg-surface border border-muted p-4 space-y-4 max-h-[70vh] overflow-y-auto" aria-label="Liste des parcours">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2 flex items-center gap-1.5">
-            <Map className="h-4 w-4 text-primary" />
-            Parcours de référence
-          </h2>
-          <div className="space-y-1">
-            {journeys.map((j) => {
-              const isSelected = selectedJourney?.id === j.id;
-              return (
-                <button
-                  key={j.id}
-                  onClick={() => setSelectedJourney(j)}
-                  className={`w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 ${
-                    isSelected 
-                      ? "bg-gradient-to-r from-primary/10 to-amber-500/10 border-l-4 border-primary text-text shadow-sm" 
-                      : "hover:bg-glass text-muted hover:text-text"
-                  }`}
-                >
-                  <Compass className={`h-5 w-5 shrink-0 ${isSelected ? "text-primary" : "text-muted"}`} />
-                  <div className="truncate flex-1">
-                    <p className="font-bold text-sm truncate">{j.name}</p>
-                    <p className="text-xs text-muted/80 truncate">Fournisseur : {j.provider}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+      <PageToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Rechercher un parcours par nom, fournisseur ou objectif..."
+      />
 
-        {/* Timeline & Détail du parcours (8/12 col) */}
-        <section className="lg:col-span-8 space-y-8" aria-label="Détail du parcours sélectionné">
-          {selectedJourney ? (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* Infos générales */}
-              <div className="rounded-2xl bg-surface border border-muted p-6 space-y-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary to-amber-500 opacity-[0.02] blur-3xl" />
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
-                    Propulsé par : {selectedJourney.provider}
-                  </span>
-                  <h2 className="text-2xl font-black text-text tracking-tight mt-2">{selectedJourney.name}</h2>
-                  {selectedJourney.objective && (
-                    <p className="text-sm text-text/90 mt-2 italic">
-                      "Objectif : {selectedJourney.objective}"
-                    </p>
-                  )}
-                  {selectedJourney.description && (
-                    <p className="text-xs text-muted mt-2">
-                      {selectedJourney.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Métadonnées */}
-                <div className="pt-4 border-t border-muted grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="space-y-1.5">
-                    <span className="font-bold text-muted flex items-center gap-1">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      Défis adressés :
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedJourney.challenges.map(c => (
-                        <span key={c.id} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-semibold border border-blue-500/10">
-                          {c.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="font-bold text-muted flex items-center gap-1">
-                      <Layers className="h-3.5 w-3.5 text-amber-500" />
-                      Filières S3 :
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedJourney.filieresS3.map(f => (
-                        <span key={f.id} className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/10">
-                          {f.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline verticale */}
-              <div className="rounded-2xl bg-surface border border-muted p-6 space-y-6">
-                <h3 className="font-bold text-text text-sm flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-primary" />
-                  Étapes du chemin de transformation
-                </h3>
-
-                <div className="relative pl-8 space-y-8 border-l border-muted">
-                  {selectedJourney.stages.map((stage, sIdx) => (
-                    <div key={stage.id} className="relative animate-in fade-in duration-300" style={{ animationDelay: `${sIdx * 100}ms` }}>
-                      {/* Timeline dot */}
-                      <span className="absolute -left-[41px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-amber-500 text-[10px] font-bold text-white shadow-md">
-                        {stage.position}
-                      </span>
-
-                      <div className="space-y-3">
-                        <h4 className="font-bold text-text text-sm tracking-tight">{stage.name}</h4>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {stage.services.map((service) => (
-                            <div key={service.id} className="rounded-xl border border-muted bg-glass p-4 space-y-2 flex flex-col justify-between hover:border-primary/20 transition-all duration-200">
-                              <div>
-                                <div className="flex items-center justify-between text-[10px] text-muted">
-                                  <span className="font-mono bg-muted/30 px-1.5 py-0.5 rounded">{service.code}</span>
-                                  <span className="flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    {service.organization.name}
-                                  </span>
-                                </div>
-                                <h5 className="font-bold text-text text-xs mt-1.5 leading-snug">{service.name}</h5>
-                                <p className="text-[11px] text-muted/90 line-clamp-2 mt-1 leading-normal">
-                                  {service.description}
-                                </p>
-                              </div>
-
-                              <div className="pt-2 border-t border-muted/50 flex justify-end">
-                                <a
-                                  href={`/services?id=${service.id}`}
-                                  className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
-                                >
-                                  Fiche service
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted border-dashed rounded-2xl bg-glass p-6 text-muted italic">
-              Sélectionnez un parcours pour afficher sa timeline.
-            </div>
-          )}
-        </section>
-      </div>
+      <SplitLayout
+        leftPane={leftPane}
+        rightPane={renderDetailPanel()}
+        leftColSpan={4}
+      />
     </div>
   );
 }

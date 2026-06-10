@@ -25,10 +25,39 @@ app.use((req, res, next) => {
   }
 });
 
+// --- IN-MEMORY CACHE FOR ACCELERATING PAGE LOADS ---
+let cachedMeta: any = null;
+let cachedMetaTime = 0;
+let cachedGraph: any = null;
+let cachedGraphTime = 0;
+let cachedBeneficiaries: any = null;
+let cachedBeneficiariesTime = 0;
+let cachedServices: any = null;
+let cachedServicesTime = 0;
+
+const CACHE_TTL_MS = 30000; // 30 seconds TTL
+
+// Middleware to invalidate cache on any write operation
+app.use((req, res, next) => {
+  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
+    console.log(`⚡ Invalidation du cache suite à une opération d'écriture: ${req.method} ${req.url}`);
+    cachedMeta = null;
+    cachedGraph = null;
+    cachedBeneficiaries = null;
+    cachedServices = null;
+  }
+  next();
+});
+
+
 // --- SERVICES PUBLICS (CPSV-AP) ---
 
 // 1. GET /api/services
 app.get('/api/services', async (req, res) => {
+  const now = Date.now();
+  if (cachedServices && (now - cachedServicesTime < CACHE_TTL_MS)) {
+    return res.json(cachedServices);
+  }
   try {
     const services = await prisma.publicService.findMany({
       select: {
@@ -51,6 +80,8 @@ app.get('/api/services', async (req, res) => {
         createdAt: 'desc',
       },
     });
+    cachedServices = services;
+    cachedServicesTime = now;
     res.json(services);
   } catch (error: any) {
     console.error('Erreur lors de la récupération des services:', error);
@@ -60,6 +91,10 @@ app.get('/api/services', async (req, res) => {
 
 // 2. GET /api/meta - Métadonnées enrichies
 app.get('/api/meta', async (req, res) => {
+  const now = Date.now();
+  if (cachedMeta && (now - cachedMetaTime < CACHE_TTL_MS)) {
+    return res.json(cachedMeta);
+  }
   try {
     const [
       organizations,
@@ -141,7 +176,7 @@ app.get('/api/meta', async (req, res) => {
       })
     ]);
 
-    res.json({
+    const data = {
       organizations,
       channels,
       targetAudiences,
@@ -168,7 +203,10 @@ app.get('/api/meta', async (req, res) => {
       knowledgeAssets,
       actionInstances,
       journeyEnrollments
-    });
+    };
+    cachedMeta = data;
+    cachedMetaTime = now;
+    res.json(data);
   } catch (error: any) {
     console.error('Erreur lors de la récupération des métadonnées:', error);
     res.status(500).json({ error: 'Erreur interne du serveur', details: error.message });
@@ -718,11 +756,17 @@ app.post('/api/second-line-missions', async (req, res) => {
 
 // --- BENEFICIAIRES (BENEFICIARIES) ---
 app.get('/api/beneficiaries', async (req, res) => {
+  const now = Date.now();
+  if (cachedBeneficiaries && (now - cachedBeneficiariesTime < CACHE_TTL_MS)) {
+    return res.json(cachedBeneficiaries);
+  }
   try {
     const data = await prisma.beneficiary.findMany({
       include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
       orderBy: { name: 'asc' }
     });
+    cachedBeneficiaries = data;
+    cachedBeneficiariesTime = now;
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -731,11 +775,17 @@ app.get('/api/beneficiaries', async (req, res) => {
 
 // Alias /api/companies pour rétrocompatibilité
 app.get('/api/companies', async (req, res) => {
+  const now = Date.now();
+  if (cachedBeneficiaries && (now - cachedBeneficiariesTime < CACHE_TTL_MS)) {
+    return res.json(cachedBeneficiaries);
+  }
   try {
     const data = await prisma.beneficiary.findMany({
       include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
       orderBy: { name: 'asc' }
     });
+    cachedBeneficiaries = data;
+    cachedBeneficiariesTime = now;
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -1168,6 +1218,10 @@ app.get('/api/recommender/beneficiary/:beneficiaryId', runRecommender);
 
 // --- KNOWLEDGE GRAPH (API) ---
 app.get('/api/graph', async (req, res) => {
+  const now = Date.now();
+  if (cachedGraph && (now - cachedGraphTime < CACHE_TTL_MS)) {
+    return res.json(cachedGraph);
+  }
   try {
     const [beneficiaries, services, journeys, ecosystems, organizations, challenges, valueChains, datasets, knowledgeAssets, eventResources, actionInstances] = await Promise.all([
       prisma.beneficiary.findMany({
@@ -1353,7 +1407,10 @@ app.get('/api/graph', async (req, res) => {
       }
     }
 
-    res.json({ nodes, edges });
+    const data = { nodes, edges };
+    cachedGraph = data;
+    cachedGraphTime = now;
+    res.json(data);
   } catch (error: any) {
     console.error('Erreur lors de la génération du graphe:', error);
     res.status(500).json({ error: 'Erreur interne lors de la génération du graphe', details: error.message });

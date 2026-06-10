@@ -40,11 +40,11 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:flex flex-col h-screen sticky top-0">
-      <div className="flex items-center justify-center px-3 py-2 border-b border-muted mb-6">
+      <div className="flex items-center justify-center px-3 py-4 border-b border-muted mb-6">
         <img 
           src="/logo.png" 
           alt="PIT Wallonie" 
-          className="h-12 w-auto max-w-full object-contain rounded-lg shadow-sm"
+          className="h-20 w-auto max-w-[200px] object-contain rounded-lg shadow-md hover:scale-102 transition-transform duration-200"
         />
       </div>
       <nav className="space-y-1.5 flex-1 overflow-y-auto">

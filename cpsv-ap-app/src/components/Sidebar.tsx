@@ -44,7 +44,7 @@ export default function Sidebar() {
         <img 
           src="/logo.png" 
           alt="PIT Wallonie" 
-          className="h-20 w-auto max-w-[200px] object-contain rounded-lg shadow-md hover:scale-102 transition-transform duration-200"
+          className="h-24 w-auto max-w-[220px] object-contain bg-transparent"
         />
       </div>
       <nav className="space-y-1.5 flex-1 overflow-y-auto">

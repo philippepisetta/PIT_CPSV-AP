@@ -57,7 +57,9 @@ export async function GET(
         datasets, knowledgeAssets, actionInstances, journeyEnrollments,
         strategies, strategicPriorities, programs, measures,
         initiatives, beneficiaryEngagements, outcomeIndicators,
-        impacts, fundingInstruments
+        impacts, fundingInstruments, projects, objectives,
+        transformationDimensions, strategicDomainDimensions, capabilityDimensions,
+        impactDimensions, knowledgeDimensions, dataQualityDimensions
       ] = await Promise.all([
         prisma.organization.findMany({ orderBy: { name: 'asc' } }),
         prisma.channel.findMany({ orderBy: { name: 'asc' } }),
@@ -144,7 +146,15 @@ export async function GET(
           include: { beneficiary: true, indicator: true, territory: true, valueChain: true },
           orderBy: { date: 'desc' }
         }),
-        prisma.fundingInstrument.findMany({ orderBy: { name: 'asc' } })
+        prisma.fundingInstrument.findMany({ orderBy: { name: 'asc' } }),
+        prisma.project.findMany({ include: { program: true, initiative: true }, orderBy: { name: 'asc' } }),
+        prisma.objective.findMany({ include: { strategy: true, parent: true }, orderBy: { name: 'asc' } }),
+        prisma.transformationDimension.findMany({ orderBy: { code: 'asc' } }),
+        prisma.strategicDomainDimension.findMany({ include: { parent: true }, orderBy: { name: 'asc' } }),
+        prisma.capabilityDimension.findMany({ orderBy: { code: 'asc' } }),
+        prisma.impactDimension.findMany({ orderBy: { code: 'asc' } }),
+        prisma.knowledgeDimension.findMany({ orderBy: { code: 'asc' } }),
+        prisma.dataQualityDimension.findMany()
       ]);
 
       const data = {
@@ -156,7 +166,9 @@ export async function GET(
         datasets, knowledgeAssets, actionInstances, journeyEnrollments,
         strategies, strategicPriorities, programs, measures,
         initiatives, beneficiaryEngagements, outcomeIndicators,
-        impacts, fundingInstruments
+        impacts, fundingInstruments, projects, objectives,
+        transformationDimensions, strategicDomainDimensions, capabilityDimensions,
+        impactDimensions, knowledgeDimensions, dataQualityDimensions
       };
       cachedMeta = data;
       cachedMetaTime = now;
@@ -215,6 +227,43 @@ export async function GET(
     }
     if (segment1 === "sectors") {
       const data = await prisma.naceSector.findMany({ orderBy: { code: "asc" } });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "projects") {
+      const data = await prisma.project.findMany({
+        include: { program: true, initiative: true, actions: true, organizations: true, ecosystems: true },
+        orderBy: { name: "asc" }
+      });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "objectives") {
+      const data = await prisma.objective.findMany({
+        include: { strategy: true, parent: true, children: true, indicators: true },
+        orderBy: { name: "asc" }
+      });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "transformation-dimensions") {
+      const data = await prisma.transformationDimension.findMany({ orderBy: { name: "asc" } });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "strategic-domains") {
+      const data = await prisma.strategicDomainDimension.findMany({
+        include: { parent: true, children: true, valueChains: true },
+        orderBy: { name: "asc" }
+      });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "capabilities") {
+      const data = await prisma.capabilityDimension.findMany({ orderBy: { name: "asc" } });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "impact-dimensions") {
+      const data = await prisma.impactDimension.findMany({ orderBy: { name: "asc" } });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "knowledge-dimensions") {
+      const data = await prisma.knowledgeDimension.findMany({ orderBy: { name: "asc" } });
       return NextResponse.json(data);
     }
     if (segment1 === "roles") {
@@ -1514,7 +1563,9 @@ async function generateGraphData() {
     challenges, valueChains, datasets, knowledgeAssets, eventResources,
     actionInstances, strategies, strategicPriorities, programs, measures,
     initiatives, beneficiaryEngagements, outcomeIndicators, impacts,
-    fundingInstruments, territories
+    fundingInstruments, territories, projects, objectives,
+    transformationDimensions, strategicDomainDimensions, capabilityDimensions,
+    impactDimensions, knowledgeDimensions, dataQualityDimensions
   ] = await Promise.all([
     prisma.beneficiary.findMany({ include: { challenges: true, filieresS3: true, stages: true, needs: true, enrolledJourneys: true, deliveries: true } }),
     prisma.publicService.findMany({ include: { organization: true, challenges: true, filieresS3: true, stages: true, initiatives: true } }),
@@ -1536,7 +1587,15 @@ async function generateGraphData() {
     prisma.outcomeIndicator.findMany(),
     prisma.impact.findMany({ include: { beneficiary: true, indicator: true, territory: true, valueChain: true } }),
     prisma.fundingInstrument.findMany({ include: { strategies: true, programs: true, measures: true, initiatives: true, services: true, beneficiaries: true } }),
-    prisma.territory.findMany({ include: { parentTerritory: true } })
+    prisma.territory.findMany({ include: { parentTerritory: true } }),
+    prisma.project.findMany({ include: { program: true, initiative: true, actions: true, organizations: true, ecosystems: true } }),
+    prisma.objective.findMany({ include: { strategy: true, parent: true, children: true, indicators: true } }),
+    prisma.transformationDimension.findMany({ include: { organizations: true, programs: true, projects: true, actionInstances: true, services: true, ecosystems: true, deliveries: true } }),
+    prisma.strategicDomainDimension.findMany({ include: { parent: true, children: true, valueChains: true, organizations: true, programs: true, projects: true, services: true } }),
+    prisma.capabilityDimension.findMany({ include: { services: true, programs: true, projects: true, actionInstances: true, organizations: true, ecosystems: true, datasets: true, knowledgeAssets: true } }),
+    prisma.impactDimension.findMany({ include: { impacts: true, services: true, programs: true, projects: true, organizations: true, ecosystems: true, datasets: true, knowledgeAssets: true } }),
+    prisma.knowledgeDimension.findMany({ include: { datasets: true, knowledgeAssets: true, services: true, projects: true, organizations: true, programs: true } }),
+    prisma.dataQualityDimension.findMany()
   ]);
 
   const nodes: any[] = [];
@@ -1710,6 +1769,80 @@ async function generateGraphData() {
     for (const init of fi.initiatives) addEdge(fiId, `initiative-${init.id}`, 'FINANCE_INITIATIVE');
     for (const s of fi.services) addEdge(fiId, `service-${s.id}`, 'FINANCE_SERVICE');
     for (const b of fi.beneficiaries) addEdge(fiId, `beneficiary-${b.id}`, 'ATTRIBUE_A');
+  }
+
+  // v7.0 Transversal Dimensions and Core Entities in Graph
+  for (const proj of projects) {
+    const projId = `project-${proj.id}`;
+    addNode(projId, proj.name, 'project', { code: proj.code, status: proj.status });
+    if (proj.programId) addEdge(projId, `program-${proj.programId}`, 'APPARTIENT_A');
+    if (proj.initiativeId) addEdge(projId, `initiative-${proj.initiativeId}`, 'APPARTIENT_A');
+    for (const org of proj.organizations) addEdge(`org-${org.id}`, projId, 'CONTRIBUE_A');
+    for (const eco of proj.ecosystems) addEdge(projId, `ecosystem-${eco.id}`, 'RATTACHE_A');
+  }
+
+  for (const obj of objectives) {
+    const objId = `objective-${obj.id}`;
+    addNode(objId, obj.name, 'objective', { code: obj.code });
+    if (obj.strategyId) addEdge(objId, `strategy-${obj.strategyId}`, 'SOUTIENT_STRATEGIE');
+    if (obj.parentId) addEdge(objId, `objective-${obj.parentId}`, 'SOUS_OBJECTIF_DE');
+  }
+
+  for (const td of transformationDimensions) {
+    const tdId = `transformation-${td.id}`;
+    addNode(tdId, td.name, 'transformation', { code: td.code });
+    for (const s of td.services) addEdge(`service-${s.id}`, tdId, 'AXE_TRANSFORMATION');
+    for (const p of td.programs) addEdge(`program-${p.id}`, tdId, 'AXE_TRANSFORMATION');
+    for (const proj of td.projects) addEdge(`project-${proj.id}`, tdId, 'AXE_TRANSFORMATION');
+    for (const eco of td.ecosystems) addEdge(`ecosystem-${eco.id}`, tdId, 'AXE_TRANSFORMATION');
+    for (const act of td.actionInstances) addEdge(`actioninstance-${act.id}`, tdId, 'AXE_TRANSFORMATION');
+  }
+
+  for (const sd of strategicDomainDimensions) {
+    const sdId = `strategicdomain-${sd.id}`;
+    addNode(sdId, sd.name, 'strategicdomain', { code: sd.code, level: sd.level });
+    if (sd.parentId) addEdge(sdId, `strategicdomain-${sd.parentId}`, 'SOUS_DOMAINE_DE');
+    for (const vc of sd.valueChains) addEdge(`valuechain-${vc.id}`, sdId, 'MAPPING_S3');
+    for (const s of sd.services) addEdge(`service-${s.id}`, sdId, 'ALIGNEMENT_S3');
+    for (const p of sd.programs) addEdge(`program-${p.id}`, sdId, 'ALIGNEMENT_S3');
+    for (const proj of sd.projects) addEdge(`project-${proj.id}`, sdId, 'ALIGNEMENT_S3');
+  }
+
+  for (const cap of capabilityDimensions) {
+    const capId = `capability-${cap.id}`;
+    addNode(capId, cap.name, 'capability', { code: cap.code });
+    for (const s of cap.services) addEdge(`service-${s.id}`, capId, 'REQUIS_CAPABILITE');
+    for (const p of cap.programs) addEdge(`program-${p.id}`, capId, 'REQUIS_CAPABILITE');
+    for (const proj of cap.projects) addEdge(`project-${proj.id}`, capId, 'DEVELOPPE_CAPABILITE');
+    for (const act of cap.actionInstances) addEdge(`actioninstance-${act.id}`, capId, 'DEVELOPPE_CAPABILITE');
+    for (const d of cap.datasets) addEdge(`dataset-${d.id}`, capId, 'DONNEE_CAPABILITE');
+    for (const ka of cap.knowledgeAssets) addEdge(`knowledgeasset-${ka.id}`, capId, 'CONNAISSANCE_CAPABILITE');
+  }
+
+  for (const idim of impactDimensions) {
+    const idimId = `impactdimension-${idim.id}`;
+    addNode(idimId, idim.name, 'impactdimension', { code: idim.code, category: idim.category });
+    for (const imp of idim.impacts) addEdge(`impact-${imp.id}`, idimId, 'CATEGORIE_IMPACT');
+    for (const s of idim.services) addEdge(`service-${s.id}`, idimId, 'VISE_IMPACT');
+    for (const p of idim.programs) addEdge(`program-${p.id}`, idimId, 'VISE_IMPACT');
+    for (const proj of idim.projects) addEdge(`project-${proj.id}`, idimId, 'VISE_IMPACT');
+  }
+
+  for (const kd of knowledgeDimensions) {
+    const kdId = `knowledgedimension-${kd.id}`;
+    addNode(kdId, kd.name, 'knowledgedimension', { code: kd.code });
+    for (const d of kd.datasets) addEdge(`dataset-${d.id}`, kdId, 'KNOWLEDGE_TYPE');
+    for (const ka of kd.knowledgeAssets) addEdge(`knowledgeasset-${ka.id}`, kdId, 'KNOWLEDGE_TYPE');
+    for (const s of kd.services) addEdge(`service-${s.id}`, kdId, 'KNOWLEDGE_TYPE');
+  }
+
+  for (const dq of dataQualityDimensions) {
+    const dqId = `dataquality-${dq.id}`;
+    const label = `Score: ${(dq.overallScore * 100).toFixed(0)}%`;
+    addNode(dqId, label, 'dataquality', { score: dq.overallScore });
+    if (dq.datasetId) addEdge(`dataset-${dq.datasetId}`, dqId, 'QUALITE_DONNEES');
+    if (dq.knowledgeAssetId) addEdge(`knowledgeasset-${dq.knowledgeAssetId}`, dqId, 'QUALITE_DONNEES');
+    if (dq.indicatorId) addEdge(`indicator-${dq.indicatorId}`, dqId, 'QUALITE_DONNEES');
   }
 
   return { nodes, edges };

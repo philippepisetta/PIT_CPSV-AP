@@ -34,6 +34,13 @@ model Organization {
   programParticipations ProgramParticipation[]
   initiativeParticipations InitiativeParticipation[]
 
+  projects              Project[]             @relation("ProjectOrganizations")
+  transformationDimensions TransformationDimension[] @relation("OrganizationTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("OrganizationStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("OrganizationCapabilities")
+  impacts                  ImpactDimension[]         @relation("OrganizationImpacts")
+  knowledges               KnowledgeDimension[]       @relation("OrganizationKnowledges")
+
   @@map("organizations")
 }
 
@@ -90,6 +97,12 @@ model PublicService {
   // Nouvelles relations Strategic Governance
   initiatives         Initiative[]         @relation("InitiativeServices")
   fundingInstruments  FundingInstrument[]  @relation("ServiceFunding")
+
+  transformationDimensions TransformationDimension[] @relation("ServiceTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("ServiceStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("ServiceCapabilities")
+  impactDimensions         ImpactDimension[]         @relation("ServiceImpacts")
+  knowledges               KnowledgeDimension[]       @relation("ServiceKnowledges")
 
   @@index([organizationId])
   @@map("public_services")
@@ -416,6 +429,9 @@ model StrategicValueChain {
   initiatives    Initiative[]          @relation("InitiativeValueChains")
   engagements    BeneficiaryEngagement[] @relation("EngagementValueChains")
   impacts        Impact[]              @relation("ImpactValueChains")
+  
+  strategicDomainId   Int?
+  strategicDomain     StrategicDomainDimension? @relation(fields: [strategicDomainId], references: [id], onDelete: SetNull)
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -518,6 +534,12 @@ model Ecosystem {
   secondLineMissionsDirect SecondLineMission[]  @relation("MissionEcosystemDirect")
   engagements              BeneficiaryEngagement[]
 
+  projects                 Project[]             @relation("ProjectEcosystems")
+  transformationDimensions TransformationDimension[] @relation("EcosystemTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("EcosystemStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("EcosystemCapabilities")
+  impacts                  ImpactDimension[]         @relation("EcosystemImpacts")
+
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -545,6 +567,10 @@ model Journey {
   journeyEnrollments JourneyEnrollment[]
   actionInstances   ActionInstance[]
   engagements      BeneficiaryEngagement[]
+  
+  transformationDimensions TransformationDimension[] @relation("JourneyTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("JourneyStrategicDomains")
+
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -638,6 +664,9 @@ model ServiceDelivery {
   journeyEnrollmentId  Int?
   journeyEnrollment    JourneyEnrollment?  @relation(fields: [journeyEnrollmentId], references: [id], onDelete: SetNull)
 
+  transformationDimensions TransformationDimension[] @relation("DeliveryTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("DeliveryStrategicDomains")
+
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -678,6 +707,10 @@ model CollectiveDelivery {
   engagement        BeneficiaryEngagement?  @relation(fields: [engagementId], references: [id], onDelete: SetNull)
   
   notes             String?                  @db.Text
+  
+  transformationDimensions TransformationDimension[] @relation("CollectiveTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("CollectiveStrategicDomains")
+
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
 
@@ -715,6 +748,10 @@ model SecondLineMission {
   ecosystem           Ecosystem?             @relation("MissionEcosystemDirect", fields: [ecosystemId], references: [id], onDelete: SetNull)
   
   notes               String?                @db.Text
+  
+  transformationDimensions TransformationDimension[] @relation("MissionTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("MissionStrategicDomains")
+
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
 
@@ -772,6 +809,14 @@ model ActionInstance {
   
   deliveries     ServiceDelivery[]
   
+  projectId              Int?
+  project                Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  transformationDimensions TransformationDimension[] @relation("ActionTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("ActionStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("ActionCapabilities")
+  impacts                  ImpactDimension[]         @relation("ActionImpacts")
+  knowledges               KnowledgeDimension[]       @relation("ActionKnowledges")
+
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -851,6 +896,11 @@ model KnowledgeAsset {
   programs           Program[]           @relation("ProgramKnowledgeAssets")
   initiatives        Initiative[]        @relation("InitiativeKnowledgeAssets")
 
+  capabilities       CapabilityDimension[]     @relation("AssetCapabilities")
+  impacts            ImpactDimension[]         @relation("AssetImpacts")
+  knowledges         KnowledgeDimension[]       @relation("AssetKnowledges")
+  dataQuality        DataQualityDimension?
+
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -868,6 +918,11 @@ model Dataset {
   
   ownerOrganizationId Int
   ownerOrganization   Organization @relation(fields: [ownerOrganizationId], references: [id], onDelete: Cascade)
+
+  capabilities       CapabilityDimension[]     @relation("DatasetCapabilities")
+  impacts            ImpactDimension[]         @relation("DatasetImpacts")
+  knowledges         KnowledgeDimension[]       @relation("DatasetKnowledges")
+  dataQuality        DataQualityDimension?
 
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
@@ -989,6 +1044,7 @@ model Strategy {
   ecosystems          Ecosystem[]           @relation("StrategyEcosystems")
   filieresS3          StrategicValueChain[] @relation("StrategyValueChains")
   fundingInstruments  FundingInstrument[]   @relation("StrategyFunding")
+  objectives          Objective[]
 
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -1038,6 +1094,13 @@ model Program {
   participations      ProgramParticipation[]
   fundingInstruments  FundingInstrument[]   @relation("ProgramFunding")
   knowledgeAssets     KnowledgeAsset[]      @relation("ProgramKnowledgeAssets")
+
+  projects            Project[]
+  transformationDimensions TransformationDimension[] @relation("ProgramTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("ProgramStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("ProgramCapabilities")
+  impacts                  ImpactDimension[]         @relation("ProgramImpacts")
+  knowledges               KnowledgeDimension[]       @relation("ProgramKnowledges")
 
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -1091,6 +1154,8 @@ model Initiative {
   engagements        BeneficiaryEngagement[]
   fundingInstruments FundingInstrument[]   @relation("InitiativeFunding")
   knowledgeAssets    KnowledgeAsset[]      @relation("InitiativeKnowledgeAssets")
+
+  projects           Project[]
 
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
@@ -1166,6 +1231,8 @@ model OutcomeIndicator {
   unit        String   // ex: "unités", "tonnes", "%", "EUR"
   description String?  @db.Text
   impacts     Impact[]
+  objectives  Objective[]           @relation("ObjectiveIndicators")
+  dataQuality DataQualityDimension?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1192,6 +1259,9 @@ model Impact {
   date          DateTime             @default(now())
   evidence      String?              @db.Text
 
+  impactDimensionId Int?
+  impactDimension   ImpactDimension?      @relation(fields: [impactDimensionId], references: [id], onDelete: SetNull)
+
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
@@ -1215,4 +1285,217 @@ model FundingInstrument {
   updatedAt      DateTime              @updatedAt
 
   @@map("funding_instruments")
+}
+
+// ==========================================
+// PIT v7.0 New Core Entities
+// ==========================================
+
+model Project {
+  id              Int                   @id @default(autoincrement())
+  code            String?               @unique
+  name            String
+  description     String?               @db.Text
+  uri             String?               @unique
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String                @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, CANCELLED
+  
+  programId       Int?
+  program         Program?              @relation(fields: [programId], references: [id], onDelete: SetNull)
+  
+  initiativeId    Int?
+  initiative      Initiative?           @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+
+  actions         ActionInstance[]
+  organizations   Organization[]        @relation("ProjectOrganizations")
+  ecosystems      Ecosystem[]           @relation("ProjectEcosystems")
+
+  // Dimension relations
+  transformationDimensions TransformationDimension[] @relation("ProjectTransformations")
+  strategicDomains         StrategicDomainDimension[] @relation("ProjectStrategicDomains")
+  capabilities             CapabilityDimension[]     @relation("ProjectCapabilities")
+  impacts                  ImpactDimension[]         @relation("ProjectImpacts")
+  knowledges               KnowledgeDimension[]       @relation("ProjectKnowledges")
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@map("projects")
+}
+
+model Objective {
+  id              Int                   @id @default(autoincrement())
+  code            String?               @unique
+  name            String
+  description     String?               @db.Text
+  uri             String?               @unique
+  
+  strategyId      Int?
+  strategy        Strategy?             @relation(fields: [strategyId], references: [id], onDelete: SetNull)
+  
+  parentId        Int?
+  parent          Objective?            @relation("ObjectiveHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Objective[]           @relation("ObjectiveHierarchy")
+
+  indicators      OutcomeIndicator[]    @relation("ObjectiveIndicators")
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@map("objectives")
+}
+
+// ==========================================
+// PIT v7.0 Transversal Dimensions
+// ==========================================
+
+model TransformationDimension {
+  id              Int                   @id @default(autoincrement())
+  code            String                @unique // D, R, B, E, S, T
+  name            String                // Demonstration, Readiness / Skills, Business, Ecosystem, Support, Technology
+  description     String?               @db.Text
+  uri             String?               @unique
+  
+  organizations   Organization[]        @relation("OrganizationTransformations")
+  programs        Program[]             @relation("ProgramTransformations")
+  projects        Project[]             @relation("ProjectTransformations")
+  actionInstances ActionInstance[]      @relation("ActionTransformations")
+  deliveries      ServiceDelivery[]     @relation("DeliveryTransformations")
+  collectiveDeliveries CollectiveDelivery[] @relation("CollectiveTransformations")
+  secondLineMissions SecondLineMission[]  @relation("MissionTransformations")
+  services        PublicService[]       @relation("ServiceTransformations")
+  journeys        Journey[]             @relation("JourneyTransformations")
+  ecosystems      Ecosystem[]           @relation("EcosystemTransformations")
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@map("transformation_dimensions")
+}
+
+model StrategicDomainDimension {
+  id              Int                         @id @default(autoincrement())
+  code            String?                     @unique
+  name            String
+  level           String                      // DOMAIN, SUBDOMAIN
+  description     String?                     @db.Text
+  uri             String?                     @unique
+  
+  parentId        Int?
+  parent          StrategicDomainDimension?   @relation("StrategicDomainHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        StrategicDomainDimension[]  @relation("StrategicDomainHierarchy")
+
+  valueChains     StrategicValueChain[]       // Links to S3 Value Chains
+  
+  organizations   Organization[]              @relation("OrganizationStrategicDomains")
+  programs        Program[]                   @relation("ProgramStrategicDomains")
+  projects        Project[]                   @relation("ProjectStrategicDomains")
+  actionInstances ActionInstance[]            @relation("ActionStrategicDomains")
+  deliveries      ServiceDelivery[]           @relation("DeliveryStrategicDomains")
+  collectiveDeliveries CollectiveDelivery[]   @relation("CollectiveStrategicDomains")
+  secondLineMissions SecondLineMission[]      @relation("MissionStrategicDomains")
+  services        PublicService[]             @relation("ServiceStrategicDomains")
+  journeys        Journey[]                   @relation("JourneyStrategicDomains")
+  ecosystems      Ecosystem[]                 @relation("EcosystemStrategicDomains")
+
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  @@map("strategic_domain_dimensions")
+}
+
+model CapabilityDimension {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique // AI, DATA_ANALYTICS, CYBERSECURITY, etc.
+  name            String            // Artificial Intelligence, Data Analytics, etc.
+  description     String?           @db.Text
+  uri             String?           @unique
+  
+  services        PublicService[]   @relation("ServiceCapabilities")
+  programs        Program[]         @relation("ProgramCapabilities")
+  projects        Project[]         @relation("ProjectCapabilities")
+  actionInstances ActionInstance[]  @relation("ActionCapabilities")
+  organizations   Organization[]    @relation("OrganizationCapabilities")
+  ecosystems      Ecosystem[]       @relation("EcosystemCapabilities")
+  datasets        Dataset[]         @relation("DatasetCapabilities")
+  knowledgeAssets KnowledgeAsset[]  @relation("AssetCapabilities")
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("capability_dimensions")
+}
+
+model ImpactDimension {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique // COMPETITIVENESS, INNOVATION, etc.
+  name            String            // Compétitivité, Innovation, etc.
+  category        String            // SDG, GREEN_DEAL, CIRCULAR_WALLONIA, REGIONAL
+  description     String?           @db.Text
+  uri             String?           @unique
+  
+  impacts         Impact[]
+  services        PublicService[]   @relation("ServiceImpacts")
+  programs        Program[]         @relation("ProgramImpacts")
+  projects        Project[]         @relation("ProjectImpacts")
+  actionInstances ActionInstance[]  @relation("ActionImpacts")
+  organizations   Organization[]    @relation("OrganizationImpacts")
+  ecosystems      Ecosystem[]       @relation("EcosystemImpacts")
+  datasets        Dataset[]         @relation("DatasetImpacts")
+  knowledgeAssets KnowledgeAsset[]  @relation("AssetImpacts")
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("impact_dimensions")
+}
+
+model KnowledgeDimension {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique // eg. REFERENTIAL, TAXONOMY, INDICATOR
+  name            String            // eg. Référentiels, Taxonomies, Indicateurs
+  description     String?           @db.Text
+  uri             String?           @unique
+  
+  datasets        Dataset[]         @relation("DatasetKnowledges")
+  knowledgeAssets KnowledgeAsset[]  @relation("AssetKnowledges")
+  services        PublicService[]   @relation("ServiceKnowledges")
+  projects        Project[]         @relation("ProjectKnowledges")
+  actionInstances ActionInstance[]  @relation("ActionKnowledges")
+  organizations   Organization[]    @relation("OrganizationKnowledges")
+  programs        Program[]         @relation("ProgramKnowledges")
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("knowledge_dimensions")
+}
+
+model DataQualityDimension {
+  id              Int               @id @default(autoincrement())
+  completeness    Float
+  accuracy        Float
+  validity        Float
+  consistency     Float
+  timeliness      Float
+  uniqueness      Float
+  traceability    Float
+  clarity         Float
+  availability    Float
+  overallScore    Float
+  
+  datasetId       Int?              @unique
+  dataset         Dataset?          @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  
+  knowledgeAssetId Int?             @unique
+  knowledgeAsset  KnowledgeAsset?   @relation(fields: [knowledgeAssetId], references: [id], onDelete: Cascade)
+
+  indicatorId     Int?              @unique
+  indicator       OutcomeIndicator? @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("data_quality_dimensions")
 }

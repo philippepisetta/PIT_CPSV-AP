@@ -12,7 +12,10 @@ export type GraphMode =
   | "journey"
   | "value-chain"
   | "ecosystem"
-  | "strategy";
+  | "strategy"
+  | "transformation"
+  | "capability"
+  | "impact";
 
 interface GraphNodeData {
   id: string;
@@ -64,6 +67,14 @@ const typeColorMap: Record<string, string> = {
   knowledgeasset: "#f43f5e",     // Rose-500
   eventresource: "#fb7185",      // Light Rose
   challenge: "#64748b",          // Slate-500
+  project: "#3b82f6",            // Blue
+  objective: "#06b6d4",          // Cyan
+  transformation: "#a855f7",     // Purple
+  strategicdomain: "#f59e0b",    // Amber
+  capability: "#10b981",        // Emerald
+  impactdimension: "#e11d48",   // Rose-600
+  knowledgedimension: "#6366f1", // Indigo
+  dataquality: "#14b8a6",        // Teal
 };
 
 const typeLabelMap: Record<string, string> = {
@@ -89,6 +100,14 @@ const typeLabelMap: Record<string, string> = {
   knowledgeasset: "Actif Connaissance",
   eventresource: "Événement",
   challenge: "Défi d'affaires",
+  project: "Projet Territorial",
+  objective: "Objectif Stratégique",
+  transformation: "Dimension DR-BEST",
+  strategicdomain: "Axe S3 Régional",
+  capability: "Compétence / Capabilité",
+  impactdimension: "Axe d'Impact Global",
+  knowledgedimension: "Type de Connaissance",
+  dataquality: "Qualité de Données",
 };
 
 // Map of standard X offsets for the layered flow
@@ -115,6 +134,14 @@ const defaultTypeXMap: Record<string, number> = {
   knowledgeasset: 2540,
   eventresource: 2680,
   challenge: 2820,
+  project: 350,
+  objective: 250,
+  transformation: 100,
+  strategicdomain: 120,
+  capability: 180,
+  impactdimension: 200,
+  knowledgedimension: 220,
+  dataquality: 240,
 };
 
 export default function PITGraphView({
@@ -167,6 +194,29 @@ export default function PITGraphView({
         else if (n.type === "program") key = "col-2";
         else if (["impact", "outcomeindicator"].includes(n.type)) key = "col-3";
         else key = "col-4";
+      } else if (mode === "transformation") {
+        // DR-BEST Transformation axis: Dimension -> Capabilities -> Services -> Projects -> Beneficiaries
+        if (n.type === "transformation") key = "col-1";
+        else if (n.type === "capability") key = "col-2";
+        else if (n.type === "service") key = "col-3";
+        else if (["project", "actioninstance"].includes(n.type)) key = "col-4";
+        else if (n.type === "beneficiary") key = "col-5";
+        else key = "col-6";
+      } else if (mode === "capability") {
+        // Capabilities axis: Skills -> Services -> Assets/Data -> Target Projects/Beneficiaries
+        if (n.type === "capability") key = "col-1";
+        else if (n.type === "service") key = "col-2";
+        else if (["dataset", "knowledgeasset"].includes(n.type)) key = "col-3";
+        else if (["project", "beneficiary"].includes(n.type)) key = "col-4";
+        else key = "col-5";
+      } else if (mode === "impact") {
+        // Impact axis: Dimensions -> Objectives/Indicators -> Services/Projects -> Impacts -> Beneficiaries
+        if (n.type === "impactdimension") key = "col-1";
+        else if (["objective", "outcomeindicator"].includes(n.type)) key = "col-2";
+        else if (["service", "project"].includes(n.type)) key = "col-3";
+        else if (n.type === "impact") key = "col-4";
+        else if (n.type === "beneficiary") key = "col-5";
+        else key = "col-6";
       }
       
       if (!columns[key]) columns[key] = [];
@@ -217,6 +267,26 @@ export default function PITGraphView({
         else if (n.type === "program") key = "col-2";
         else if (["impact", "outcomeindicator"].includes(n.type)) key = "col-3";
         else key = "col-4";
+      } else if (mode === "transformation") {
+        if (n.type === "transformation") key = "col-1";
+        else if (n.type === "capability") key = "col-2";
+        else if (n.type === "service") key = "col-3";
+        else if (["project", "actioninstance"].includes(n.type)) key = "col-4";
+        else if (n.type === "beneficiary") key = "col-5";
+        else key = "col-6";
+      } else if (mode === "capability") {
+        if (n.type === "capability") key = "col-1";
+        else if (n.type === "service") key = "col-2";
+        else if (["dataset", "knowledgeasset"].includes(n.type)) key = "col-3";
+        else if (["project", "beneficiary"].includes(n.type)) key = "col-4";
+        else key = "col-5";
+      } else if (mode === "impact") {
+        if (n.type === "impactdimension") key = "col-1";
+        else if (["objective", "outcomeindicator"].includes(n.type)) key = "col-2";
+        else if (["service", "project"].includes(n.type)) key = "col-3";
+        else if (n.type === "impact") key = "col-4";
+        else if (n.type === "beneficiary") key = "col-5";
+        else key = "col-6";
       }
 
       const colNodes = columns[key] || [];

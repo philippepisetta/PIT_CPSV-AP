@@ -91,6 +91,7 @@ model PublicService {
   initiatives         Initiative[]         @relation("InitiativeServices")
   fundingInstruments  FundingInstrument[]  @relation("ServiceFunding")
 
+  @@index([organizationId])
   @@map("public_services")
 }
 
@@ -356,6 +357,8 @@ model Beneficiary {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
+  @@index([primaryNaceSectorId])
+  @@index([territoryId])
   @@map("beneficiaries")
 }
 
@@ -638,6 +641,9 @@ model ServiceDelivery {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
+  @@index([beneficiaryId])
+  @@index([serviceId])
+  @@index([operatorId])
   @@map("service_deliveries")
 }
 

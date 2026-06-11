@@ -217,6 +217,32 @@ export async function GET(
       const data = await prisma.naceSector.findMany({ orderBy: { code: "asc" } });
       return NextResponse.json(data);
     }
+    if (segment1 === "roles") {
+      if (segment2) {
+        const id = parseInt(segment2);
+        const item = await prisma.ecosystemRole.findUnique({ where: { id } });
+        if (!item) return NextResponse.json({ error: "Rôle non trouvé" }, { status: 404 });
+        return NextResponse.json(item);
+      }
+      const data = await prisma.ecosystemRole.findMany({ orderBy: { name: "asc" } });
+      return NextResponse.json(data);
+    }
+    if (segment1 === "business-needs") {
+      if (segment2) {
+        const id = parseInt(segment2);
+        const item = await prisma.businessNeed.findUnique({
+          where: { id },
+          include: { beneficiaries: true, valueChains: true, valueChainStages: true, journeys: true, services: true }
+        });
+        if (!item) return NextResponse.json({ error: "Besoin non trouvé" }, { status: 404 });
+        return NextResponse.json(item);
+      }
+      const data = await prisma.businessNeed.findMany({
+        include: { beneficiaries: true, valueChains: true, valueChainStages: true, journeys: true, services: true },
+        orderBy: { name: "asc" }
+      });
+      return NextResponse.json(data);
+    }
 
     // 4. Ecosystems
     if (segment1 === "ecosystems") {
@@ -585,6 +611,29 @@ export async function POST(
       const { name, description, category, uri } = body;
       const item = await prisma.valueChainStage.create({
         data: { name, description, category, uri: uri || `https://pit.wallonie.be/id/stage/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
+      });
+      return NextResponse.json(item, { status: 201 });
+    }
+
+    if (segment1 === "roles") {
+      const { name, description, uri } = body;
+      const item = await prisma.ecosystemRole.create({
+        data: { name, description, uri: uri || `https://pit.wallonie.be/id/ecosystem-role/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` }
+      });
+      return NextResponse.json(item, { status: 201 });
+    }
+
+    if (segment1 === "business-needs") {
+      const { name, description, uri, valueChainIds, valueChainStageIds, serviceIds, rule } = body;
+      const item = await prisma.businessNeed.create({
+        data: {
+          name, description,
+          uri: uri || `https://pit.wallonie.be/id/business-need/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          rule: rule || null,
+          valueChains: valueChainIds ? { connect: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+          valueChainStages: valueChainStageIds ? { connect: valueChainStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+          services: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+        }
       });
       return NextResponse.json(item, { status: 201 });
     }
@@ -1138,6 +1187,30 @@ export async function PATCH(
           name, type, code,
           parentTerritoryId: parentTerritoryId !== undefined ? (parentTerritoryId ? parseInt(parentTerritoryId) : null) : undefined,
           description
+        }
+      });
+      return NextResponse.json(updated);
+    }
+
+    if (segment1 === "roles") {
+      const { name, description, uri } = body;
+      const updated = await prisma.ecosystemRole.update({
+        where: { id },
+        data: { name, description, uri }
+      });
+      return NextResponse.json(updated);
+    }
+
+    if (segment1 === "business-needs") {
+      const { name, description, uri, valueChainIds, valueChainStageIds, serviceIds, rule } = body;
+      const updated = await prisma.businessNeed.update({
+        where: { id },
+        data: {
+          name, description, uri,
+          rule: rule !== undefined ? rule : undefined,
+          valueChains: valueChainIds ? { set: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+          valueChainStages: valueChainStageIds ? { set: valueChainStageIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+          services: serviceIds ? { set: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
         }
       });
       return NextResponse.json(updated);

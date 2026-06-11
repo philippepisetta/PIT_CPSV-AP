@@ -59,10 +59,10 @@ export default function ValueChainsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
 
-  const valueChains = metaData?.strategicValueChains || [];
-  const stages = metaData?.stages || [];
-  const services = metaData?.services || [];
-  const beneficiaries = beneficiariesData || [];
+  const valueChains = (metaData?.strategicValueChains || []) as StrategicValueChain[];
+  const stages = (metaData?.stages || []) as ValueChainStage[];
+  const services = (metaData?.services || []) as PublicService[];
+  const beneficiaries = (beneficiariesData || []) as Beneficiary[];
 
   useEffect(() => {
     if (valueChains.length > 0 && !selectedChain) {

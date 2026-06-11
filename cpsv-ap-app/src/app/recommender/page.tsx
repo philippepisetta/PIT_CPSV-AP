@@ -313,7 +313,7 @@ export default function RecommenderPage() {
     const relationSections = [
       {
         title: "Accompagnements (Services) Prioritaires",
-        items: (recData.recommendedServices || []).map(s => ({
+        items: (recData.recommendedServices || []).map((s: PublicService) => ({
           id: s.id,
           title: s.name,
           relationType: s.organization?.name || "Opérateur",
@@ -325,7 +325,7 @@ export default function RecommenderPage() {
       },
       {
         title: "Clusters & Écosystèmes Recommandés",
-        items: (recData.recommendedEcosystems || []).map(eco => ({
+        items: (recData.recommendedEcosystems || []).map((eco: Ecosystem) => ({
           id: eco.id,
           title: eco.name,
           relationType: "Écosystème S3",
@@ -336,7 +336,7 @@ export default function RecommenderPage() {
       },
       {
         title: "Opérateurs Locaux à Contacter",
-        items: (recData.recommendedActors || []).map(actor => ({
+        items: (recData.recommendedActors || []).map((actor: Organization) => ({
           id: actor.id,
           title: actor.name,
           relationType: actor.type || "Opérateur Public",
@@ -357,8 +357,8 @@ export default function RecommenderPage() {
               Parcours Recommandés & Étapes Types
             </h4>
             <div className="space-y-4">
-              {recData.recommendedJourneys.map(j => {
-                const timelineItems: TimelineItem[] = j.stages.map(stage => ({
+              {recData.recommendedJourneys.map((j: Journey) => {
+                const timelineItems: TimelineItem[] = j.stages.map((stage: JourneyStage) => ({
                   id: stage.id,
                   title: stage.name,
                   subtitle: `Étape ${stage.position}`,

@@ -27,6 +27,13 @@ model Organization {
   ecosystemMemberships EcosystemMembership[]
   datasets            Dataset[]
 
+  // Nouvelles relations Strategic Governance
+  strategies           Strategy[]           @relation("StrategyOwner")
+  programs             Program[]            @relation("ProgramOwner")
+  initiatives          Initiative[]         @relation("InitiativeLead")
+  programParticipations ProgramParticipation[]
+  initiativeParticipations InitiativeParticipation[]
+
   @@map("organizations")
 }
 
@@ -80,6 +87,11 @@ model PublicService {
   knowledgeAssets     KnowledgeAsset[]     @relation("ServiceKnowledgeAssets")
   eventResources      EventResource[]      @relation("ServiceEvents")
 
+  // Nouvelles relations Strategic Governance
+  initiatives         Initiative[]         @relation("InitiativeServices")
+  fundingInstruments  FundingInstrument[]  @relation("ServiceFunding")
+
+  @@index([organizationId])
   @@map("public_services")
 }
 
@@ -336,10 +348,17 @@ model Beneficiary {
   territoryId         Int?
   territory           Territory?            @relation(fields: [territoryId], references: [id], onDelete: SetNull)
 
+  // Nouvelles relations Strategic Governance
+  engagements         BeneficiaryEngagement[]
+  impacts             Impact[]
+  fundingInstruments  FundingInstrument[]   @relation("BeneficiaryFunding")
+
   roadmapLogs         Json?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
+  @@index([primaryNaceSectorId])
+  @@index([territoryId])
   @@map("beneficiaries")
 }
 
@@ -388,6 +407,16 @@ model StrategicValueChain {
   ecosystems     Ecosystem[]     @relation("EcosystemValueChains")
   needs          BusinessNeed[]  @relation("NeedValueChains")
   secondLineMissions SecondLineMission[] @relation("MissionValueChains")
+
+  // Nouvelles relations Strategic Governance
+  strategies     Strategy[]            @relation("StrategyValueChains")
+  priorities     StrategicPriority[]   @relation("PriorityValueChains")
+  programs       Program[]             @relation("ProgramValueChains")
+  measures       Measure[]             @relation("MeasureValueChains")
+  initiatives    Initiative[]          @relation("InitiativeValueChains")
+  engagements    BeneficiaryEngagement[] @relation("EngagementValueChains")
+  impacts        Impact[]              @relation("ImpactValueChains")
+
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -479,6 +508,16 @@ model Ecosystem {
   eventResources  EventResource[]      @relation("EcosystemEvents")
   actionInstances ActionInstance[]
 
+  // Nouvelles relations Strategic Governance
+  strategies               Strategy[]           @relation("StrategyEcosystems")
+  priorities               StrategicPriority[]  @relation("PriorityEcosystems")
+  programs                 Program[]            @relation("ProgramEcosystems")
+  measures                 Measure[]            @relation("MeasureEcosystems")
+  initiatives              Initiative[]         @relation("InitiativeEcosystems")
+  territories              Territory[]          @relation("EcosystemTerritories")
+  secondLineMissionsDirect SecondLineMission[]  @relation("MissionEcosystemDirect")
+  engagements              BeneficiaryEngagement[]
+
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -505,6 +544,7 @@ model Journey {
   deliveries       ServiceDelivery[]
   journeyEnrollments JourneyEnrollment[]
   actionInstances   ActionInstance[]
+  engagements      BeneficiaryEngagement[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -590,9 +630,20 @@ model ServiceDelivery {
   actionInstance ActionInstance?      @relation(fields: [actionInstanceId], references: [id], onDelete: SetNull)
   evidences      Evidence[]
 
+  // Nouvelles relations Strategic Governance
+  initiativeId         Int?
+  initiative           Initiative?         @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  engagementId         Int?
+  engagement           BeneficiaryEngagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
+  journeyEnrollmentId  Int?
+  journeyEnrollment    JourneyEnrollment?  @relation(fields: [journeyEnrollmentId], references: [id], onDelete: SetNull)
+
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
+  @@index([beneficiaryId])
+  @@index([serviceId])
+  @@index([operatorId])
   @@map("service_deliveries")
 }
 
@@ -619,6 +670,12 @@ model CollectiveDelivery {
   eventResourceId   Int?
   eventResource     EventResource?           @relation(fields: [eventResourceId], references: [id], onDelete: SetNull)
   evidences         Evidence[]
+
+  // Nouvelles relations Strategic Governance
+  initiativeId      Int?
+  initiative        Initiative?             @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  engagementId      Int?
+  engagement        BeneficiaryEngagement?  @relation(fields: [engagementId], references: [id], onDelete: SetNull)
   
   notes             String?                  @db.Text
   createdAt         DateTime                 @default(now())
@@ -650,6 +707,12 @@ model SecondLineMission {
   valueChains         StrategicValueChain[]  @relation("MissionValueChains")
   knowledgeAssets     KnowledgeAsset[]       @relation("MissionKnowledgeAssets")
   evidences           Evidence[]
+
+  // Nouvelles relations Strategic Governance
+  initiativeId        Int?
+  initiative          Initiative?            @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  ecosystemId         Int?
+  ecosystem           Ecosystem?             @relation("MissionEcosystemDirect", fields: [ecosystemId], references: [id], onDelete: SetNull)
   
   notes               String?                @db.Text
   createdAt           DateTime               @default(now())
@@ -726,10 +789,13 @@ model JourneyEnrollment {
   beneficiary    Beneficiary   @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
   
   journeyId      Int
-  journey        Journey       @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  journey       Journey       @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   
   currentStageId Int?
   currentStage   JourneyStage? @relation(fields: [currentStageId], references: [id], onDelete: SetNull)
+
+  // Relation inverse pour ServiceDelivery
+  deliveries     ServiceDelivery[]
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -771,7 +837,7 @@ model EcosystemMembership {
 model KnowledgeAsset {
   id                 Int                 @id @default(autoincrement())
   title              String
-  type               String              // Guide, Référentiel, Benchmark, Étude, Méthodologie, Toolkit, Livre blanc
+  type               KnowledgeAssetType  // Enum type
   description        String?             @db.Text
   file               String?
   url                String?
@@ -780,6 +846,10 @@ model KnowledgeAsset {
   ecosystems         Ecosystem[]         @relation("EcosystemKnowledgeAssets")
   secondLineMissions SecondLineMission[] @relation("MissionKnowledgeAssets")
   eventResources     EventResource[]     @relation("EventKnowledgeAssets")
+
+  // Nouvelles relations Strategic Governance
+  programs           Program[]           @relation("ProgramKnowledgeAssets")
+  initiatives        Initiative[]        @relation("InitiativeKnowledgeAssets")
 
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
@@ -806,13 +876,26 @@ model Dataset {
 }
 
 model Territory {
-  id            Int           @id @default(autoincrement())
-  name          String
-  type          String        // Wallonie, Province, Arrondissement, Commune, Bassin économique
-  code          String?       @unique
-  beneficiaries Beneficiary[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                Int                   @id @default(autoincrement())
+  uri               String?               @unique
+  code              String?               @unique
+  name              String
+  type              TerritoryType         // Enum type
+  description       String?               @db.Text
+  
+  parentTerritoryId Int?
+  parentTerritory   Territory?            @relation("TerritoryHierarchy", fields: [parentTerritoryId], references: [id], onDelete: SetNull)
+  childTerritories  Territory[]           @relation("TerritoryHierarchy")
+
+  beneficiaries     Beneficiary[]
+  programs          Program[]             @relation("ProgramTerritories")
+  initiatives       Initiative[]          @relation("InitiativeTerritories")
+  ecosystems        Ecosystem[]           @relation("EcosystemTerritories")
+  engagements       BeneficiaryEngagement[]
+  impacts           Impact[]
+
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   @@map("territories")
 }
@@ -836,4 +919,300 @@ model EventResource {
   updatedAt           DateTime             @updatedAt
 
   @@map("event_resources")
+}
+
+// ==========================================
+// Strategic Governance Enums
+// ==========================================
+
+enum ParticipationRole {
+  COORDINATOR
+  PARTNER
+  FUNDER
+  OPERATOR
+  EXPERT
+  CONTRIBUTOR
+}
+
+enum ProgramStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum InitiativeStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TerritoryType {
+  REGION
+  PROVINCE
+  ARRONDISSEMENT
+  COMMUNE
+  ECONOMIC_BASIN
+  INNOVATION_DISTRICT
+}
+
+enum KnowledgeAssetType {
+  GUIDE
+  REFERENTIAL
+  BENCHMARK
+  STUDY
+  PUBLICATION
+  METHODOLOGY
+  TOOLKIT
+}
+
+// ==========================================
+// Strategic Governance Models
+// ==========================================
+
+model Strategy {
+  id                  Int                   @id @default(autoincrement())
+  uri                 String?               @unique
+  code                String?               @unique
+  name                String
+  description         String?               @db.Text
+  ownerOrganizationId Int?
+  ownerOrganization   Organization?         @relation("StrategyOwner", fields: [ownerOrganizationId], references: [id], onDelete: SetNull)
+  startDate           DateTime?
+  endDate             DateTime?
+  status              String                @default("ACTIVE") // ex: ACTIVE, DRAFT, COMPLETED
+  website             String?
+
+  priorities          StrategicPriority[]
+  programs            Program[]             @relation("StrategyPrograms")
+  ecosystems          Ecosystem[]           @relation("StrategyEcosystems")
+  filieresS3          StrategicValueChain[] @relation("StrategyValueChains")
+  fundingInstruments  FundingInstrument[]   @relation("StrategyFunding")
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@map("strategies")
+}
+
+model StrategicPriority {
+  id          Int                   @id @default(autoincrement())
+  strategyId  Int
+  strategy    Strategy              @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  code        String?               @unique
+  name        String
+  description String?               @db.Text
+  status      String                @default("ACTIVE")
+
+  programs    Program[]             @relation("PriorityPrograms")
+  measures    Measure[]             @relation("PriorityMeasures")
+  initiatives Initiative[]          @relation("PriorityInitiatives")
+  ecosystems  Ecosystem[]           @relation("PriorityEcosystems")
+  filieresS3  StrategicValueChain[] @relation("PriorityValueChains")
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("strategic_priorities")
+}
+
+model Program {
+  id                  Int                   @id @default(autoincrement())
+  code                String?               @unique
+  name                String
+  description         String?               @db.Text
+  ownerOrganizationId Int?
+  ownerOrganization   Organization?         @relation("ProgramOwner", fields: [ownerOrganizationId], references: [id], onDelete: SetNull)
+  startDate           DateTime?
+  endDate             DateTime?
+  budget              Float?
+  status              ProgramStatus         @default(PLANNED)
+
+  strategies          Strategy[]            @relation("StrategyPrograms")
+  priorities          StrategicPriority[]   @relation("PriorityPrograms")
+  measures            Measure[]             @relation("ProgramMeasures")
+  ecosystems          Ecosystem[]           @relation("ProgramEcosystems")
+  filieresS3          StrategicValueChain[] @relation("ProgramValueChains")
+  territories         Territory[]           @relation("ProgramTerritories")
+  participations      ProgramParticipation[]
+  fundingInstruments  FundingInstrument[]   @relation("ProgramFunding")
+  knowledgeAssets     KnowledgeAsset[]      @relation("ProgramKnowledgeAssets")
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@map("programs")
+}
+
+model Measure {
+  id                 Int                   @id @default(autoincrement())
+  code               String?               @unique
+  name               String
+  description        String?               @db.Text
+  budget             Float?
+  status             String                @default("ACTIVE")
+
+  programs           Program[]             @relation("ProgramMeasures")
+  priorities         StrategicPriority[]   @relation("PriorityMeasures")
+  initiatives        Initiative[]
+  ecosystems         Ecosystem[]           @relation("MeasureEcosystems")
+  filieresS3         StrategicValueChain[] @relation("MeasureValueChains")
+  fundingInstruments FundingInstrument[]   @relation("MeasureFunding")
+
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@map("measures")
+}
+
+model Initiative {
+  id                 Int                   @id @default(autoincrement())
+  measureId          Int
+  measure            Measure               @relation(fields: [measureId], references: [id], onDelete: Cascade)
+  code               String?               @unique
+  name               String
+  description        String?               @db.Text
+  leadOrganizationId Int?
+  leadOrganization   Organization?         @relation("InitiativeLead", fields: [leadOrganizationId], references: [id], onDelete: SetNull)
+  startDate          DateTime?
+  endDate            DateTime?
+  status             InitiativeStatus      @default(PLANNED)
+
+  priorities         StrategicPriority[]   @relation("PriorityInitiatives")
+  ecosystems         Ecosystem[]           @relation("InitiativeEcosystems")
+  filieresS3         StrategicValueChain[] @relation("InitiativeValueChains")
+  territories        Territory[]           @relation("InitiativeTerritories")
+  publicServices     PublicService[]       @relation("InitiativeServices")
+  participations     InitiativeParticipation[]
+  deliveries         ServiceDelivery[]
+  collectiveDeliveries CollectiveDelivery[]
+  secondLineMissions SecondLineMission[]
+  engagements        BeneficiaryEngagement[]
+  fundingInstruments FundingInstrument[]   @relation("InitiativeFunding")
+  knowledgeAssets    KnowledgeAsset[]      @relation("InitiativeKnowledgeAssets")
+
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@map("initiatives")
+}
+
+model ProgramParticipation {
+  id             Int               @id @default(autoincrement())
+  programId      Int
+  program        Program           @relation(fields: [programId], references: [id], onDelete: Cascade)
+  organizationId Int
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           ParticipationRole
+  startDate      DateTime          @default(now())
+  endDate        DateTime?
+  status         String            @default("ACTIVE") // ACTIVE, INACTIVE
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@map("program_participations")
+}
+
+model InitiativeParticipation {
+  id             Int               @id @default(autoincrement())
+  initiativeId   Int
+  initiative     Initiative        @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  organizationId Int
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           ParticipationRole
+  startDate      DateTime          @default(now())
+  endDate        DateTime?
+  status         String            @default("ACTIVE") // ACTIVE, INACTIVE
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@map("initiative_participations")
+}
+
+model BeneficiaryEngagement {
+  id            Int                   @id @default(autoincrement())
+  beneficiaryId Int
+  beneficiary   Beneficiary           @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  journeyId     Int?
+  journey       Journey?              @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  initiativeId  Int?
+  initiative    Initiative?           @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  ecosystemId   Int?
+  ecosystem     Ecosystem?            @relation(fields: [ecosystemId], references: [id], onDelete: SetNull)
+  territoryId   Int?
+  territory     Territory?            @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  title         String
+  objective     String?               @db.Text
+  status        String                @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  startDate     DateTime              @default(now())
+  endDate       DateTime?
+
+  filieresS3    StrategicValueChain[] @relation("EngagementValueChains")
+  deliveries    ServiceDelivery[]
+  collectiveDeliveries CollectiveDelivery[]
+
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@map("beneficiary_engagements")
+}
+
+model OutcomeIndicator {
+  id          Int      @id @default(autoincrement())
+  name        String   // ex: "Emplois créés", "Réduction CO2"
+  unit        String   // ex: "unités", "tonnes", "%", "EUR"
+  description String?  @db.Text
+  impacts     Impact[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("outcome_indicators")
+}
+
+model Impact {
+  id            Int                  @id @default(autoincrement())
+  beneficiaryId Int
+  beneficiary   Beneficiary          @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  indicatorId   Int
+  indicator     OutcomeIndicator     @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+  
+  numericValue  Float?               // ex: 50000.0 (quantitative)
+  textValue     String?              @db.Text // ex: "Plan d'action IA établi" (qualitative)
+  
+  territoryId   Int?
+  territory     Territory?           @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  
+  valueChainId  Int?
+  valueChain    StrategicValueChain? @relation("ImpactValueChains", fields: [valueChainId], references: [id], onDelete: SetNull)
+  
+  date          DateTime             @default(now())
+  evidence      String?              @db.Text
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@map("impacts")
+}
+
+model FundingInstrument {
+  id             Int                   @id @default(autoincrement())
+  name           String                // ex: "FEDER Wallonie", "Chèque Entreprises Cybersécurité"
+  type           String                // ex: FEDER, Horizon Europe, Chèque Entreprise, Wallonie, Digital Europe
+  description    String?               @db.Text
+  
+  strategies     Strategy[]            @relation("StrategyFunding")
+  programs       Program[]             @relation("ProgramFunding")
+  measures       Measure[]             @relation("MeasureFunding")
+  initiatives    Initiative[]          @relation("InitiativeFunding")
+  services       PublicService[]       @relation("ServiceFunding")
+  beneficiaries  Beneficiary[]         @relation("BeneficiaryFunding")
+
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@map("funding_instruments")
 }

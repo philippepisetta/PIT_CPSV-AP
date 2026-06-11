@@ -1339,9 +1339,19 @@ export default function ServicesContainer() {
                 investissement: []
               };
 
-              (j.steps || []).forEach((step: any) => {
-                const phaseId = getServicePhaseName(step.service || { name: step.name });
-                stepsObj[phaseId].push(step.name);
+              const phaseMap: Record<string, string> = {
+                "Amorçage": "amorcage",
+                "Diagnostic": "diagnostic",
+                "Coaching": "coaching",
+                "Planification": "planification",
+                "Mise en œuvre": "implementation",
+                "Investissement": "investissement"
+              };
+              (j.stages || []).forEach((stage: any) => {
+                const phaseKey = phaseMap[stage.name] || "amorcage";
+                (stage.services || []).forEach((svc: any) => {
+                  stepsObj[phaseKey].push(svc.name);
+                });
               });
 
               return {

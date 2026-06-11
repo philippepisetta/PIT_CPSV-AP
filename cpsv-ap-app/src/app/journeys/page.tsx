@@ -6,31 +6,22 @@ import {
   Compass, 
   Building2, 
   ExternalLink, 
-  HelpCircle, 
-  Network, 
-  FileText, 
-  Plus, 
-  Trash2, 
-  Edit3, 
   Save, 
   ArrowLeft,
   Activity,
   Layers,
-  TrendingUp,
   Database,
   Users,
   Sparkles,
+  Network,
+  Info,
+  FileText,
   Share2
 } from "lucide-react";
 
 import PITLayout from "@/design-system/PITLayout";
-import PITFilterBar from "@/design-system/PITFilterBar";
-import PITEntityCard from "@/design-system/PITEntityCard";
+import PITTabs from "@/design-system/PITTabs";
 import PITRelationsPanel from "@/design-system/PITRelationsPanel";
-import PITDetailLayout from "@/design-system/PITDetailLayout";
-import SplitLayout from "@/components/ui/SplitLayout";
-import Timeline, { TimelineItem } from "@/components/ui/Timeline";
-import PITVirtualList from "@/design-system/PITVirtualList";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 import { 
   useJourneysQuery, 
@@ -42,6 +33,7 @@ import {
   useDeleteJourneyMutation 
 } from "@/hooks/usePITQueries";
 import { cn } from "@/lib/utils";
+import JourneyModelsView from "@/components/journeys/JourneyModelsView";
 
 interface PublicService {
   id: number;
@@ -89,7 +81,6 @@ interface ValueChainStage {
   id: number;
   name: string;
   category: string;
-  description?: string;
 }
 
 interface Journey {
@@ -108,30 +99,46 @@ interface Journey {
   strategicDomains?: StrategicDomainDimension[];
   stagesTransverses?: ValueChainStage[];
   actionInstances?: { id: number; title: string }[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface JourneyEnrollment {
+  id: number;
+  journeyId: number;
+  beneficiaryId: number;
+  status: string;
+  completionRate: number;
+  beneficiary?: {
+    name: string;
+    location: string;
+  };
+  currentStage?: {
+    name: string;
+  };
 }
 
 export default function JourneysPage() {
   const { data: journeysData, isLoading: loadingJourneys } = useJourneysQuery();
   const { data: metaData, isLoading: loadingMeta } = useMetaQuery();
-  const { data: beneficiariesData, isLoading: loadingBenefs } = useBeneficiariesQuery();
+  const { isLoading: loadingBenefs } = useBeneficiariesQuery();
   const { data: enrollmentsData, isLoading: loadingEnrollments } = useJourneyEnrollmentsQuery();
 
-  const journeys = (journeysData || []) as Journey[];
+  const journeys = useMemo(() => (journeysData || []) as Journey[], [journeysData]);
   const servicesList = (metaData?.services || []) as PublicService[];
   const filieresList = (metaData?.strategicValueChains || []) as StrategicValueChain[];
   const challengesList = (metaData?.challenges || []) as BusinessChallenge[];
   const ecosystemsList = (metaData?.ecosystems || []) as Ecosystem[];
   const transformationsList = (metaData?.transformationDimensions || []) as TransformationDimension[];
   const domainsList = (metaData?.strategicDomainDimensions || []) as StrategicDomainDimension[];
-  const beneficiaries = beneficiariesData || [];
-  const enrollments = enrollmentsData || [];
+  const enrollments = useMemo(() => (enrollmentsData || []) as JourneyEnrollment[], [enrollmentsData]);
 
   const createMutation = useCreateJourneyMutation();
   const updateMutation = useUpdateJourneyMutation();
   const deleteMutation = useDeleteJourneyMutation();
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"models" | "active" | "relations" | "metadata">("models");
   const { isEntityTypeVisible } = usePerspective();
 
   // CRUD & Form States
@@ -163,35 +170,29 @@ export default function JourneysPage() {
 
   const isLoading = loadingJourneys || loadingMeta || loadingBenefs || loadingEnrollments;
 
-  // Handle URL id query param selection
+  // Filter journeys based on perspective visibility
+  const visibleJourneys = useMemo(() => {
+    return journeys.filter(() => isEntityTypeVisible("journey"));
+  }, [journeys, isEntityTypeVisible]);
+
+  // Handle URL id query param selection & auto-selection
   useEffect(() => {
-    if (journeys.length > 0) {
+    if (visibleJourneys.length > 0) {
       const params = new URLSearchParams(window.location.search);
       const idParam = params.get("id");
       if (idParam) {
-        const found = journeys.find(j => String(j.id) === idParam);
+        const found = visibleJourneys.find(j => String(j.id) === idParam);
         if (found) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setSelectedJourney(found);
           return;
         }
       }
       if (!selectedJourney) {
-        setSelectedJourney(journeys[0]);
+        setSelectedJourney(visibleJourneys[0]);
       }
     }
-  }, [journeys, selectedJourney]);
-
-  // Filtered journeys list
-  const filteredJourneys = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    return journeys.filter(j => {
-      if (!isEntityTypeVisible("journey")) return false;
-      if (!q) return true;
-      return j.name.toLowerCase().includes(q) || 
-             j.provider.toLowerCase().includes(q) || 
-             (j.objective && j.objective.toLowerCase().includes(q));
-    });
-  }, [journeys, searchQuery, isEntityTypeVisible]);
+  }, [visibleJourneys, selectedJourney]);
 
   // Load journey data into form for editing
   const handleStartEdit = (j: Journey) => {
@@ -247,61 +248,21 @@ export default function JourneysPage() {
       "Mise en œuvre": [],
       "Investissement": []
     });
-
-    setIsCreating(true);
     setIsEditing(false);
-  };
-
-  const handleSave = async () => {
-    if (!formName || !formProvider) {
-      alert("⚠️ Veuillez remplir tous les champs obligatoires (Nom, Fournisseur).");
-      return;
-    }
-
-    const payloadStages = Object.entries(stepServices).map(([name, ids], index) => ({
-      name,
-      position: index + 1,
-      services: ids.map(id => ({ id }))
-    }));
-
-    const payload = {
-      name: formName,
-      provider: formProvider,
-      objective: formObjective,
-      description: formDescription,
-      targetAudience: formTargetAudience,
-      filiereIds: formFiliereIds,
-      challengeIds: formChallengeIds,
-      ecosystemIds: formEcosystemIds,
-      transformationIds: formTransformationCodes,
-      domainIds: formDomainIds,
-      stages: payloadStages
-    };
-
-    try {
-      if (formId) {
-        await updateMutation.mutateAsync({ id: formId, data: payload });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
-      setIsEditing(false);
-      setIsCreating(false);
-    } catch (err) {
-      console.error(err);
-      alert("⚠️ Une erreur est survenue lors de l'enregistrement.");
-    }
+    setIsCreating(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("❌ Êtes-vous sûr de vouloir supprimer définitivement ce parcours ?")) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce parcours ? Cette action est irréversible et supprimera toutes ses étapes.")) {
       try {
         await deleteMutation.mutateAsync(id);
+        alert("✅ Parcours supprimé avec succès.");
         if (selectedJourney?.id === id) {
           setSelectedJourney(null);
         }
       } catch (err) {
         console.error(err);
-        alert("⚠️ Une erreur est survenue lors de la suppression.");
+        alert("❌ Une erreur est survenue lors de la suppression.");
       }
     }
   };
@@ -320,6 +281,56 @@ export default function JourneysPage() {
     return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
   };
 
+  const handleSave = async () => {
+    if (!formName || !formProvider || !formObjective) {
+      alert("⚠️ Le nom du parcours, le fournisseur et l'objectif sont obligatoires.");
+      return;
+    }
+
+    const payload = {
+      name: formName,
+      provider: formProvider,
+      objective: formObjective,
+      description: formDescription,
+      targetAudience: formTargetAudience,
+      filiereIds: formFiliereIds,
+      challengeIds: formChallengeIds,
+      ecosystemIds: formEcosystemIds,
+      transformationIds: formTransformationCodes,
+      domainIds: formDomainIds,
+      stages: Object.entries(stepServices).map(([name, ids], idx) => ({
+        name,
+        position: idx + 1,
+        services: ids.map(id => ({ id }))
+      }))
+    };
+
+    try {
+      if (formId) {
+        await updateMutation.mutateAsync({ id: formId, data: payload });
+        alert("✅ Parcours mis à jour avec succès.");
+      } else {
+        await createMutation.mutateAsync(payload);
+        alert("✅ Parcours créé avec succès.");
+      }
+      setIsEditing(false);
+      setIsCreating(false);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Une erreur est survenue lors de l'enregistrement.");
+    }
+  };
+
+  // Helper mapping enrollments count
+  const enrollmentsCount = useMemo(() => {
+    const counts: Record<number, number> = {};
+    enrollments.forEach((e) => {
+      const jId = e.journeyId;
+      counts[jId] = (counts[jId] || 0) + 1;
+    });
+    return counts;
+  }, [enrollments]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
@@ -328,364 +339,6 @@ export default function JourneysPage() {
       </div>
     );
   }
-
-  // --- PANNEAU GAUCHE : LISTE ---
-  const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
-      <div className="flex justify-between items-center pb-2 border-b border-muted/10">
-        <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1">
-          Parcours territoriaux ({filteredJourneys.length})
-        </h3>
-        <button
-          onClick={handleStartCreate}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-primary hover:bg-primary-dark text-white rounded-lg text-[10px] font-bold transition shadow-xs cursor-pointer border-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Nouveau
-        </button>
-      </div>
-      <div className="flex-1 min-h-0">
-        {filteredJourneys.length > 0 ? (
-          <PITVirtualList
-            items={filteredJourneys}
-            itemHeight={110}
-            maxHeight="60vh"
-            renderItem={(j) => (
-              <div className="py-1 pr-1" style={{ height: "110px" }}>
-                <PITEntityCard
-                  title={j.name}
-                  description={j.objective || "Aucun objectif défini"}
-                  icon={Compass}
-                  type="parcours"
-                  subtitle={`Fournisseur : ${j.provider}`}
-                  isSelected={selectedJourney?.id === j.id}
-                  onClick={() => {
-                    setSelectedJourney(j);
-                    setIsEditing(false);
-                    setIsCreating(false);
-                  }}
-                />
-              </div>
-            )}
-          />
-        ) : (
-          <div className="text-center py-8 text-xs text-muted italic">
-            Aucun parcours ne correspond.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // --- PANNEAU DROIT : DETAILS ---
-  const renderDetailPanel = () => {
-    if (!selectedJourney) {
-      return (
-        <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">
-          Sélectionnez ou créez un parcours pour l'afficher.
-        </div>
-      );
-    }
-
-    const j = selectedJourney;
-
-    // Filter active enrollments for this journey
-    const activeEnrollments = enrollments.filter((e: any) => e.journeyId === j.id);
-
-    // 1. Modèles de Parcours Tab (Overview / Timeline)
-    const timelineItems: TimelineItem[] = (j.stages || []).map((stage) => {
-      const servicesContent = (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-          {(stage.services || []).map((service) => (
-            <div 
-              key={service.id} 
-              className="rounded-xl border border-muted/20 bg-glass/25 p-3.5 space-y-2 flex flex-col justify-between hover:border-teal-500/20 transition-all duration-200"
-            >
-              <div>
-                <div className="flex items-center justify-between text-[9px] text-muted">
-                  <span className="font-mono bg-muted/10 px-1.5 py-0.2 rounded font-bold uppercase">{service.code}</span>
-                  <span className="flex items-center gap-1">
-                    <Building2 className="h-3 w-3" />
-                    {service.organization?.name || "Opérateur"}
-                  </span>
-                </div>
-                <h5 className="font-bold text-text text-[11px] mt-1.5 leading-snug">{service.name}</h5>
-                {service.description && (
-                  <p className="text-[10px] text-muted/80 line-clamp-2 mt-1 leading-normal">
-                    {service.description}
-                  </p>
-                )}
-              </div>
-              
-              <div className="pt-2 border-t border-muted/10 flex justify-end">
-                <a
-                  href={`/services?id=${service.id}`}
-                  className="text-[9px] font-bold text-teal-650 dark:text-teal-400 flex items-center gap-1 hover:underline"
-                >
-                  Fiche service
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </div>
-          ))}
-          {(!stage.services || stage.services.length === 0) && (
-            <div className="text-[10px] italic text-muted/65 p-2 bg-glass/10 border border-muted/5 rounded-xl col-span-2">
-              Aucun service CPSV-AP associé à ce maillon.
-            </div>
-          )}
-        </div>
-      );
-
-      return {
-        id: stage.id,
-        title: stage.name,
-        subtitle: `Étape ${stage.position}`,
-        description: servicesContent,
-        Icon: Compass,
-        color: "teal",
-      };
-    });
-
-    const overviewTab = (
-      <div className="space-y-6">
-        {j.objective && (
-          <div className="bg-glass/20 border border-muted/10 rounded-xl p-4">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-1">Objectif métier</h4>
-            <p className="text-xs text-text italic">"{j.objective}"</p>
-          </div>
-        )}
-
-        {j.description && (
-          <div className="bg-glass/10 border border-muted/5 rounded-xl p-4 text-xs text-muted/95 leading-relaxed">
-            {j.description}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted border-b border-muted/10 pb-1.5">
-            Chemin d'accompagnement
-          </h4>
-          <Timeline
-            items={timelineItems}
-            emptyMessage="Aucun maillon configuré pour ce parcours."
-          />
-        </div>
-      </div>
-    );
-
-    // 2. Parcours Actifs Tab (Enrolled companies)
-    const activeTab = (
-      <div className="space-y-4">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted border-b border-muted/10 pb-1.5">
-          Suivi des Entreprises Engagées ({activeEnrollments.length})
-        </h4>
-
-        {activeEnrollments.length > 0 ? (
-          <div className="space-y-3">
-            {activeEnrollments.map((e: any) => (
-              <div 
-                key={e.id}
-                className="bg-glass/20 border border-muted/10 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-primary/20 transition-all"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-xs text-text">{e.beneficiary?.name}</span>
-                    <span className="text-[8px] font-bold bg-muted/10 px-1.5 py-0.5 rounded text-muted">
-                      {e.beneficiary?.location}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-muted leading-tight">
-                    Étape actuelle : <span className="font-semibold text-text">{e.currentStage?.name || "Initialisation"}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="text-right space-y-1">
-                    <span className={cn(
-                      "text-[9px] font-bold px-2 py-0.5 rounded-full",
-                      e.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-500" :
-                      e.status === "IN_PROGRESS" ? "bg-amber-500/10 text-amber-500" :
-                      "bg-blue-500/10 text-blue-500"
-                    )}>
-                      {e.status}
-                    </span>
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <div className="w-16 h-1 bg-muted/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${e.completionRate}%` }} />
-                      </div>
-                      <span className="text-[9px] font-black text-text">{Math.round(e.completionRate)}%</span>
-                    </div>
-                  </div>
-
-                  <a 
-                    href={`/beneficiaries?id=${e.beneficiaryId}`}
-                    className="p-1.5 rounded-lg hover:bg-muted/20 text-muted hover:text-primary transition"
-                    title="Voir la fiche bénéficiaire"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-glass/5 border border-dashed border-muted/10 rounded-xl text-muted text-xs italic">
-            Aucune entreprise wallonne n'est actuellement active sur ce parcours.
-          </div>
-        )}
-      </div>
-    );
-
-    // 3. Relations Tab (Territorial Knowledge Graph)
-    const linkedServices = (j.stages || []).flatMap(st => st.services || []);
-    const linkedOrgs = Array.from(new Set(linkedServices.map(s => s.organization?.name).filter(Boolean)));
-    const linkedBenefs = activeEnrollments.map((e: any) => e.beneficiary?.name).filter(Boolean);
-    const linkedProjects = (j.actionInstances || []).map((ai: any) => ai.title).filter(Boolean);
-    const linkedCapabilities = Array.from(new Set(linkedServices.flatMap(s => s.capabilities || []).map(c => c.name)));
-    const linkedKnowledgeAssets = Array.from(new Set(linkedServices.flatMap(s => s.knowledgeAssets || []).map(a => a.title)));
-
-    const relationSections = [
-      {
-        title: "Services CPSV-AP impliqués",
-        items: linkedServices.map(s => ({
-          id: s.id,
-          title: s.name,
-          relationType: `Code : ${s.code}`,
-          Icon: FileText,
-          onClick: () => window.location.href = `/services?id=${s.id}`
-        }))
-      },
-      {
-        title: "Opérateurs et Organisations impliqués",
-        items: linkedOrgs.map((org, index) => ({
-          id: index,
-          title: org,
-          relationType: "Opérateur de support",
-          Icon: Building2
-        }))
-      },
-      {
-        title: "Entreprises bénéficiaires actives",
-        items: linkedBenefs.map((ben: string, index: number) => ({
-          id: index,
-          title: ben,
-          relationType: "PME accompagnée",
-          Icon: Users
-        }))
-      },
-      {
-        title: "Programmes & Projets alignés",
-        items: linkedProjects.map((p: string, index: number) => ({
-          id: index,
-          title: p,
-          relationType: "Projet territorial",
-          Icon: Layers
-        }))
-      },
-      {
-        title: "Filières S3 associées",
-        items: (j.filieresS3 || []).map(f => ({
-          id: f.id,
-          title: f.name,
-          relationType: "Spécialisation intelligente",
-          Icon: Network
-        }))
-      },
-      {
-        title: "Maillons de la chaîne de valeur",
-        items: (j.stagesTransverses || []).map(st => ({
-          id: st.id,
-          title: st.name,
-          relationType: "Maillon de chaîne",
-          Icon: Layers
-        }))
-      },
-      {
-        title: "Écosystèmes territoriaux (Clusters)",
-        items: (j.ecosystems || []).map(e => ({
-          id: e.id,
-          title: e.name,
-          relationType: "Écosystème S3",
-          Icon: Share2
-        }))
-      },
-      {
-        title: "DR-BEST (Axes de transformation)",
-        items: (j.transformationDimensions || []).map(t => ({
-          id: t.code,
-          title: t.name,
-          relationType: "Transformation Dimension",
-          Icon: Activity
-        }))
-      },
-      {
-        title: "Capabilités technologiques",
-        items: linkedCapabilities.map((cap, index) => ({
-          id: index,
-          title: cap,
-          relationType: "Compétence clé",
-          Icon: Sparkles
-        }))
-      },
-      {
-        title: "Knowledge Assets générés/requis",
-        items: linkedKnowledgeAssets.map((asset, index) => ({
-          id: index,
-          title: asset,
-          relationType: "Actif de connaissance",
-          Icon: Database
-        }))
-      }
-    ];
-
-    const relationsTabPanel = <PITRelationsPanel sections={relationSections} />;
-
-    // 4. Métadonnées Tab
-    const metadataTab = (
-      <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-        <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">{j.uri || `https://pit.wallonie.be/id/journey/${j.id}`}</span></p>
-        <p className="text-text">Classe RDF : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:JourneyTemplate</span></p>
-        <p className="text-text">Chef de file : <span className="font-bold">{j.provider}</span></p>
-        <p className="text-text">Publics cibles : <span className="font-semibold">{j.targetAudience?.join(", ") || "PME"}</span></p>
-      </div>
-    );
-
-    const actionButtons = (
-      <div className="flex gap-2">
-        <button
-          onClick={() => handleStartEdit(j)}
-          className="p-1.5 rounded-lg hover:bg-muted/25 text-muted hover:text-primary transition cursor-pointer border-0 bg-transparent"
-          title="Modifier le parcours"
-        >
-          <Edit3 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => handleDelete(j.id)}
-          className="p-1.5 rounded-lg hover:bg-muted/25 text-muted hover:text-red-500 transition cursor-pointer border-0 bg-transparent"
-          title="Supprimer le parcours"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    );
-
-    return (
-      <PITDetailLayout
-        title={j.name}
-        subtitle={`Parcours territorial par : ${j.provider}`}
-        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-650 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full">Modèle de Parcours</span>}
-        overviewTab={overviewTab}
-        relationsTab={relationsTabPanel}
-        impactTab={activeTab}
-        metadataTab={metadataTab}
-        actions={actionButtons}
-        overviewLabel="Modèle de parcours"
-        impactLabel="Parcours actifs"
-        relationsLabel="Relations"
-        metadataLabel="Métadonnées"
-      />
-    );
-  };
 
   // --- FORMULAIRE D'EDITION / CREATION ---
   const renderForm = () => {
@@ -696,8 +349,8 @@ export default function JourneysPage() {
     });
 
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md p-6 space-y-6">
-        <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-800 pb-3">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-md p-6 space-y-6 animate-fadeIn text-left">
+        <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-700 pb-3">
           <div>
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-primary">
               {formId ? "Modifier le parcours territorial" : "Créer un nouveau parcours territorial"}
@@ -718,8 +371,8 @@ export default function JourneysPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Metadata & Taxonomies */}
-          <div className="lg:col-span-4 space-y-4 bg-gray-50/50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-850">
-            <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block border-b border-gray-250 dark:border-gray-700 pb-1.5">
+          <div className="lg:col-span-4 space-y-4 bg-gray-55 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-150 dark:border-gray-850">
+            <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block border-b border-gray-200 dark:border-gray-700 pb-1.5 select-none">
               Informations Générales
             </span>
 
@@ -753,7 +406,7 @@ export default function JourneysPage() {
                   value={formObjective}
                   onChange={(e) => setFormObjective(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-primary resize-none"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-255 dark:border-gray-700 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
 
@@ -764,12 +417,12 @@ export default function JourneysPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-primary resize-none"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-255 dark:border-gray-700 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
             </div>
 
-            <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block border-b border-gray-250 dark:border-gray-700 pb-1.5 pt-2">
+            <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block border-b border-gray-200 dark:border-gray-700 pb-1.5 pt-2 select-none">
               Alignements Stratégiques S3
             </span>
 
@@ -792,7 +445,7 @@ export default function JourneysPage() {
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Défis d'affaires ciblés</label>
+                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">{"Défis d'Affaires Associés"}</label>
                 <div className="max-h-[100px] overflow-y-auto border border-gray-250 dark:border-gray-700 rounded-lg p-2 bg-white dark:bg-gray-800 space-y-1.5">
                   {challengesList.map(c => (
                     <label key={c.id} className="flex items-center gap-2 text-[10px] text-text cursor-pointer">
@@ -864,7 +517,7 @@ export default function JourneysPage() {
           {/* Right Column: Mapping Services */}
           <div className="lg:col-span-8 space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-200 dark:border-gray-700 pb-2.5">
-              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider select-none">
                 Sélection des Services CPSV-AP par Étape
               </span>
               <input
@@ -889,7 +542,7 @@ export default function JourneysPage() {
 
                 return (
                   <div key={stepName} className="bg-gray-55 dark:bg-gray-900 p-3 rounded-xl border border-gray-150 dark:border-gray-800 flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2 select-none">
                       {stepName} ({activeIds.length} associés)
                     </span>
 
@@ -902,7 +555,7 @@ export default function JourneysPage() {
                             className={cn(
                               "flex items-start gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-[10px] border",
                               checked
-                                ? "border-primary/30 bg-primary/5 text-primary"
+                                ? "border-primary/30 bg-primary/5 text-primary font-semibold"
                                 : "border-transparent text-muted"
                             )}
                           >
@@ -913,7 +566,7 @@ export default function JourneysPage() {
                               className="mt-0.5 accent-primary w-3 h-3 shrink-0"
                             />
                             <div className="leading-tight">
-                              <div className="font-semibold">{service.name}</div>
+                              <div className="font-semibold text-text">{service.name}</div>
                               <div className="text-[8px] text-muted-foreground">{service.organization?.name}</div>
                             </div>
                           </label>
@@ -950,31 +603,297 @@ export default function JourneysPage() {
     );
   };
 
+  // Shared dropdown selector for active, relations, and metadata tabs
+  const renderJourneySelector = () => (
+    <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-150 dark:border-gray-800/80 shadow-xs mb-6 text-left">
+      <span className="text-xs font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none">
+        Parcours actif :
+      </span>
+      <select
+        value={selectedJourney?.id || ""}
+        onChange={(e) => {
+          const found = visibleJourneys.find(j => String(j.id) === e.target.value);
+          if (found) setSelectedJourney(found);
+        }}
+        className="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs text-text focus:ring-1 focus:ring-purple-500 font-bold outline-none cursor-pointer"
+      >
+        {visibleJourneys.map(j => (
+          <option key={j.id} value={j.id}>{j.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  // Tab Options
+  const tabOptions = [
+    { id: "models", label: "Modèles de parcours", icon: Compass },
+    { id: "active", label: "Parcours actifs", icon: Users },
+    { id: "relations", label: "Relations", icon: Network },
+    { id: "metadata", label: "Métadonnées", icon: Info }
+  ];
+
+  // Tab 2 content: Parcours actifs
+  const activeTabContent = () => {
+    if (!selectedJourney) return null;
+    const activeEnrollments = enrollments.filter((e) => e.journeyId === selectedJourney.id);
+
+    return (
+      <div className="space-y-4">
+        {renderJourneySelector()}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-sm space-y-4 text-left">
+          <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-purple-600">
+              Suivi des Entreprises Engagées ({activeEnrollments.length})
+            </h3>
+          </div>
+
+          {activeEnrollments.length > 0 ? (
+            <div className="space-y-3">
+              {activeEnrollments.map((e) => (
+                <div 
+                  key={e.id}
+                  className="bg-gray-50/50 dark:bg-gray-900/30 border border-gray-150 dark:border-gray-800 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-purple-500/25 transition-all"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-xs text-text">{e.beneficiary?.name}</span>
+                      <span className="text-[8px] font-bold bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-muted">
+                        {e.beneficiary?.location}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted leading-tight">
+                      Étape actuelle : <span className="font-semibold text-text">{e.currentStage?.name || "Initialisation"}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="text-right space-y-1">
+                      <span className={cn(
+                        "text-[9px] font-bold px-2 py-0.5 rounded-full",
+                        e.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-500" :
+                        e.status === "IN_PROGRESS" ? "bg-amber-500/10 text-amber-500" :
+                        "bg-blue-500/10 text-blue-500"
+                      )}>
+                        {e.status}
+                      </span>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <div className="w-16 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-500" style={{ width: `${e.completionRate}%` }} />
+                        </div>
+                        <span className="text-[9px] font-black text-text">{Math.round(e.completionRate)}%</span>
+                      </div>
+                    </div>
+                    <a 
+                      href={`/beneficiaries?id=${e.beneficiaryId}`}
+                      className="p-1.5 rounded-lg hover:bg-gray-250 dark:hover:bg-gray-700 text-muted hover:text-purple-500 transition border-0 bg-transparent cursor-pointer"
+                      title="Voir la fiche bénéficiaire"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-muted text-xs italic">
+              {"Aucune entreprise wallonne n'est actuellement active sur ce parcours."}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Tab 3 content: Relations
+  const relationsTabContent = () => {
+    if (!selectedJourney) return null;
+    const activeEnrollments = enrollments.filter((e) => e.journeyId === selectedJourney.id);
+    const linkedServices = (selectedJourney.stages || []).flatMap(st => st.services || []);
+    const linkedOrgs = Array.from(new Set(linkedServices.map(s => s.organization?.name).filter((name): name is string => !!name)));
+    const linkedBenefs = activeEnrollments.map((e) => e.beneficiary?.name).filter((name): name is string => !!name);
+    const linkedProjects = (selectedJourney.actionInstances || []).map((ai) => ai.title).filter((title): title is string => !!title);
+    const linkedCapabilities = Array.from(new Set(linkedServices.flatMap(s => s.capabilities || []).map(c => c.name)));
+    const linkedKnowledgeAssets = Array.from(new Set(linkedServices.flatMap(s => s.knowledgeAssets || []).map(a => a.title)));
+
+    const relationSections = [
+      {
+        title: "Services CPSV-AP impliqués",
+        items: linkedServices.map(s => ({
+          id: s.id,
+          title: s.name,
+          relationType: `Code : ${s.code}`,
+          Icon: FileText,
+          onClick: () => window.location.href = `/services?id=${s.id}`
+        }))
+      },
+      {
+        title: "Opérateurs et Organisations impliqués",
+        items: linkedOrgs.map((org: string, index: number) => ({
+          id: index,
+          title: org,
+          relationType: "Opérateur de support",
+          Icon: Building2
+        }))
+      },
+      {
+        title: "Entreprises bénéficiaires actives",
+        items: linkedBenefs.map((ben: string, index: number) => ({
+          id: index,
+          title: ben,
+          relationType: "PME accompagnée",
+          Icon: Users
+        }))
+      },
+      {
+        title: "Programmes & Projets alignés",
+        items: linkedProjects.map((p: string, index: number) => ({
+          id: index,
+          title: p,
+          relationType: "Projet territorial",
+          Icon: Layers
+        }))
+      },
+      {
+        title: "Filières S3 associées",
+        items: (selectedJourney.filieresS3 || []).map(f => ({
+          id: f.id,
+          title: f.name,
+          relationType: "Spécialisation intelligente",
+          Icon: Network
+        }))
+      },
+      {
+        title: "Maillons de la chaîne de valeur",
+        items: (selectedJourney.stagesTransverses || []).map(st => ({
+          id: st.id,
+          title: st.name,
+          relationType: "Maillon de chaîne",
+          Icon: Layers
+        }))
+      },
+      {
+        title: "Écosystèmes territoriaux (Clusters)",
+        items: (selectedJourney.ecosystems || []).map(e => ({
+          id: e.id,
+          title: e.name,
+          relationType: "Écosystème S3",
+          Icon: Share2
+        }))
+      },
+      {
+        title: "DR-BEST (Axes de transformation)",
+        items: (selectedJourney.transformationDimensions || []).map(t => ({
+          id: t.code,
+          title: t.name,
+          relationType: "Transformation Dimension",
+          Icon: Activity
+        }))
+      },
+      {
+        title: "Capabilités technologiques",
+        items: linkedCapabilities.map((cap: string, index: number) => ({
+          id: index,
+          title: cap,
+          relationType: "Compétence clé",
+          Icon: Sparkles
+        }))
+      },
+      {
+        title: "Knowledge Assets générés/requis",
+        items: linkedKnowledgeAssets.map((asset: string, index: number) => ({
+          id: index,
+          title: asset,
+          relationType: "Actif de connaissance",
+          Icon: Database
+        }))
+      }
+    ];
+
+    return (
+      <div className="space-y-4">
+        {renderJourneySelector()}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-sm text-left">
+          <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700 mb-4">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-purple-600">
+              Cartographie du Territorial Knowledge Graph
+            </h3>
+          </div>
+          <PITRelationsPanel sections={relationSections} />
+        </div>
+      </div>
+    );
+  };
+
+  // Tab 4 content: Métadonnées
+  const metadataTabContent = () => {
+    if (!selectedJourney) return null;
+
+    return (
+      <div className="space-y-4">
+        {renderJourneySelector()}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-sm space-y-4 text-left">
+          <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-purple-600">
+              Métadonnées Techniques
+            </h3>
+          </div>
+          <div className="bg-gray-50/50 dark:bg-gray-900/50 border border-gray-150 dark:border-gray-700 p-4 rounded-xl text-xs space-y-3 leading-relaxed">
+            <p className="text-text">URI : <span className="font-mono text-purple-650 dark:text-purple-400 select-all">{selectedJourney.uri || `https://pit.wallonie.be/id/journey/${selectedJourney.id}`}</span></p>
+            <p className="text-text">Classe RDF : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:JourneyTemplate</span></p>
+            <p className="text-text">Chef de file : <span className="font-bold">{selectedJourney.provider}</span></p>
+            <p className="text-text">Publics cibles : <span className="font-semibold">{selectedJourney.targetAudience?.join(", ") || "PME"}</span></p>
+            <p className="text-text">{"Date d'encodage :"} <span className="font-medium">{selectedJourney.createdAt ? new Date(selectedJourney.createdAt).toLocaleDateString("fr-BE") : "N/A"}</span></p>
+            <p className="text-text">Dernière mise à jour : <span className="font-medium">{selectedJourney.updatedAt ? new Date(selectedJourney.updatedAt).toLocaleDateString("fr-BE") : "N/A"}</span></p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <PITLayout
       category="OBSERVATOIRE TERRITORIAL"
       title="Parcours territoriaux"
-      description="Modèles de parcours permettant d’organiser l’enchaînement des services, des acteurs et des étapes d’accompagnement au sein des écosystèmes territoriaux."
+      description="Modèles de parcours permettant d’organiser l’enchaînement des services, des acteurs et des étapes d’accompagnement au sein des écosystèmes territoriaux de Wallonie."
       pageIcon={Compass}
       breadcrumb={[
         { label: "Tableau de bord", href: "/" },
         { label: "Parcours" }
       ]}
+      tabs={
+        !isEditing && !isCreating ? (
+          <PITTabs
+            tabs={tabOptions}
+            activeTab={activeTab}
+            onChange={(id) => setActiveTab(id as "models" | "active" | "relations" | "metadata")}
+          />
+        ) : undefined
+      }
     >
-      <PITFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Rechercher un parcours par nom, fournisseur ou objectif..."
-      />
-
       {isEditing || isCreating ? (
         renderForm()
       ) : (
-        <SplitLayout
-          leftPane={leftPane}
-          rightPane={renderDetailPanel()}
-          leftColSpan={4}
-        />
+        <div className="w-full">
+          {activeTab === "models" && (
+            <JourneyModelsView
+              journeys={visibleJourneys}
+              selectedJourney={selectedJourney}
+              setSelectedJourney={setSelectedJourney}
+              onEdit={handleStartEdit}
+              onDelete={handleDelete}
+              onCreate={handleStartCreate}
+              filieresList={filieresList}
+              challengesList={challengesList}
+              ecosystemsList={ecosystemsList}
+              transformationsList={transformationsList}
+              domainsList={domainsList}
+              enrollmentsCount={enrollmentsCount}
+            />
+          )}
+          {activeTab === "active" && activeTabContent()}
+          {activeTab === "relations" && relationsTabContent()}
+          {activeTab === "metadata" && metadataTabContent()}
+        </div>
       )}
     </PITLayout>
   );

@@ -78,11 +78,11 @@ export default function PITEntityCard({
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl border p-4 flex items-start gap-4 transition-all duration-200 bg-glass/40 w-full text-left",
+        "rounded-xl border p-4 flex items-start gap-4 transition-all duration-200 bg-white dark:bg-gray-800 w-full text-left",
         onClick ? "cursor-pointer hover:shadow-xs" : "",
         isSelected
           ? "border-teal-700 bg-teal-700/5 dark:border-teal-400 dark:bg-teal-400/5 shadow-inner"
-          : "border-muted/20 hover:border-muted hover:bg-glass/80",
+          : "border-gray-150 dark:border-gray-800/80 hover:border-teal-500 hover:bg-gray-50/50 dark:hover:bg-gray-750/30",
         className
       )}
     >
@@ -127,7 +127,7 @@ export default function PITEntityCard({
             {tags.map((t) => (
               <span
                 key={t}
-                className="px-1.5 py-0.5 rounded bg-glass border border-muted/20 text-[9px] font-bold text-text/80"
+                className="px-1.5 py-0.5 rounded bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 text-[9px] font-bold text-text/80"
               >
                 {t}
               </span>

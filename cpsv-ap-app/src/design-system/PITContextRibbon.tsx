@@ -26,7 +26,7 @@ export default function PITContextRibbon({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-1.5 text-[10px] font-extrabold text-muted uppercase tracking-wider bg-glass/25 px-3 py-1.5 rounded-lg border border-muted/10 w-fit max-w-full mb-4",
+        "flex flex-wrap items-center gap-1.5 text-[10px] font-extrabold text-muted uppercase tracking-wider bg-gray-50/50 dark:bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-150 dark:border-gray-800 w-fit max-w-full mb-4",
         className
       )}
     >

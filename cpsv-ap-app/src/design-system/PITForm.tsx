@@ -51,7 +51,7 @@ export default function PITForm({
       <form
         onSubmit={onSubmit}
         className={cn(
-          "bg-glass border border-muted/20 rounded-2xl p-6 shadow-sm space-y-6",
+          "bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-850 rounded-2xl p-6 shadow-sm space-y-6",
           infoPanel ? "lg:col-span-2" : "lg:col-span-3"
         )}
       >
@@ -67,7 +67,7 @@ export default function PITForm({
             return (
               <div
                 key={section.id}
-                className="border border-muted/15 rounded-xl overflow-hidden bg-glass/10 transition-all duration-200"
+                className="border border-gray-150 dark:border-gray-750 rounded-xl overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 transition-all duration-200"
               >
                 {/* Accordion Trigger */}
                 <button
@@ -109,7 +109,7 @@ export default function PITForm({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-5 py-2.5 border border-muted hover:bg-glass rounded-xl font-bold text-muted hover:text-text transition-all cursor-pointer bg-transparent disabled:opacity-50 text-xs"
+            className="px-5 py-2.5 border border-gray-250 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 rounded-xl font-bold text-muted hover:text-text transition-all cursor-pointer bg-transparent disabled:opacity-50 text-xs"
           >
             {cancelLabel}
           </button>
@@ -125,7 +125,7 @@ export default function PITForm({
 
       {/* Help / Information Side Panel */}
       {infoPanel && (
-        <div className="bg-glass/15 border border-muted/10 rounded-2xl p-5 shadow-xs space-y-4 lg:col-span-1 leading-relaxed text-xs">
+        <div className="bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-1 leading-relaxed text-xs">
           <div className="flex items-center gap-2 border-b border-muted/10 pb-3">
             <HelpCircle className="h-5 w-5 text-teal-650 dark:text-teal-400" />
             <span className="font-extrabold text-[10px] uppercase text-text tracking-wider">

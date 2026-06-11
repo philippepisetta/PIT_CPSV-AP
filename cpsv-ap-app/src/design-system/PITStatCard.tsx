@@ -89,7 +89,7 @@ export default function PITStatCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-glass border border-muted/20 p-5 group shadow-xs w-full transition-all duration-300",
+        "relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-850 p-5 group shadow-sm w-full transition-all duration-300",
         className
       )}
     >

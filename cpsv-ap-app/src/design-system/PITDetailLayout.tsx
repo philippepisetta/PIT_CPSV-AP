@@ -48,12 +48,12 @@ export default function PITDetailLayout({
   return (
     <div
       className={cn(
-        "bg-glass border border-muted/20 rounded-2xl p-6 shadow-xs space-y-6 transition-all duration-300 w-full",
+        "bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-850 rounded-2xl p-6 shadow-sm space-y-6 transition-all duration-300 w-full",
         className
       )}
     >
       {/* Detail Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-muted/20 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-gray-100 dark:border-gray-850 pb-4">
         <div className="space-y-1">
           {badge && <div className="inline-block">{badge}</div>}
           <h2 className="text-xl font-black text-text tracking-tight mt-1">

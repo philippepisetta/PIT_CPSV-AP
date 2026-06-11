@@ -291,7 +291,7 @@ export default function PITGraphView({
   }, [edges]);
 
   return (
-    <div className={cn("h-[500px] border border-muted/20 rounded-2xl bg-glass/25 relative overflow-hidden shadow-inner", className)}>
+    <div className={cn("h-[500px] border border-gray-150 dark:border-gray-850 rounded-2xl bg-white dark:bg-gray-800 relative overflow-hidden shadow-inner", className)}>
       <ReactFlow
         nodes={layoutNodes}
         edges={rfEdges}
@@ -308,11 +308,11 @@ export default function PITGraphView({
         preventScrolling={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="opacity-25" />
-        <Controls className="!bg-glass !border-muted/20 !text-text !rounded-xl !shadow-md" />
+        <Controls className="!bg-white dark:!bg-gray-800 !border-gray-150 dark:!border-gray-800 !text-text !rounded-xl !shadow-md" />
         <MiniMap
           nodeColor={(n) => typeColorMap[n.id.split("-")[0]] || "#3b82f6"}
           maskColor="rgba(0, 0, 0, 0.2)"
-          className="!bg-glass !border-muted/20 !rounded-xl !shadow-md hidden sm:block"
+          className="!bg-white dark:!bg-gray-800 !border-gray-150 dark:!border-gray-800 !rounded-xl !shadow-md hidden sm:block"
         />
       </ReactFlow>
     </div>

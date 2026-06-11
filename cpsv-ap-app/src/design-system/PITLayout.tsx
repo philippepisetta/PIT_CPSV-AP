@@ -94,7 +94,7 @@ export default function PITLayout({
           {children}
         </div>
         {contextPanel && (
-          <div className="xl:col-span-4 w-full bg-glass border border-muted/20 p-5 rounded-2xl shadow-xs space-y-4">
+          <div className="xl:col-span-4 w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-850 p-5 rounded-2xl shadow-sm space-y-4">
             {contextPanel}
           </div>
         )}

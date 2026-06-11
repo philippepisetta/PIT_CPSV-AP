@@ -17,6 +17,10 @@ interface PITDetailLayoutProps {
   historyTab?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
+  overviewLabel?: string;
+  relationsLabel?: string;
+  impactLabel?: string;
+  metadataLabel?: string;
 }
 
 export default function PITDetailLayout({
@@ -30,20 +34,24 @@ export default function PITDetailLayout({
   historyTab,
   actions,
   className,
+  overviewLabel,
+  relationsLabel,
+  impactLabel,
+  metadataLabel,
 }: PITDetailLayoutProps) {
   const [activeSubTab, setActiveSubTab] = useState<string>("overview");
 
   // Build active tabs array dynamically
   const detailTabs = React.useMemo(() => {
     const list: TabOption[] = [
-      { id: "overview", label: "Vue d'ensemble", icon: Info },
+      { id: "overview", label: overviewLabel || "Vue d'ensemble", icon: Info },
     ];
-    if (relationsTab) list.push({ id: "relations", label: "Relations", icon: Share2 });
-    if (impactTab) list.push({ id: "impact", label: "Impact", icon: TrendingUp });
-    list.push({ id: "metadata", label: "Métadonnées", icon: Database });
+    if (relationsTab) list.push({ id: "relations", label: relationsLabel || "Relations", icon: Share2 });
+    if (impactTab) list.push({ id: "impact", label: impactLabel || "Parcours actifs", icon: TrendingUp });
+    list.push({ id: "metadata", label: metadataLabel || "Métadonnées", icon: Database });
     if (historyTab) list.push({ id: "history", label: "Historique", icon: Clock });
     return list;
-  }, [relationsTab, impactTab, historyTab]);
+  }, [relationsTab, impactTab, historyTab, overviewLabel, relationsLabel, impactLabel, metadataLabel]);
 
   return (
     <div

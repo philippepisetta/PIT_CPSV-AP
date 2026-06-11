@@ -375,8 +375,25 @@ export async function GET(
     if (segment1 === "journeys") {
       const data = await prisma.journey.findMany({
         include: {
-          challenges: true, filieresS3: true, stagesTransverses: true,
-          stages: { orderBy: { position: "asc" }, include: { services: { include: { organization: true } } } }
+          challenges: true,
+          filieresS3: true,
+          stagesTransverses: true,
+          ecosystems: true,
+          transformationDimensions: true,
+          strategicDomains: true,
+          actionInstances: true,
+          stages: {
+            orderBy: { position: "asc" },
+            include: {
+              services: {
+                include: {
+                  organization: true,
+                  capabilities: true,
+                  knowledgeAssets: true
+                }
+              }
+            }
+          }
         },
         orderBy: { name: "asc" }
       });
@@ -646,6 +663,45 @@ export async function POST(
         include: { organization: true, channels: true, targetAudiences: true, supportsBusinessNeed: true }
       });
       return NextResponse.json(newService, { status: 201 });
+    }
+
+    if (segment1 === "journeys") {
+      const {
+        name, provider, objective, description, targetAudience,
+        filiereIds, challengeIds, ecosystemIds, transformationIds, domainIds,
+        stages
+      } = body;
+
+      if (!name || !provider) {
+        return NextResponse.json({ error: "Le nom du parcours et le fournisseur sont obligatoires." }, { status: 400 });
+      }
+
+      const created = await prisma.journey.create({
+        data: {
+          name,
+          provider,
+          objective: objective || null,
+          description: description || null,
+          targetAudience: targetAudience || [],
+          uri: `https://pit.wallonie.be/id/journey/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          filieresS3: filiereIds ? { connect: filiereIds.map((fid: any) => ({ id: parseInt(fid) })) } : undefined,
+          challenges: challengeIds ? { connect: challengeIds.map((cid: any) => ({ id: parseInt(cid) })) } : undefined,
+          ecosystems: ecosystemIds ? { connect: ecosystemIds.map((eid: any) => ({ id: parseInt(eid) })) } : undefined,
+          transformationDimensions: transformationIds ? { connect: transformationIds.map((code: any) => ({ code })) } : undefined,
+          strategicDomains: domainIds ? { connect: domainIds.map((did: any) => ({ id: parseInt(did) })) } : undefined,
+          stages: {
+            create: (stages || []).map((st: any) => ({
+              name: st.name,
+              position: parseInt(st.position),
+              services: st.services ? { connect: st.services.map((s: any) => ({ id: parseInt(s.id) })) } : undefined
+            }))
+          }
+        },
+        include: {
+          stages: { include: { services: true } }
+        }
+      });
+      return NextResponse.json(created, { status: 201 });
     }
 
     if (segment1 === "value-chains") {
@@ -1126,6 +1182,51 @@ export async function PATCH(
   if (isNaN(id)) return NextResponse.json({ error: "ID invalide" }, { status: 400 });
 
   try {
+    if (segment1 === "journeys") {
+      const journeyId = id;
+      const {
+        name, provider, objective, description, targetAudience,
+        filiereIds, challengeIds, ecosystemIds, transformationIds, domainIds,
+        stages
+      } = body;
+
+      if (!name || !provider) {
+        return NextResponse.json({ error: "Le nom du parcours et le fournisseur sont obligatoires." }, { status: 400 });
+      }
+
+      // Delete old stages first
+      await prisma.journeyStage.deleteMany({
+        where: { journeyId }
+      });
+
+      const updated = await prisma.journey.update({
+        where: { id: journeyId },
+        data: {
+          name,
+          provider,
+          objective: objective || null,
+          description: description || null,
+          targetAudience: targetAudience || [],
+          filieresS3: { set: filiereIds ? filiereIds.map((fid: any) => ({ id: parseInt(fid) })) : [] },
+          challenges: { set: challengeIds ? challengeIds.map((cid: any) => ({ id: parseInt(cid) })) : [] },
+          ecosystems: { set: ecosystemIds ? ecosystemIds.map((eid: any) => ({ id: parseInt(eid) })) : [] },
+          transformationDimensions: { set: transformationIds ? transformationIds.map((code: any) => ({ code })) : [] },
+          strategicDomains: { set: domainIds ? domainIds.map((did: any) => ({ id: parseInt(did) })) : [] },
+          stages: {
+            create: (stages || []).map((st: any) => ({
+              name: st.name,
+              position: parseInt(st.position),
+              services: st.services ? { connect: st.services.map((s: any) => ({ id: parseInt(s.id) })) } : undefined
+            }))
+          }
+        },
+        include: {
+          stages: { include: { services: true } }
+        }
+      });
+      return NextResponse.json(updated);
+    }
+
     if (segment1 === "service-deliveries") {
       const { status, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles } = body;
       const original = await prisma.serviceDelivery.findUnique({ where: { id } });
@@ -1386,6 +1487,38 @@ export async function PATCH(
     return NextResponse.json({ error: "Route non trouvée" }, { status: 404 });
   } catch (err: any) {
     console.error("PATCH API Error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// --- DELETE HANDLER ---
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await context.params;
+  const segment1 = path[0];
+  const segment2 = path[1];
+  clearCache();
+
+  if (!segment2) {
+    return NextResponse.json({ error: "ID requis pour suppression" }, { status: 400 });
+  }
+  const id = parseInt(segment2);
+  if (isNaN(id)) return NextResponse.json({ error: "ID invalide" }, { status: 400 });
+
+  try {
+    if (segment1 === "journeys") {
+      // stages are automatically deleted due to onDelete: Cascade on JourneyStage
+      await prisma.journey.delete({
+        where: { id }
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "Route non trouvée" }, { status: 404 });
+  } catch (err: any) {
+    console.error("DELETE API Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

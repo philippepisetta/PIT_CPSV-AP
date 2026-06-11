@@ -1,5 +1,5 @@
 // src/hooks/usePITQueries.ts
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -91,5 +91,64 @@ export function useRecommenderQuery(beneficiaryId?: string) {
     queryKey: ["recommender", beneficiaryId],
     queryFn: () => fetcher(`/api/recommender/${beneficiaryId}`),
     enabled: !!beneficiaryId,
+  });
+}
+
+export function useJourneyEnrollmentsQuery() {
+  return useQuery({
+    queryKey: ["journey-enrollments"],
+    queryFn: () => fetcher("/api/journey-enrollments"),
+  });
+}
+
+export function useCreateJourneyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (journeyData: any) => {
+      const res = await fetch("/api/journeys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(journeyData),
+      });
+      if (!res.ok) throw new Error("Failed to save journey");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["journeys"] });
+    },
+  });
+}
+
+export function useUpdateJourneyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number | string; data: any }) => {
+      const res = await fetch(`/api/journeys/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update journey");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["journeys"] });
+    },
+  });
+}
+
+export function useDeleteJourneyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number | string) => {
+      const res = await fetch(`/api/journeys/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete journey");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["journeys"] });
+    },
   });
 }

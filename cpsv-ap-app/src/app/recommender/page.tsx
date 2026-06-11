@@ -195,7 +195,7 @@ export default function RecommenderPage() {
   );
 
   const renderDetailPanel = () => {
-    const b = recData.beneficiary;
+    const b = recData.beneficiary as Beneficiary | null;
     if (!b) {
       return (
         <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">

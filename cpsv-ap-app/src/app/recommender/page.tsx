@@ -23,6 +23,8 @@ import PITStatCard from "@/design-system/PITStatCard";
 import SplitLayout from "@/components/ui/SplitLayout";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 import { cn } from "@/lib/utils";
+import { useBeneficiariesQuery, useRecommenderQuery } from "@/hooks/usePITQueries";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface NaceSector {
   id: number;
@@ -109,72 +111,36 @@ interface Beneficiary {
 }
 
 export default function RecommenderPage() {
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const { data: beneficiariesData, isLoading: loadingList, error: listError } = useBeneficiariesQuery();
+  const beneficiaries = (beneficiariesData || []) as Beneficiary[];
+
   const [selectedBId, setSelectedBId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Données de recommandation
-  const [recData, setRecData] = useState<{
-    beneficiary: Beneficiary | null;
-    matchedNeeds: any[];
-    recommendedServices: PublicService[];
-    recommendedJourneys: Journey[];
-    recommendedEcosystems: Ecosystem[];
-    recommendedActors: Organization[];
-  }>({
-    beneficiary: null,
-    matchedNeeds: [],
-    recommendedServices: [],
-    recommendedJourneys: [],
-    recommendedEcosystems: [],
-    recommendedActors: []
-  });
 
-  const [loadingList, setLoadingList] = useState(true);
-  const [loadingRec, setLoadingRec] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Charger la liste des bénéficiaires
+  // Sync selectedBId once the list loads
   useEffect(() => {
-    async function loadBeneficiaries() {
-      try {
-        setLoadingList(true);
-        const res = await fetch("/api/beneficiaries");
-        if (!res.ok) throw new Error("Impossible de charger les bénéficiaires.");
-        const data = await res.json();
-        setBeneficiaries(data);
-        if (data.length > 0) {
-          setSelectedBId(String(data[0].id));
-        }
-        setLoadingList(false);
-      } catch (err: any) {
-        setError(err.message);
-        setLoadingList(false);
-      }
+    if (beneficiaries.length > 0 && !selectedBId) {
+      setSelectedBId(String(beneficiaries[0].id));
     }
-    loadBeneficiaries();
-  }, []);
+  }, [beneficiaries, selectedBId]);
 
-  // Calculer les recommandations
-  useEffect(() => {
-    if (!selectedBId) return;
+  const { data: recDataResult, isLoading: loadingRec, error: recError } = useRecommenderQuery(selectedBId || undefined);
 
-    async function loadRecommendations() {
-      try {
-        setLoadingRec(true);
-        const res = await fetch(`/api/recommender/${selectedBId}`);
-        if (!res.ok) throw new Error("Erreur lors du calcul des recommandations.");
-        const data = await res.json();
-        setRecData(data);
-        setLoadingRec(false);
-      } catch (err: any) {
-        console.error(err);
-        setLoadingRec(false);
-      }
+  const error = (listError?.message || recError?.message) || null;
+
+  const recData = useMemo(() => {
+    if (!recDataResult) {
+      return {
+        beneficiary: null,
+        matchedNeeds: [],
+        recommendedServices: [],
+        recommendedJourneys: [],
+        recommendedEcosystems: [],
+        recommendedActors: []
+      };
     }
-
-    loadRecommendations();
-  }, [selectedBId]);
+    return recDataResult;
+  }, [recDataResult]);
 
   // Filtrage des bénéficiaires sur la gauche
   const filteredBeneficiaries = useMemo(() => {
@@ -198,23 +164,30 @@ export default function RecommenderPage() {
   }
 
   const leftPane = (
-    <div className="space-y-3">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Bénéficiaires ({filteredBeneficiaries.length})
-      </div>
-      <div className="space-y-2.5 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-        {filteredBeneficiaries.map((benef) => (
-          <PITEntityCard
-            key={benef.id}
-            title={benef.name}
-            description={`${benef.location} (${benef.province})`}
-            icon={Building2}
-            type="beneficiary"
-            isSelected={String(benef.id) === selectedBId}
-            onClick={() => setSelectedBId(String(benef.id))}
+      </h3>
+      <div className="flex-1 min-h-0">
+        {filteredBeneficiaries.length > 0 ? (
+          <PITVirtualList
+            items={filteredBeneficiaries}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(benef) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={benef.name}
+                  description={`${benef.location} (${benef.province})`}
+                  icon={Building2}
+                  type="beneficiary"
+                  isSelected={String(benef.id) === selectedBId}
+                  onClick={() => setSelectedBId(String(benef.id))}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredBeneficiaries.length === 0 && (
+        ) : (
           <p className="text-center text-xs text-muted italic py-6">Aucun bénéficiaire trouvé.</p>
         )}
       </div>

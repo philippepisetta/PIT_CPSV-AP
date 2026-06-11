@@ -20,6 +20,10 @@ import PITForm from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
 import MultiTagSelector from "@/components/ui/MultiTagSelector";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useKnowledgeAssetsQuery, useMetaQuery } from "@/hooks/usePITQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface PublicService {
   id: number;
@@ -50,14 +54,33 @@ interface KnowledgeAsset {
 }
 
 export default function KnowledgeAssetsPage() {
-  const [assets, setAssets] = useState<KnowledgeAsset[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<KnowledgeAsset | null>(null);
-  
-  // Meta cache
-  const [services, setServices] = useState<PublicService[]>([]);
-  const [ecosystems, setEcosystems] = useState<Ecosystem[]>([]);
-  const [events, setEvents] = useState<EventResource[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: assetsData, isLoading: assetsLoading, error: assetsError } = useKnowledgeAssetsQuery();
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+
+  const loading = assetsLoading || metaLoading;
+  const error = (assetsError?.message || metaError?.message) || null;
+
+  const assets = (assetsData || []) as KnowledgeAsset[];
+
+  const services = useMemo(() => (metaData?.services || []) as PublicService[], [metaData]);
+  const ecosystems = useMemo(() => (metaData?.ecosystems || []) as Ecosystem[], [metaData]);
+  const events = useMemo(() => (metaData?.eventResources || []) as EventResource[], [metaData]);
+
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
+
+  const selectedAsset = useMemo(() => {
+    if (assets.length === 0) return null;
+    if (selectedAssetId !== null) {
+      return assets.find(a => a.id === selectedAssetId) || assets[0];
+    }
+    return assets[0];
+  }, [assets, selectedAssetId]);
+
+  const setSelectedAsset = (a: KnowledgeAsset | null) => {
+    setSelectedAssetId(a ? a.id : null);
+  };
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -73,40 +96,13 @@ export default function KnowledgeAssetsPage() {
   const [selectedEcosystemIds, setSelectedEcosystemIds] = useState<number[]>([]);
   const [selectedEventIds, setSelectedEventIds] = useState<number[]>([]);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [aRes, mRes] = await Promise.all([
-        fetch("/api/knowledge-assets"),
-        fetch("/api/meta")
-      ]);
-
-      if (!aRes.ok || !mRes.ok) throw new Error("Erreur de récupération des données.");
-      
-      const aData = await aRes.json();
-      const mData = await mRes.json();
-
-      setAssets(aData);
-      setServices(mData.services || []);
-      setEcosystems(mData.ecosystems || []);
-      setEvents(mData.eventResources || []);
-
-      if (aData.length > 0 && !selectedAsset) {
-        setSelectedAsset(aData[0]);
-      } else if (selectedAsset) {
-        const updated = aData.find((a: KnowledgeAsset) => a.id === selectedAsset.id);
-        if (updated) setSelectedAsset(updated);
-      }
-
-      setLoading(false);
-    } catch (err: any) {
-      console.error(err);
-      setLoading(false);
-    }
-  }
+  const loadData = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["knowledge-assets"] });
+    await queryClient.invalidateQueries({ queryKey: ["meta"] });
+  };
 
   useEffect(() => {
-    loadData();
+    // Selection initialization is handled by selectedAsset useMemo
   }, []);
 
   async function handleAddAsset(e: React.FormEvent) {
@@ -171,24 +167,31 @@ export default function KnowledgeAssetsPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES ACTIFS ---
   const leftPane = (
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Actifs de Connaissance ({filteredAssets.length})
-      </div>
-      <div className="space-y-2.5">
-        {filteredAssets.map((a) => (
-          <PITEntityCard
-            key={a.id}
-            title={a.title}
-            description={a.description}
-            icon={BookOpen}
-            type="programme"
-            subtitle={a.type}
-            isSelected={selectedAsset?.id === a.id}
-            onClick={() => setSelectedAsset(a)}
+      </h3>
+      <div className="flex-1 min-h-0">
+        {filteredAssets.length > 0 ? (
+          <PITVirtualList
+            items={filteredAssets}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(a) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={a.title}
+                  description={a.description}
+                  icon={BookOpen}
+                  type="knowledge-asset"
+                  subtitle={a.type}
+                  isSelected={selectedAsset?.id === a.id}
+                  onClick={() => setSelectedAsset(a)}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredAssets.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun livrable ne correspond.
           </div>
@@ -375,6 +378,26 @@ export default function KnowledgeAssetsPage() {
       )
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
+        <p className="text-muted text-sm font-medium animate-pulse">Chargement des actifs de connaissance...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] text-center p-6">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg p-6 max-w-md">
+          <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PITLayout

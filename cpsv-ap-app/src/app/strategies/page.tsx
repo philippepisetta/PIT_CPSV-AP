@@ -31,15 +31,15 @@ import PITForm, { FormSection } from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
 import { cn } from "@/lib/utils";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useMetaQuery } from "@/hooks/usePITQueries";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function StrategiesPage() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data: meta, isLoading: loading, error: metaError } = useMetaQuery();
+  const error = metaError ? (metaError as Error).message : null;
   const { isEntityTypeVisible } = usePerspective();
   
-  // Data from API
-  const [meta, setMeta] = useState<any>(null);
-
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterFiliere, setFilterFiliere] = useState("");
@@ -70,22 +70,11 @@ export default function StrategiesPage() {
     measureId: "", name: "", code: "", description: "", leadOrganizationId: "", startDate: "", endDate: "", status: "PLANNED", priorityIds: [] as number[], ecosystemIds: [] as number[], filiereIds: [] as number[], territoryIds: [] as number[], serviceIds: [] as number[]
   });
 
-  async function loadData() {
-    try {
-      const res = await fetch("/api/meta");
-      if (!res.ok) throw new Error("Erreur de chargement des référentiels stratégiques.");
-      const data = await res.json();
-      setMeta(data);
-      setLoading(false);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-      setLoading(false);
-    }
-  }
+  const loadData = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["meta"] });
+  };
 
   useEffect(() => {
-    loadData();
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const action = params.get("action");

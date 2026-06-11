@@ -20,6 +20,8 @@ import PITDetailLayout from "@/design-system/PITDetailLayout";
 import SplitLayout from "@/components/ui/SplitLayout";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useJourneysQuery } from "@/hooks/usePITQueries";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface Organization {
   id: number;
@@ -65,32 +67,18 @@ interface Journey {
 }
 
 export default function JourneysPage() {
-  const [journeys, setJourneys] = useState<Journey[]>([]);
+  const { data: journeysData, isLoading: loading, error: queryError } = useJourneysQuery();
+  const journeys = journeysData || [];
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
 
   useEffect(() => {
-    async function loadJourneys() {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/journeys");
-        if (!response.ok) throw new Error("Impossible de charger le catalogue des parcours.");
-        const data = await response.json();
-        setJourneys(data);
-        if (data.length > 0) {
-          setSelectedJourney(data[0]);
-        }
-        setLoading(false);
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
+    if (journeys.length > 0 && !selectedJourney) {
+      setSelectedJourney(journeys[0]);
     }
-    loadJourneys();
-  }, []);
+  }, [journeys, selectedJourney]);
 
   if (loading) {
     return (
@@ -102,7 +90,7 @@ export default function JourneysPage() {
   }
 
   // Filtrer les parcours
-  const filteredJourneys = journeys.filter(j => {
+  const filteredJourneys = (journeys as Journey[]).filter(j => {
     // Verifier la perspective
     if (!isEntityTypeVisible("journey")) return false;
 
@@ -114,24 +102,31 @@ export default function JourneysPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES PARCOURS ---
   const leftPane = (
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Parcours de référence ({filteredJourneys.length})
-      </div>
-      <div className="space-y-2.5">
-        {filteredJourneys.map((j) => (
-          <PITEntityCard
-            key={j.id}
-            title={j.name}
-            description={j.objective}
-            icon={Compass}
-            type="parcours"
-            subtitle={`Fournisseur : ${j.provider}`}
-            isSelected={selectedJourney?.id === j.id}
-            onClick={() => setSelectedJourney(j)}
+      </h3>
+      <div className="flex-1 min-h-0">
+        {filteredJourneys.length > 0 ? (
+          <PITVirtualList
+            items={filteredJourneys}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(j) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={j.name}
+                  description={j.objective}
+                  icon={Compass}
+                  type="parcours"
+                  subtitle={`Fournisseur : ${j.provider}`}
+                  isSelected={selectedJourney?.id === j.id}
+                  onClick={() => setSelectedJourney(j)}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredJourneys.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun parcours ne correspond.
           </div>

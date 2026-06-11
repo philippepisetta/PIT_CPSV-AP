@@ -80,11 +80,27 @@ export default function PITDetailLayout({
 
       {/* Tab Contents */}
       <div className="pt-2 animate-in fade-in duration-200">
-        {activeSubTab === "overview" && overviewTab}
-        {activeSubTab === "relations" && relationsTab}
-        {activeSubTab === "impact" && impactTab}
-        {activeSubTab === "metadata" && metadataTab}
-        {activeSubTab === "history" && historyTab}
+        <div className={cn(activeSubTab !== "overview" && "hidden")}>
+          {overviewTab}
+        </div>
+        {relationsTab && (
+          <div className={cn(activeSubTab !== "relations" && "hidden")}>
+            {relationsTab}
+          </div>
+        )}
+        {impactTab && (
+          <div className={cn(activeSubTab !== "impact" && "hidden")}>
+            {impactTab}
+          </div>
+        )}
+        <div className={cn(activeSubTab !== "metadata" && "hidden")}>
+          {metadataTab}
+        </div>
+        {historyTab && (
+          <div className={cn(activeSubTab !== "history" && "hidden")}>
+            {historyTab}
+          </div>
+        )}
       </div>
     </div>
   );

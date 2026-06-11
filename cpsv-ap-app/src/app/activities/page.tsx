@@ -24,8 +24,10 @@ import PITRelationsPanel from "@/design-system/PITRelationsPanel";
 import PITForm, { FormSection } from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
-import { fetchWithCache, invalidateClientCache } from "@/lib/api";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useMetaQuery, useServiceDeliveriesQuery } from "@/hooks/usePITQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 interface PublicService {
   id: number;
@@ -93,30 +95,64 @@ interface SecondLineMission {
 }
 
 export default function ActivitiesPage() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"individual" | "collective" | "secondline">("individual");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
 
-  // Données
-  const [meta, setMeta] = useState<{
-    services: PublicService[];
-    organizations: Organization[];
-    beneficiaries: Beneficiary[];
-  }>({
-    services: [],
-    organizations: [],
-    beneficiaries: []
-  });
-  const [individualDeliveries, setIndividualDeliveries] = useState<ServiceDelivery[]>([]);
-  const [collectiveDeliveries, setCollectiveDeliveries] = useState<CollectiveDelivery[]>([]);
-  const [secondLineMissions, setSecondLineMissions] = useState<SecondLineMission[]>([]);
+  // Queries
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+  const { data: deliveriesData, isLoading: deliveriesLoading, error: deliveriesError } = useServiceDeliveriesQuery();
+
+  const loading = metaLoading || deliveriesLoading;
+  const error = (metaError?.message || deliveriesError?.message) || null;
+
+  // Deriving data
+  const meta = useMemo(() => {
+    if (!metaData) {
+      return { services: [], organizations: [], beneficiaries: [] };
+    }
+    return {
+      services: (metaData.services || []) as PublicService[],
+      organizations: (metaData.organizations || []) as Organization[],
+      beneficiaries: (metaData.sectors ? metaData.sectors.reduce((acc: any[], s: any) => {
+        s.primaryBeneficiaries?.forEach((b: any) => {
+          if (!acc.some((exist: any) => exist.id === b.id)) {
+            acc.push({ id: b.id, name: b.name });
+          }
+        });
+        return acc;
+      }, []) : []) as Beneficiary[]
+    };
+  }, [metaData]);
+
+  const individualDeliveries = (deliveriesData || []) as ServiceDelivery[];
+  const collectiveDeliveries = (metaData?.collectiveDeliveries || []) as CollectiveDelivery[];
+  const secondLineMissions = (metaData?.secondLineMissions || []) as SecondLineMission[];
 
   // Selection states
   const [selectedIndividual, setSelectedIndividual] = useState<ServiceDelivery | null>(null);
   const [selectedCollective, setSelectedCollective] = useState<CollectiveDelivery | null>(null);
   const [selectedSecondLine, setSelectedSecondLine] = useState<SecondLineMission | null>(null);
+
+  // Sync selections when lists load
+  useEffect(() => {
+    if (individualDeliveries.length > 0 && !selectedIndividual) {
+      setSelectedIndividual(individualDeliveries[0]);
+    }
+  }, [individualDeliveries, selectedIndividual]);
+
+  useEffect(() => {
+    if (collectiveDeliveries.length > 0 && !selectedCollective) {
+      setSelectedCollective(collectiveDeliveries[0]);
+    }
+  }, [collectiveDeliveries, selectedCollective]);
+
+  useEffect(() => {
+    if (secondLineMissions.length > 0 && !selectedSecondLine) {
+      setSelectedSecondLine(secondLineMissions[0]);
+    }
+  }, [secondLineMissions, selectedSecondLine]);
 
   // Modals
   const [showCollForm, setShowCollForm] = useState(false);
@@ -149,47 +185,14 @@ export default function ActivitiesPage() {
   const [secTerritory, setSecTerritory] = useState("Wallonie");
   const [secNotes, setSecNotes] = useState("");
 
-  async function loadData(bypassCache = false) {
-    try {
-      if (bypassCache) {
-        invalidateClientCache();
-      }
-      setLoading(true);
-      const [metaData, deliveriesData] = await Promise.all([
-        fetchWithCache<any>("/api/meta"),
-        fetchWithCache<ServiceDelivery[]>("/api/service-deliveries")
-      ]);
-
-      setMeta({
-        services: metaData.services || [],
-        organizations: metaData.organizations || [],
-        beneficiaries: metaData.sectors ? metaData.sectors.reduce((acc: any[], s: any) => {
-          s.primaryBeneficiaries?.forEach((b: any) => {
-            if (!acc.some(exist => exist.id === b.id)) {
-              acc.push({ id: b.id, name: b.name });
-            }
-          });
-          return acc;
-        }, []) : []
-      });
-
-      setIndividualDeliveries(deliveriesData);
-      setCollectiveDeliveries(metaData.collectiveDeliveries || []);
-      setSecondLineMissions(metaData.secondLineMissions || []);
-
-      if (deliveriesData.length > 0) setSelectedIndividual(deliveriesData[0]);
-      if (metaData.collectiveDeliveries?.length > 0) setSelectedCollective(metaData.collectiveDeliveries[0]);
-      if (metaData.secondLineMissions?.length > 0) setSelectedSecondLine(metaData.secondLineMissions[0]);
-
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
+  const loadData = async (bypassCache = false) => {
+    if (bypassCache) {
+      await queryClient.invalidateQueries({ queryKey: ["meta"] });
+      await queryClient.invalidateQueries({ queryKey: ["service-deliveries"] });
     }
-  }
+  };
 
   useEffect(() => {
-    loadData();
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const action = params.get("action");

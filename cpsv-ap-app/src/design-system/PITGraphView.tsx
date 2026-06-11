@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap, Node, Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
+import { getCachedPosition } from "@/lib/graphLayoutCache";
 
 export type GraphMode =
   | "network"
@@ -293,10 +294,13 @@ export default function PITGraphView({
       const idx = colNodes.findIndex((cn) => cn.id === n.id);
       const count = colNodes.length;
 
-      const x = computedXMap[key] || 100;
-      const ySpacing = Math.min(120, height / (count + 1));
-      const yOffset = (height - (count - 1) * ySpacing) / 2;
-      const y = yOffset + (idx >= 0 ? idx : 0) * ySpacing;
+      const pos = getCachedPosition(n.id, mode, () => {
+        const xVal = computedXMap[key] || 100;
+        const ySpacing = Math.min(120, height / (count + 1));
+        const yOffset = (height - (count - 1) * ySpacing) / 2;
+        const yVal = yOffset + (idx >= 0 ? idx : 0) * ySpacing;
+        return { x: xVal, y: yVal };
+      });
 
       const isSelected = selectedNodeId === n.id;
 
@@ -323,7 +327,7 @@ export default function PITGraphView({
             </div>
           ),
         },
-        position: { x, y },
+        position: pos,
         style: {
           background: typeColorMap[n.type] || "#3b82f6",
           color: "white",

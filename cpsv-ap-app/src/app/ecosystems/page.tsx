@@ -20,6 +20,8 @@ import PITRelationsPanel from "@/design-system/PITRelationsPanel";
 import PITDetailLayout from "@/design-system/PITDetailLayout";
 import SplitLayout from "@/components/ui/SplitLayout";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useEcosystemsQuery } from "@/hooks/usePITQueries";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface Organization {
   id: number;
@@ -64,32 +66,18 @@ interface Ecosystem {
 }
 
 export default function EcosystemsPage() {
-  const [ecosystems, setEcosystems] = useState<Ecosystem[]>([]);
+  const { data: ecosystemsData, isLoading: loading, error: queryError } = useEcosystemsQuery();
+  const ecosystems = ecosystemsData || [];
   const [selectedEcosystem, setSelectedEcosystem] = useState<Ecosystem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
 
   useEffect(() => {
-    async function loadEcosystems() {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/ecosystems");
-        if (!response.ok) throw new Error("Impossible de charger le catalogue des écosystèmes.");
-        const data = await response.json();
-        setEcosystems(data);
-        if (data.length > 0) {
-          setSelectedEcosystem(data[0]);
-        }
-        setLoading(false);
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
+    if (ecosystems.length > 0 && !selectedEcosystem) {
+      setSelectedEcosystem(ecosystems[0]);
     }
-    loadEcosystems();
-  }, []);
+  }, [ecosystems, selectedEcosystem]);
 
   if (loading) {
     return (
@@ -101,7 +89,7 @@ export default function EcosystemsPage() {
   }
 
   // Filtrer les écosystèmes
-  const filteredEcosystems = ecosystems.filter(e => {
+  const filteredEcosystems = (ecosystems as Ecosystem[]).filter(e => {
     if (!isEntityTypeVisible("ecosystem")) return false;
 
     const query = searchQuery.toLowerCase();
@@ -112,24 +100,31 @@ export default function EcosystemsPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES ECOSYSTEMES ---
   const leftPane = (
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Écosystèmes Territoriaux ({filteredEcosystems.length})
-      </div>
-      <div className="space-y-2.5">
-        {filteredEcosystems.map((e) => (
-          <PITEntityCard
-            key={e.id}
-            title={e.name}
-            description={e.description}
-            icon={Globe}
-            type="ecosystem"
-            subtitle={e.territory || "Wallonie"}
-            isSelected={selectedEcosystem?.id === e.id}
-            onClick={() => setSelectedEcosystem(e)}
+      </h3>
+      <div className="flex-1 min-h-0">
+        {filteredEcosystems.length > 0 ? (
+          <PITVirtualList
+            items={filteredEcosystems}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(e) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={e.name}
+                  description={e.description}
+                  icon={Globe}
+                  type="ecosystem"
+                  subtitle={e.territory || "Wallonie"}
+                  isSelected={selectedEcosystem?.id === e.id}
+                  onClick={() => setSelectedEcosystem(e)}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredEcosystems.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun écosystème ne correspond.
           </div>

@@ -21,56 +21,24 @@ import PITLayout from "@/design-system/PITLayout";
 import PITFilterBar from "@/design-system/PITFilterBar";
 import PITStatCard from "@/design-system/PITStatCard";
 import { cn } from "@/lib/utils";
+import { usePilotageQuery, useMetaQuery } from "@/hooks/usePITQueries";
 
 export default function PilotagePage() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // API Data
-  const [pilotageData, setPilotageData] = useState<any>(null);
-  const [metaData, setMetaData] = useState<any>(null);
-
   // Filters
   const [filiereFilter, setFiliereFilter] = useState("");
   const [territoryFilter, setTerritoryFilter] = useState("");
 
+  const { data: pilotageData, isLoading: pilotageLoading, error: pilotageError } = usePilotageQuery(
+    filiereFilter ? parseInt(filiereFilter) : undefined,
+    territoryFilter ? parseInt(territoryFilter) : undefined
+  );
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+
+  const loading = pilotageLoading || metaLoading;
+  const error = (pilotageError?.message || metaError?.message) || null;
+
   // Question navigation state
   const [activeQuestion, setActiveQuestion] = useState<number>(1);
-
-  async function fetchPilotageData() {
-    try {
-      setLoading(true);
-      
-      const params = new URLSearchParams();
-      if (filiereFilter) params.append("filiereS3Id", filiereFilter);
-      if (territoryFilter) params.append("territoryId", territoryFilter);
-
-      const [pilotageRes, metaRes] = await Promise.all([
-        fetch(`/api/pilotage?${params.toString()}`),
-        fetch("/api/meta")
-      ]);
-
-      if (!pilotageRes.ok || !metaRes.ok) {
-        throw new Error("Erreur lors de la récupération des données de pilotage.");
-      }
-
-      const pilotage = await pilotageRes.json();
-      const meta = await metaRes.json();
-
-      setPilotageData(pilotage);
-      setMetaData(meta);
-      setLoading(false);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-      setLoading(false);
-    }
-  }
-
-  // Refetch data when filters change
-  useEffect(() => {
-    fetchPilotageData();
-  }, [filiereFilter, territoryFilter]);
 
   if (loading && !pilotageData) {
     return (

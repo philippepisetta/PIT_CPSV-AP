@@ -15,6 +15,7 @@ import PITRelationsPanel from "@/design-system/PITRelationsPanel";
 import PITDetailLayout from "@/design-system/PITDetailLayout";
 import SplitLayout from "@/components/ui/SplitLayout";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useMetaQuery, useBeneficiariesQuery } from "@/hooks/usePITQueries";
 
 interface ValueChainStage {
   id: number;
@@ -49,54 +50,25 @@ interface Beneficiary {
 }
 
 export default function ValueChainsPage() {
-  const [valueChains, setValueChains] = useState<StrategicValueChain[]>([]);
-  const [selectedChain, setSelectedChain] = useState<StrategicValueChain | null>(null);
-  const [stages, setStages] = useState<ValueChainStage[]>([]);
-  const [services, setServices] = useState<PublicService[]>([]);
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+  const { data: beneficiariesData, isLoading: beneficiariesLoading, error: beneficiariesError } = useBeneficiariesQuery();
   
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const loading = metaLoading || beneficiariesLoading;
+  const [selectedChain, setSelectedChain] = useState<StrategicValueChain | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
 
+  const valueChains = metaData?.strategicValueChains || [];
+  const stages = metaData?.stages || [];
+  const services = metaData?.services || [];
+  const beneficiaries = beneficiariesData || [];
+
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [vcRes, stRes, bRes] = await Promise.all([
-          fetch("/api/value-chains"),
-          fetch("/api/stages"),
-          fetch("/api/beneficiaries")
-        ]);
-
-        if (!vcRes.ok || !stRes.ok || !bRes.ok) {
-          throw new Error("Impossible de charger les chaînes de valeur.");
-        }
-
-        const vcData = await vcRes.json();
-        const stData = await stRes.json();
-        const bData = await bRes.json();
-        
-        const sResFull = await fetch("/api/meta");
-        const metaFull = await sResFull.json();
-
-        setValueChains(vcData);
-        setStages(stData);
-        setServices(metaFull.services || []);
-        setBeneficiaries(bData);
-
-        if (vcData.length > 0) {
-          setSelectedChain(vcData[0]);
-        }
-        setLoading(false);
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
+    if (valueChains.length > 0 && !selectedChain) {
+      setSelectedChain(valueChains[0]);
     }
-    loadData();
-  }, []);
+  }, [valueChains, selectedChain]);
 
   if (loading) {
     return (

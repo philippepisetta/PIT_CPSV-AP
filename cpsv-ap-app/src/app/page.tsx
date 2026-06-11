@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { 
   Building2, 
   FileText, 
@@ -17,6 +17,7 @@ import {
 
 import PITLayout from "@/design-system/PITLayout";
 import PITStatCard from "@/design-system/PITStatCard";
+import { useMetaQuery, useGraphQuery, useServiceDeliveriesQuery } from "@/hooks/usePITQueries";
 
 interface Kpi {
   label: string;
@@ -27,132 +28,106 @@ interface Kpi {
 }
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    beneficiaries: 0,
-    services: 0,
-    journeys: 0,
-    ecosystems: 0,
-    relations: 0,
-    valueChains: 0
-  });
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+  const { data: graphData, isLoading: graphLoading, error: graphError } = useGraphQuery();
+  const { data: deliveriesData, isLoading: deliveriesLoading, error: deliveriesError } = useServiceDeliveriesQuery();
 
-  const [activityStats, setActivityStats] = useState({
-    individualCount: 0,
-    collectiveCount: 0,
-    collectiveParticipants: 0,
-    collectiveCompanies: 0,
-    collectiveSatisfaction: 0,
-    secondLineCount: 0,
-    secondLineOperators: 0,
-    secondLineCollaborations: 0
-  });
+  const loading = metaLoading || graphLoading || deliveriesLoading;
+  const error = (metaError?.message || graphError?.message || deliveriesError?.message) || null;
 
-  const [provinces, setProvinces] = useState<Record<string, number>>({});
-  const [challengesDistribution, setChallengesDistribution] = useState<Record<string, number>>({});
+  const stats = useMemo(() => {
+    if (!metaData || !graphData) return { beneficiaries: 0, services: 0, journeys: 0, ecosystems: 0, relations: 0, valueChains: 0 };
+    const numBenefs = metaData.sectors ? metaData.sectors.reduce((acc: number, s: any) => acc + (s.primaryBeneficiaries?.length || 0), 0) : 2;
+    return {
+      beneficiaries: numBenefs || 2,
+      services: metaData.services?.length || 0,
+      journeys: metaData.journeys?.length || 0,
+      ecosystems: metaData.ecosystems?.length || 0,
+      relations: graphData.edges?.length || 0,
+      valueChains: metaData.strategicValueChains?.length || 0
+    };
+  }, [metaData, graphData]);
 
-  useEffect(() => {
-    async function fetchDashboardData() {
-      try {
-        const [metaRes, graphRes, deliveryRes] = await Promise.all([
-          fetch("/api/meta"),
-          fetch("/api/graph"),
-          fetch("/api/service-deliveries")
-        ]);
-
-        if (!metaRes.ok || !graphRes.ok || !deliveryRes.ok) {
-          throw new Error("Impossible de récupérer les données du tableau de bord.");
-        }
-
-        const metaData = await metaRes.json();
-        const graphData = await graphRes.json();
-        const deliveriesData = await deliveryRes.json();
-
-        // Calculer les statistiques réelles
-        const numBenefs = metaData.sectors ? metaData.sectors.reduce((acc: number, s: any) => acc + (s.primaryBeneficiaries?.length || 0), 0) : 2;
-        setStats({
-          beneficiaries: numBenefs || 2,
-          services: metaData.services?.length || 0,
-          journeys: metaData.journeys?.length || 0,
-          ecosystems: metaData.ecosystems?.length || 0,
-          relations: graphData.edges?.length || 0,
-          valueChains: metaData.strategicValueChains?.length || 0
-        });
-
-        // Calculer les statistiques opérationnelles par niveau d'intervention
-        const individualCount = deliveriesData.length;
-        const collectiveDeliveries = metaData.collectiveDeliveries || [];
-        const secondLineMissions = metaData.secondLineMissions || [];
-
-        const collCount = collectiveDeliveries.length;
-        const collPart = collectiveDeliveries.reduce((sum: number, cd: any) => sum + (cd.participantsCount || 0), 0);
-        const collComp = collectiveDeliveries.reduce((sum: number, cd: any) => sum + (cd.companiesCount || 0), 0);
-        const validSats = collectiveDeliveries.filter((cd: any) => cd.satisfactionScore !== null && cd.satisfactionScore !== undefined);
-        const collSat = validSats.length > 0 
-          ? (validSats.reduce((sum: number, cd: any) => sum + cd.satisfactionScore, 0) / validSats.length) 
-          : 0;
-
-        const slCount = secondLineMissions.length;
-        const slOps = secondLineMissions.reduce((sum: number, sl: any) => sum + (sl.operatorsMobilized?.length || 0) + 1, 0); // +1 pour le leadOperator
-        const slCollabs = secondLineMissions.reduce((sum: number, sl: any) => sum + (sl.collaborationsCount || 0), 0);
-
-        setActivityStats({
-          individualCount,
-          collectiveCount: collCount,
-          collectiveParticipants: collPart,
-          collectiveCompanies: collComp,
-          collectiveSatisfaction: Math.round(collSat * 10) / 10,
-          secondLineCount: slCount,
-          secondLineOperators: slOps,
-          secondLineCollaborations: slCollabs
-        });
-
-        // Répartition par province
-        const provMap: Record<string, number> = {};
-        const beneficiaryNodes = graphData.nodes?.filter((n: any) => n.type === "beneficiary") || [];
-        beneficiaryNodes.forEach((node: any) => {
-          const prov = node.province || "Non spécifié";
-          provMap[prov] = (provMap[prov] || 0) + 1;
-        });
-        
-        if (Object.keys(provMap).length === 0) {
-          provMap["Namur"] = 1;
-          provMap["Liège"] = 1;
-          provMap["Hainaut"] = 0;
-          provMap["Brabant Wallon"] = 0;
-        }
-        setProvinces(provMap);
-
-        // Répartition par défis sémantiques des services
-        const challMap: Record<string, number> = {};
-        metaData.services?.forEach((s: any) => {
-          s.challenges?.forEach((c: any) => {
-            challMap[c.name] = (challMap[c.name] || 0) + 1;
-          });
-        });
-        if (Object.keys(challMap).length === 0) {
-          challMap["Digitalisation"] = 3;
-          challMap["IA"] = 2;
-          challMap["Cybersécurité"] = 2;
-          challMap["Export"] = 1;
-        }
-        setChallengesDistribution(challMap);
-        setLoading(false);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message);
-        setLoading(false);
-      }
+  const activityStats = useMemo(() => {
+    if (!metaData || !deliveriesData) {
+      return {
+        individualCount: 0,
+        collectiveCount: 0,
+        collectiveParticipants: 0,
+        collectiveCompanies: 0,
+        collectiveSatisfaction: 0,
+        secondLineCount: 0,
+        secondLineOperators: 0,
+        secondLineCollaborations: 0
+      };
     }
+    const individualCount = deliveriesData.length;
+    const collectiveDeliveries = metaData.collectiveDeliveries || [];
+    const secondLineMissions = metaData.secondLineMissions || [];
 
-    fetchDashboardData();
-  }, []);
+    const collCount = collectiveDeliveries.length;
+    const collPart = collectiveDeliveries.reduce((sum: number, cd: any) => sum + (cd.participantsCount || 0), 0);
+    const collComp = collectiveDeliveries.reduce((sum: number, cd: any) => sum + (cd.companiesCount || 0), 0);
+    const validSats = collectiveDeliveries.filter((cd: any) => cd.satisfactionScore !== null && cd.satisfactionScore !== undefined);
+    const collSat = validSats.length > 0 
+      ? (validSats.reduce((sum: number, cd: any) => sum + cd.satisfactionScore, 0) / validSats.length) 
+      : 0;
+
+    const slCount = secondLineMissions.length;
+    const slOps = secondLineMissions.reduce((sum: number, sl: any) => sum + (sl.operatorsMobilized?.length || 0) + 1, 0); // +1 pour le leadOperator
+    const slCollabs = secondLineMissions.reduce((sum: number, sl: any) => sum + (sl.collaborationsCount || 0), 0);
+
+    return {
+      individualCount,
+      collectiveCount: collCount,
+      collectiveParticipants: collPart,
+      collectiveCompanies: collComp,
+      collectiveSatisfaction: Math.round(collSat * 10) / 10,
+      secondLineCount: slCount,
+      secondLineOperators: slOps,
+      secondLineCollaborations: slCollabs
+    };
+  }, [metaData, deliveriesData]);
+
+  const provinces = useMemo(() => {
+    const provMap: Record<string, number> = {};
+    if (!graphData) return provMap;
+    const beneficiaryNodes = graphData.nodes?.filter((n: any) => n.type === "beneficiary") || [];
+    beneficiaryNodes.forEach((node: any) => {
+      const prov = node.province || "Non spécifié";
+      provMap[prov] = (provMap[prov] || 0) + 1;
+    });
+    
+    if (Object.keys(provMap).length === 0) {
+      provMap["Namur"] = 1;
+      provMap["Liège"] = 1;
+      provMap["Hainaut"] = 0;
+      provMap["Brabant Wallon"] = 0;
+    }
+    return provMap;
+  }, [graphData]);
+
+  const challengesDistribution = useMemo(() => {
+    const challMap: Record<string, number> = {};
+    if (!metaData) return challMap;
+    metaData.services?.forEach((s: any) => {
+      s.challenges?.forEach((c: any) => {
+        challMap[c.name] = (challMap[c.name] || 0) + 1;
+      });
+    });
+    if (Object.keys(challMap).length === 0) {
+      challMap["Digitalisation"] = 3;
+      challMap["IA"] = 2;
+      challMap["Cybersécurité"] = 2;
+      challMap["Export"] = 1;
+    }
+    return challMap;
+  }, [metaData]);
 
   if (loading) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         <p className="text-muted text-sm font-medium animate-pulse">Chargement du Tableau de bord territorial...</p>
       </div>
     );

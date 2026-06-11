@@ -22,6 +22,10 @@ import PITForm from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
 import ReferenceSelector from "@/components/ui/ReferenceSelector";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useDatasetsQuery, useMetaQuery } from "@/hooks/usePITQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface Organization {
   id: number;
@@ -42,10 +46,30 @@ interface Dataset {
 }
 
 export default function DatasetsPage() {
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: datasetsData, isLoading: datasetsLoading, error: datasetsError } = useDatasetsQuery();
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+
+  const loading = datasetsLoading || metaLoading;
+  const error = (datasetsError?.message || metaError?.message) || null;
+
+  const datasets = (datasetsData || []) as Dataset[];
+  const organizations = useMemo(() => (metaData?.organizations || []) as Organization[], [metaData]);
+
+  const [selectedDatasetId, setSelectedDatasetId] = useState<number | null>(null);
+
+  const selectedDataset = useMemo(() => {
+    if (datasets.length === 0) return null;
+    if (selectedDatasetId !== null) {
+      return datasets.find(d => d.id === selectedDatasetId) || datasets[0];
+    }
+    return datasets[0];
+  }, [datasets, selectedDatasetId]);
+
+  const setSelectedDataset = (d: Dataset | null) => {
+    setSelectedDatasetId(d ? d.id : null);
+  };
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedThemeFilter, setSelectedThemeFilter] = useState("");
@@ -60,38 +84,13 @@ export default function DatasetsPage() {
   const [newUpdateFrequency, setNewUpdateFrequency] = useState("Mensuel");
   const [newOwnerOrgId, setNewOwnerOrgId] = useState("");
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [dRes, mRes] = await Promise.all([
-        fetch("/api/datasets"),
-        fetch("/api/meta")
-      ]);
-
-      if (!dRes.ok || !mRes.ok) throw new Error("Erreur de récupération des données.");
-      
-      const dData = await dRes.json();
-      const mData = await mRes.json();
-
-      setDatasets(dData);
-      setOrganizations(mData.organizations || []);
-
-      if (dData.length > 0 && !selectedDataset) {
-        setSelectedDataset(dData[0]);
-      } else if (selectedDataset) {
-        const updated = dData.find((d: Dataset) => d.id === selectedDataset.id);
-        if (updated) setSelectedDataset(updated);
-      }
-
-      setLoading(false);
-    } catch (err: any) {
-      console.error(err);
-      setLoading(false);
-    }
-  }
+  const loadData = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["datasets"] });
+    await queryClient.invalidateQueries({ queryKey: ["meta"] });
+  };
 
   useEffect(() => {
-    loadData();
+    // Selection initialization is handled by selectedDataset useMemo
   }, []);
 
   async function handleAddDataset(e: React.FormEvent) {
@@ -164,24 +163,31 @@ export default function DatasetsPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES DATASETS ---
   const leftPane = (
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Jeux de Données ({filteredDatasets.length})
-      </div>
-      <div className="space-y-2.5">
-        {filteredDatasets.map((d) => (
-          <PITEntityCard
-            key={d.id}
-            title={d.title}
-            description={d.description}
-            icon={Database}
-            type="service"
-            subtitle={d.ownerOrganization?.name || "Organisation inconnue"}
-            isSelected={selectedDataset?.id === d.id}
-            onClick={() => setSelectedDataset(d)}
+      </h3>
+      <div className="flex-1 min-h-0">
+        {filteredDatasets.length > 0 ? (
+          <PITVirtualList
+            items={filteredDatasets}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(d) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={d.title}
+                  description={d.description}
+                  icon={Database}
+                  type="dataset"
+                  subtitle={d.ownerOrganization?.name || "Organisation inconnue"}
+                  isSelected={selectedDataset?.id === d.id}
+                  onClick={() => setSelectedDataset(d)}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredDatasets.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun dataset ne correspond.
           </div>
@@ -373,6 +379,26 @@ export default function DatasetsPage() {
       )
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
+        <p className="text-muted text-sm font-medium animate-pulse">Chargement du catalogue de données...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] text-center p-6">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg p-6 max-w-md">
+          <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PITLayout

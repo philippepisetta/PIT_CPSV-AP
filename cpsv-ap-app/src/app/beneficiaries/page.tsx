@@ -29,8 +29,11 @@ import PITForm, { FormSection } from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
 import { cn } from "@/lib/utils";
-import { fetchWithCache, invalidateClientCache } from "@/lib/api";
 import { usePerspective } from "@/design-system/PITPerspectiveProvider";
+import { useMetaQuery, useBeneficiariesQuery } from "@/hooks/usePITQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import PITVirtualList from "@/design-system/PITVirtualList";
 
 interface NaceSector {
   id: number;
@@ -104,32 +107,55 @@ interface Beneficiary {
 }
 
 export default function BeneficiariesPage() {
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
+  const queryClient = useQueryClient();
+  const { data: beneficiariesData, isLoading: beneficiariesLoading, error: beneficiariesError } = useBeneficiariesQuery();
+  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
+
+  const loading = beneficiariesLoading || metaLoading;
+  const error = (beneficiariesError?.message || metaError?.message) || null;
+
+  const beneficiaries = (beneficiariesData || []) as Beneficiary[];
+
+  const meta = useMemo(() => {
+    if (!metaData) {
+      return {
+        sectors: [],
+        strategicValueChains: [],
+        stages: [],
+        challenges: [],
+        organizations: [],
+        services: []
+      };
+    }
+    return {
+      sectors: (metaData.sectors || []) as NaceSector[],
+      strategicValueChains: (metaData.strategicValueChains || []) as StrategicValueChain[],
+      stages: (metaData.stages || []) as ValueChainStage[],
+      challenges: (metaData.challenges || []) as BusinessChallenge[],
+      organizations: (metaData.organizations || []) as Organization[],
+      services: (metaData.services || []) as PublicService[]
+    };
+  }, [metaData]);
+
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<number | null>(null);
+
+  const selectedBeneficiary = useMemo(() => {
+    if (beneficiaries.length === 0) return null;
+    if (selectedBeneficiaryId !== null) {
+      return beneficiaries.find(b => b.id === selectedBeneficiaryId) || beneficiaries[0];
+    }
+    return beneficiaries[0];
+  }, [beneficiaries, selectedBeneficiaryId]);
+
+  const setSelectedBeneficiary = (b: Beneficiary | null) => {
+    setSelectedBeneficiaryId(b ? b.id : null);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const { isEntityTypeVisible } = usePerspective();
-  
-  // Métadonnées
-  const [meta, setMeta] = useState<{
-    sectors: NaceSector[];
-    strategicValueChains: StrategicValueChain[];
-    stages: ValueChainStage[];
-    challenges: BusinessChallenge[];
-    organizations: Organization[];
-    services: PublicService[];
-  }>({
-    sectors: [],
-    strategicValueChains: [],
-    stages: [],
-    challenges: [],
-    organizations: [],
-    services: []
-  });
 
-  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Formulaire Beneficiary
   const [newName, setNewName] = useState("");
@@ -173,43 +199,14 @@ export default function BeneficiariesPage() {
   const [delMaturityAfter, setDelMaturityAfter] = useState(2);
 
   // Charger les données
-  async function loadData(bypassCache = false) {
-    try {
-      if (bypassCache) {
-        invalidateClientCache();
-      }
-      setLoading(true);
-      const [bData, mData] = await Promise.all([
-        fetchWithCache<Beneficiary[]>("/api/beneficiaries"),
-        fetchWithCache<any>("/api/meta")
-      ]);
-
-      setBeneficiaries(bData);
-      setMeta({
-        sectors: mData.sectors || [],
-        strategicValueChains: mData.strategicValueChains || [],
-        stages: mData.stages || [],
-        challenges: mData.challenges || [],
-        organizations: mData.organizations || [],
-        services: mData.services || []
-      });
-
-      if (bData.length > 0 && !selectedBeneficiary) {
-        setSelectedBeneficiary(bData[0]);
-      } else if (selectedBeneficiary) {
-        const updated = bData.find((b: Beneficiary) => b.id === selectedBeneficiary.id);
-        if (updated) setSelectedBeneficiary(updated);
-      }
-
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
+  const loadData = async (bypassCache = false) => {
+    if (bypassCache) {
+      await queryClient.invalidateQueries({ queryKey: ["beneficiaries"] });
+      await queryClient.invalidateQueries({ queryKey: ["meta"] });
     }
-  }
+  };
 
   useEffect(() => {
-    loadData();
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const action = params.get("action");
@@ -363,23 +360,30 @@ export default function BeneficiariesPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES ENTREPRISES ---
   const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1">
+    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
+      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
         Entreprises actives ({filteredBeneficiaries.length})
       </h3>
-      <div className="space-y-2">
-        {filteredBeneficiaries.map((b) => (
-          <PITEntityCard
-            key={b.id}
-            title={b.name}
-            description={`${b.location} (${b.province}) — ${b.size}`}
-            icon={Building2}
-            type="beneficiary"
-            isSelected={selectedBeneficiary?.id === b.id}
-            onClick={() => setSelectedBeneficiary(b)}
+      <div className="flex-1 min-h-0">
+        {filteredBeneficiaries.length > 0 ? (
+          <PITVirtualList
+            items={filteredBeneficiaries}
+            itemHeight={110}
+            maxHeight="60vh"
+            renderItem={(b) => (
+              <div className="py-1 pr-1" style={{ height: "110px" }}>
+                <PITEntityCard
+                  title={b.name}
+                  description={`${b.location} (${b.province}) — ${b.size}`}
+                  icon={Building2}
+                  type="beneficiary"
+                  isSelected={selectedBeneficiary?.id === b.id}
+                  onClick={() => setSelectedBeneficiary(b)}
+                />
+              </div>
+            )}
           />
-        ))}
-        {filteredBeneficiaries.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun bénéficiaire ne correspond.
           </div>

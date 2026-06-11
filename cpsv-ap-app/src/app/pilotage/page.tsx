@@ -12,19 +12,14 @@ import {
   Zap, 
   HelpCircle, 
   Target, 
-  FileText,
-  Users,
-  Compass,
-  ArrowRight,
-  Filter,
-  CheckCircle2,
-  AlertCircle,
-  Layers,
+  CheckCircle2, 
+  Layers, 
   Scale
 } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
-import PageToolbar from "@/components/ui/PageToolbar";
-import StatCard from "@/components/ui/StatCard";
+
+import PITLayout from "@/design-system/PITLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITStatCard from "@/design-system/PITStatCard";
 import { cn } from "@/lib/utils";
 
 export default function PilotagePage() {
@@ -46,7 +41,6 @@ export default function PilotagePage() {
     try {
       setLoading(true);
       
-      // Construct query parameters
       const params = new URLSearchParams();
       if (filiereFilter) params.append("filiereS3Id", filiereFilter);
       if (territoryFilter) params.append("territoryId", territoryFilter);
@@ -81,7 +75,7 @@ export default function PilotagePage() {
   if (loading && !pilotageData) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
         <p className="text-muted text-sm font-medium animate-pulse">Chargement du tableau de pilotage territorial...</p>
       </div>
     );
@@ -144,55 +138,49 @@ export default function PilotagePage() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader 
-        title="Pilotage Stratégique & Territorial" 
-        description="Système de pilotage intelligent basé sur le graphe sémantique pour mesurer l'alignement des aides et l'impact réel des politiques publiques."
-        Icon={LineChart}
+    <PITLayout
+      category="PILOTAGE TERRITORIAL"
+      title="Pilotage Stratégique & Territorial"
+      description="Système de pilotage intelligent basé sur le graphe sémantique pour mesurer l'alignement des aides et l'impact réel des politiques publiques."
+      pageIcon={LineChart}
+      breadcrumb={[
+        { label: "Tableau de bord", href: "/" },
+        { label: "Pilotage" }
+      ]}
+    >
+      {/* FILTER BAR */}
+      <PITFilterBar
+        searchQuery=""
+        onSearchChange={() => {}}
+        searchPlaceholder=""
+        selectFilters={[
+          {
+            id: "filiereS3",
+            label: "Toutes les filières",
+            value: filiereFilter,
+            onChange: setFiliereFilter,
+            options: metaData?.strategicValueChains?.map((vc: any) => ({ value: String(vc.id), label: vc.name })) || []
+          },
+          {
+            id: "territory",
+            label: "Tous les territoires",
+            value: territoryFilter,
+            onChange: setTerritoryFilter,
+            options: metaData?.territories?.map((t: any) => ({ value: String(t.id), label: `${t.name} (${t.type})` })) || []
+          }
+        ]}
+        className="mb-6"
       />
 
-      {/* FILTER BAR */}
-      <div className="flex flex-col md:flex-row gap-4 bg-glass border border-muted/20 p-4 rounded-2xl shadow-sm mb-6 items-center">
-        <div className="flex items-center gap-2 w-full md:w-1/2">
-          <Filter className="h-4 w-4 text-muted shrink-0" />
-          <span className="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Filtre Filière S3 :</span>
-          <select
-            value={filiereFilter}
-            onChange={(e) => setFiliereFilter(e.target.value)}
-            className="w-full bg-glass border border-muted/30 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-teal-500 text-text transition-colors"
-          >
-            <option value="">Toutes les filières</option>
-            {metaData?.strategicValueChains?.map((vc: any) => (
-              <option key={vc.id} value={vc.id}>{vc.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-1/2">
-          <MapPin className="h-4 w-4 text-muted shrink-0" />
-          <span className="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Filtre Territoire :</span>
-          <select
-            value={territoryFilter}
-            onChange={(e) => setTerritoryFilter(e.target.value)}
-            className="w-full bg-glass border border-muted/30 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-teal-500 text-text transition-colors"
-          >
-            <option value="">Tous les territoires</option>
-            {metaData?.territories?.map((t: any) => (
-              <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       {/* 5 ALIGNMENT QUESTIONS NAV SELECTOR */}
-      <div className="bg-glass/40 border border-muted/15 rounded-2xl p-4 shadow-xs">
-        <div className="flex items-center gap-2 mb-3">
-          <HelpCircle className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+      <div className="bg-glass/40 border border-muted/15 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <HelpCircle className="h-4.5 w-4.5 text-teal-650" />
           <h3 className="text-xs font-black uppercase text-muted tracking-wider">
             Questions d'Alignement Stratégique Territorial (5 Questions Clés)
           </h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {alignmentQuestions.map((q) => {
             const Icon = q.icon;
             const isActive = activeQuestion === q.id;
@@ -201,13 +189,13 @@ export default function PilotagePage() {
                 key={q.id}
                 onClick={() => setActiveQuestion(q.id)}
                 className={cn(
-                  "flex items-center gap-2.5 p-3 rounded-xl border text-left cursor-pointer transition-all duration-200",
+                  "flex items-center gap-2.5 p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 border-0 outline-none",
                   isActive 
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/10" 
-                    : "bg-surface/50 border-muted/20 text-text hover:bg-glass/80"
+                    ? "bg-fuchsia-600 text-white shadow-md shadow-fuchsia-500/10" 
+                    : "bg-surface/50 border border-muted/20 text-text hover:bg-glass/85"
                 )}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-primary")} />
+                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-teal-650")} />
                 <span className="text-[10px] font-black tracking-tight leading-tight">{q.short}</span>
               </button>
             );
@@ -216,7 +204,7 @@ export default function PilotagePage() {
       </div>
 
       {/* QUESTION EXPLANATION BANNER */}
-      <div className="bg-glass border border-muted/20 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-glass border border-muted/20 rounded-2xl p-5 shadow-xs space-y-5 mt-6">
         <div>
           <h2 className="text-sm font-black text-text uppercase flex items-center gap-2">
             {alignmentQuestions[activeQuestion - 1].question}
@@ -235,42 +223,42 @@ export default function PilotagePage() {
 
         {/* QUESTION CONTENT 1: PUBLIC POLICIES DEPLOYMENT */}
         {!loading && activeQuestion === 1 && (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <StatCard label="Stratégies Globales" value={kpis.strategiesCount} Icon={Target} color="teal" />
-              <StatCard label="Programmes Opérationnels" value={kpis.programsCount} Icon={Layers} color="blue" />
-              <StatCard label="Mesures Structurantes" value={kpis.measuresCount} Icon={Scale} color="purple" />
-              <StatCard label="Initiatives sur le terrain" value={kpis.initiativesCount} Icon={Zap} color="rose" />
+          <div className="space-y-4 text-xs animate-in fade-in duration-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <PITStatCard label="Stratégies Globales" value={kpis.strategiesCount} icon={Target} themeColor="teal" />
+              <PITStatCard label="Programmes Opérationnels" value={kpis.programsCount} icon={Layers} themeColor="indigo" />
+              <PITStatCard label="Mesures Structurantes" value={kpis.measuresCount} icon={Scale} themeColor="purple" />
+              <PITStatCard label="Initiatives sur le terrain" value={kpis.initiativesCount} icon={Zap} themeColor="rose" />
             </div>
 
-            <div className="border border-muted/15 rounded-xl overflow-hidden bg-glass/5">
-              <table className="w-full text-left border-collapse">
+            <div className="border border-muted/20 rounded-xl overflow-hidden bg-glass/5">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-muted/20 bg-glass/25 text-[10px] uppercase font-bold text-muted">
-                    <th className="p-3">Sigle / Code</th>
-                    <th className="p-3">Nom de la Politique</th>
-                    <th className="p-3">Domaines S3</th>
-                    <th className="p-3">Statut</th>
+                    <th className="p-3.5">Sigle / Code</th>
+                    <th className="p-3.5">Nom de la Politique</th>
+                    <th className="p-3.5">Domaines S3</th>
+                    <th className="p-3.5">Statut</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-muted/10">
                   {metaData?.strategies?.map((strat: any) => (
                     <tr key={strat.id} className="hover:bg-glass/10 transition-colors">
-                      <td className="p-3 font-bold text-primary">{strat.code || "STRAT"}</td>
-                      <td className="p-3">
+                      <td className="p-3.5 font-bold text-teal-650">{strat.code || "STRAT"}</td>
+                      <td className="p-3.5">
                         <p className="font-extrabold text-text">{strat.name}</p>
-                        <p className="text-muted text-[10px] line-clamp-1">{strat.description}</p>
+                        <p className="text-muted text-[10px] line-clamp-1 mt-0.5">{strat.description}</p>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5">
                         <div className="flex flex-wrap gap-1">
                           {strat.filieresS3?.map((f: any) => (
-                            <span key={f.id} className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                            <span key={f.id} className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-700 dark:text-teal-400">
                               {f.name}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5">
                         <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-extrabold">
                           {strat.status}
                         </span>
@@ -285,14 +273,13 @@ export default function PilotagePage() {
 
         {/* QUESTION CONTENT 2: CONSORTIUM & OPERATORS */}
         {!loading && activeQuestion === 2 && (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-xs animate-in fade-in duration-200">
             <div className="bg-glass/10 border border-muted/10 rounded-xl p-4">
               <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-muted mb-3">
                 Acteurs pilotes et consortia impliqués
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {metaData?.organizations?.map((org: any) => {
-                  // Count active strategies, programs and initiatives piloted by this organization
                   const stratsCount = metaData.strategies.filter((s: any) => s.ownerOrganizationId === org.id).length;
                   const progsCount = metaData.programs.filter((p: any) => p.ownerOrganizationId === org.id).length;
                   const initsCount = metaData.initiatives.filter((i: any) => i.leadOrganizationId === org.id).length;
@@ -307,7 +294,7 @@ export default function PilotagePage() {
                         <p className="text-muted text-[10px]">{org.type || "Institution publique"}</p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {stratsCount > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400" title="Stratégies">{stratsCount} S</span>}
+                        {stratsCount > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-700 dark:text-teal-400" title="Stratégies">{stratsCount} S</span>}
                         {progsCount > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" title="Programmes">{progsCount} P</span>}
                         {initsCount > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-455" title="Initiatives">{initsCount} I</span>}
                       </div>
@@ -323,11 +310,11 @@ export default function PilotagePage() {
               </h4>
               <div className="flex flex-wrap gap-4 text-xs font-semibold">
                 <div className="flex items-center gap-2 border border-muted/20 bg-glass/20 px-3 py-1.5 rounded-lg">
-                  <CheckCircle2 className="h-4.5 w-4.5 text-teal-500" />
+                  <CheckCircle2 className="h-4.5 w-4.5 text-teal-650" />
                   <span>Coordinateur de Programme : Agence du Numérique</span>
                 </div>
                 <div className="flex items-center gap-2 border border-muted/20 bg-glass/20 px-3 py-1.5 rounded-lg">
-                  <CheckCircle2 className="h-4.5 w-4.5 text-blue-500" />
+                  <CheckCircle2 className="h-4.5 w-4.5 text-indigo-500" />
                   <span>Opérateurs Certifiés : WE, Clusters (MecaTech, BioWin, etc.)</span>
                 </div>
               </div>
@@ -337,11 +324,11 @@ export default function PilotagePage() {
 
         {/* QUESTION CONTENT 3: BUDGET ALLOCATIONS */}
         {!loading && activeQuestion === 3 && (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-xs animate-in fade-in duration-200">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard label="Budget Global Rempli" value={`${kpis.totalBudget.toLocaleString()} €`} Icon={Coins} color="teal" />
-              <StatCard label="Budget Moyen par Programme" value={`${Math.round(kpis.totalBudget / (kpis.programsCount || 1)).toLocaleString()} €`} Icon={Coins} color="blue" />
-              <StatCard label="Programmes avec financements" value={metaData?.programs?.filter((p: any) => p.budget > 0).length} Icon={CheckCircle2} color="emerald" />
+              <PITStatCard label="Budget Global Rempli" value={`${kpis.totalBudget.toLocaleString()} €`} icon={Coins} themeColor="teal" />
+              <PITStatCard label="Budget Moyen par Programme" value={`${Math.round(kpis.totalBudget / (kpis.programsCount || 1)).toLocaleString()} €`} icon={Coins} themeColor="indigo" />
+              <PITStatCard label="Programmes avec financements" value={metaData?.programs?.filter((p: any) => p.budget > 0).length} icon={CheckCircle2} themeColor="emerald" />
             </div>
 
             <div className="space-y-3 bg-glass/10 border border-muted/10 rounded-xl p-4">
@@ -358,12 +345,12 @@ export default function PilotagePage() {
                         <span className="font-extrabold text-text truncate max-w-[320px]">{prog.name}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-bold text-muted uppercase">{prog.status}</span>
-                          <span className="font-black text-primary">{(prog.budget || 0).toLocaleString()} €</span>
+                          <span className="font-black text-teal-650">{(prog.budget || 0).toLocaleString()} €</span>
                         </div>
                       </div>
                       <div className="h-2 w-full bg-glass rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-teal-500 to-indigo-500 rounded-full" 
+                          className="h-full bg-gradient-to-r from-teal-700 to-indigo-500 rounded-full" 
                           style={{ width: `${pct}%` }} 
                         />
                       </div>
@@ -377,8 +364,7 @@ export default function PilotagePage() {
 
         {/* QUESTION CONTENT 4: CONCRETE IMPACTS */}
         {!loading && activeQuestion === 4 && (
-          <div className="space-y-4 text-xs">
-            {/* Indicator Totals */}
+          <div className="space-y-4 text-xs animate-in fade-in duration-200">
             <div className="bg-glass/10 border border-muted/10 rounded-xl p-4">
               <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-muted mb-3">
                 Résultats quantitatifs cumulés par Indicateur de Résultat S3
@@ -408,15 +394,15 @@ export default function PilotagePage() {
               </h4>
               <div className="space-y-3">
                 {latestImpacts.map((imp: any) => (
-                  <div key={imp.id} className="border-l-4 border-teal-500 bg-glass/5 p-3 rounded-r-xl space-y-1 hover:bg-glass/10 transition-colors">
+                  <div key={imp.id} className="border-l-4 border-teal-700 bg-glass/5 p-3 rounded-r-xl space-y-1 hover:bg-glass/10 transition-colors">
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-extrabold text-text">{imp.beneficiaryName}</span>
                       <span className="text-[9px] text-muted">{new Date(imp.date).toLocaleDateString()}</span>
                     </div>
-                    <p className="text-text leading-relaxed font-semibold italic text-[11px]">{imp.value}</p>
-                    <div className="flex items-center gap-3 text-[9px] text-muted font-bold mt-1">
+                    <p className="text-text leading-relaxed font-semibold italic text-[11px] mt-1">"{imp.value}"</p>
+                    <div className="flex items-center gap-3 text-[9px] text-muted font-bold mt-1.5">
                       <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" /> {imp.territoryName}</span>
-                      <span className="flex items-center gap-0.5"><Zap className="h-3 w-3" /> {imp.valueChainName}</span>
+                      <span className="flex items-center gap-0.5 text-teal-650"><Layers className="h-3 w-3" /> {imp.valueChainName}</span>
                     </div>
                   </div>
                 ))}
@@ -430,11 +416,11 @@ export default function PilotagePage() {
 
         {/* QUESTION CONTENT 5: GEOGRAPHIC & SECTORIAL */}
         {!loading && activeQuestion === 5 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs animate-in fade-in duration-200">
             {/* Geo Distribution */}
             <div className="bg-glass/10 border border-muted/10 rounded-xl p-4 space-y-3">
               <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-muted flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                <MapPin className="h-4 w-4 text-teal-650" />
                 Intensité Territoriale par Province (Entreprises / Impacts)
               </h4>
               <div className="space-y-3">
@@ -451,7 +437,7 @@ export default function PilotagePage() {
                       </div>
                       <div className="h-2 w-full bg-glass rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-teal-500 to-indigo-500 rounded-full" 
+                          className="h-full bg-gradient-to-r from-teal-700 to-indigo-500 rounded-full" 
                           style={{ width: `${pct}%` }} 
                         />
                       </div>
@@ -484,7 +470,7 @@ export default function PilotagePage() {
                       </div>
                       <div className="h-1.5 w-full bg-glass rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-amber-500 to-teal-500 rounded-full" 
+                          className="h-full bg-gradient-to-r from-amber-500 to-teal-700 rounded-full" 
                           style={{ width: `${pct}%` }} 
                         />
                       </div>
@@ -499,6 +485,6 @@ export default function PilotagePage() {
           </div>
         )}
       </div>
-    </div>
+    </PITLayout>
   );
 }

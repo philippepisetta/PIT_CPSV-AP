@@ -1,28 +1,25 @@
 // src/app/journeys/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { 
   Compass, 
   Map, 
-  CheckCircle2, 
-  ArrowRight,
-  Sparkles,
-  Layers,
-  Building2,
-  ExternalLink,
-  HelpCircle,
-  Network,
-  FileText
+  Building2, 
+  ExternalLink, 
+  HelpCircle, 
+  Network, 
+  FileText 
 } from "lucide-react";
 
-import PageHeader from "@/components/ui/PageHeader";
-import PageToolbar from "@/components/ui/PageToolbar";
+import PITLayout from "@/design-system/PITLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITEntityCard from "@/design-system/PITEntityCard";
+import PITRelationsPanel from "@/design-system/PITRelationsPanel";
+import PITDetailLayout from "@/design-system/PITDetailLayout";
 import SplitLayout from "@/components/ui/SplitLayout";
-import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
-import RelationshipCard from "@/components/ui/RelationshipCard";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
+import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 
 interface Organization {
   id: number;
@@ -73,6 +70,7 @@ export default function JourneysPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { isEntityTypeVisible } = usePerspective();
 
   useEffect(() => {
     async function loadJourneys() {
@@ -105,6 +103,9 @@ export default function JourneysPage() {
 
   // Filtrer les parcours
   const filteredJourneys = journeys.filter(j => {
+    // Verifier la perspective
+    if (!isEntityTypeVisible("journey")) return false;
+
     const term = searchQuery.toLowerCase();
     return j.name.toLowerCase().includes(term) || 
            j.provider.toLowerCase().includes(term) || 
@@ -113,32 +114,23 @@ export default function JourneysPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES PARCOURS ---
   const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2 flex items-center gap-1.5">
-        <Map className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
         Parcours de référence ({filteredJourneys.length})
-      </h3>
-      <div className="space-y-1.5">
-        {filteredJourneys.map((j) => {
-          const isSelected = selectedJourney?.id === j.id;
-          return (
-            <button
-              key={j.id}
-              onClick={() => setSelectedJourney(j)}
-              className={`w-full text-left flex items-start space-x-3 p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
-                isSelected 
-                  ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" 
-                  : "hover:bg-glass text-muted hover:text-text"
-              }`}
-            >
-              <Compass className={`h-5 w-5 shrink-0 mt-0.5 ${isSelected ? "text-primary" : "text-muted"}`} />
-              <div className="truncate flex-1">
-                <p className="font-bold text-sm truncate">{j.name}</p>
-                <p className="text-xs text-muted/80 truncate mt-0.5">Fournisseur : {j.provider}</p>
-              </div>
-            </button>
-          );
-        })}
+      </div>
+      <div className="space-y-2.5">
+        {filteredJourneys.map((j) => (
+          <PITEntityCard
+            key={j.id}
+            title={j.name}
+            description={j.objective}
+            icon={Compass}
+            type="parcours"
+            subtitle={`Fournisseur : ${j.provider}`}
+            isSelected={selectedJourney?.id === j.id}
+            onClick={() => setSelectedJourney(j)}
+          />
+        ))}
         {filteredJourneys.length === 0 && (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucun parcours ne correspond.
@@ -148,7 +140,7 @@ export default function JourneysPage() {
     </div>
   );
 
-  // --- PANNEAU DROIT : DETAILS EN ENTITYDETAILPANEL ---
+  // --- PANNEAU DROIT : DETAILS ET TABS ---
   const renderDetailPanel = () => {
     if (!selectedJourney) {
       return (
@@ -186,7 +178,7 @@ export default function JourneysPage() {
               <div className="pt-2 border-t border-muted/10 flex justify-end">
                 <a
                   href={`/services?id=${service.id}`}
-                  className="text-[9px] font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1 hover:underline"
+                  className="text-[9px] font-bold text-teal-650 dark:text-teal-400 flex items-center gap-1 hover:underline"
                 >
                   Fiche service
                   <ExternalLink className="h-3 w-3" />
@@ -234,75 +226,54 @@ export default function JourneysPage() {
       </div>
     );
 
-    // 2. Relations Tab : Challenges, S3 value chains, and all services involved
-    const relationsTab = (
-      <div className="space-y-6">
-        {/* Challenges */}
-        {j.challenges && j.challenges.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Défis d'affaires adressés</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {j.challenges.map(c => (
-                <RelationshipCard
-                  key={c.id}
-                  title={c.name}
-                  relationType="Défi"
-                  Icon={HelpCircle}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+    // 2. Relations Tab using PITRelationsPanel
+    const sections = [
+      {
+        title: "Défis d'affaires adressés",
+        items: (j.challenges || []).map(c => ({
+          id: c.id,
+          title: c.name,
+          relationType: "Défi",
+          Icon: HelpCircle
+        }))
+      },
+      {
+        title: "Filières S3 couvertes",
+        items: (j.filieresS3 || []).map(f => ({
+          id: f.id,
+          title: f.name,
+          relationType: "Filière S3",
+          Icon: Network
+        }))
+      },
+      {
+        title: "Services de support inclus",
+        items: j.stages.flatMap(st => st.services).map(s => ({
+          id: s.id,
+          title: s.name,
+          relationType: `Code : ${s.code}`,
+          Icon: FileText,
+          onClick: () => window.location.href = `/services?id=${s.id}`
+        }))
+      }
+    ];
 
-        {/* S3 Value Chains */}
-        {j.filieresS3 && j.filieresS3.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Filières S3 couvertes</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {j.filieresS3.map(f => (
-                <RelationshipCard
-                  key={f.id}
-                  title={f.name}
-                  relationType="Filière S3"
-                  Icon={Network}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* All included services */}
-        <div className="space-y-2">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Services de support inclus</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {j.stages.flatMap(st => st.services).map(s => (
-              <RelationshipCard
-                key={s.id}
-                title={s.name}
-                relationType={`Code : ${s.code}`}
-                Icon={FileText}
-                onClick={() => window.location.href = `/services?id=${s.id}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    const relationsTab = <PITRelationsPanel sections={sections} />;
 
     // 3. Metadata Tab
     const metadataTab = (
       <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-        <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/journey/{j.id}</span></p>
+        <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/journey/{j.id}</span></p>
         <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:JourneyTemplate</span></p>
         <p className="text-text">Propulsé par : <span className="font-bold">{j.provider}</span></p>
       </div>
     );
 
     return (
-      <EntityDetailPanel
+      <PITDetailLayout
         title={j.name}
         subtitle={`Fournisseur de parcours : ${j.provider}`}
-        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded">Parcours type CPSV</span>}
+        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-650 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full">Parcours type CPSV</span>}
         overviewTab={overviewTab}
         relationsTab={relationsTab}
         metadataTab={metadataTab}
@@ -311,14 +282,17 @@ export default function JourneysPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Parcours de Transformation"
-        description="Découvrez les chemins d'accompagnement thématiques inter-acteurs configurés pour guider les PME régionales de la sensibilisation jusqu'à l'industrialisation."
-        Icon={Compass}
-      />
-
-      <PageToolbar
+    <PITLayout
+      category="BACKOFFICE TERRITORIAL"
+      title="Parcours de Transformation"
+      description="Découvrez les chemins d'accompagnement thématiques inter-acteurs configurés pour guider les PME régionales de la sensibilisation jusqu'à l'industrialisation."
+      pageIcon={Compass}
+      breadcrumb={[
+        { label: "Tableau de bord", href: "/" },
+        { label: "Parcours" }
+      ]}
+    >
+      <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Rechercher un parcours par nom, fournisseur ou objectif..."
@@ -329,6 +303,6 @@ export default function JourneysPage() {
         rightPane={renderDetailPanel()}
         leftColSpan={4}
       />
-    </div>
+    </PITLayout>
   );
 }

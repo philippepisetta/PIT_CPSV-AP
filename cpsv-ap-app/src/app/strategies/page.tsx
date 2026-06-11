@@ -16,26 +16,26 @@ import {
   X, 
   ChevronRight, 
   ChevronDown, 
-  Eye, 
   Info,
   Calendar,
-  DollarSign,
-  Bookmark,
   Award,
   BookOpen
 } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
-import PageToolbar from "@/components/ui/PageToolbar";
+
+import PITLayout from "@/design-system/PITLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITStatCard from "@/design-system/PITStatCard";
+import PITRelationsPanel from "@/design-system/PITRelationsPanel";
+import PITDetailLayout from "@/design-system/PITDetailLayout";
+import PITForm, { FormSection } from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
-import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
-import StatCard from "@/components/ui/StatCard";
-import RelationshipCard from "@/components/ui/RelationshipCard";
-import Timeline from "@/components/ui/Timeline";
 import { cn } from "@/lib/utils";
+import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 
 export default function StrategiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isEntityTypeVisible } = usePerspective();
   
   // Data from API
   const [meta, setMeta] = useState<any>(null);
@@ -109,7 +109,6 @@ export default function StrategiesPage() {
     if (type === "strategy") {
       const strat = meta.strategies.find((s: any) => s.id === id);
       if (!strat) return null;
-      // Find programs linked
       const linkedProgs = meta.programs.filter((p: any) => p.strategies?.some((s: any) => s.id === id));
       const linkedPriorities = meta.strategicPriorities.filter((p: any) => p.strategyId === id);
       const linkedFunding = meta.fundingInstruments.filter((f: any) => f.strategies?.some((s: any) => s.id === id));
@@ -137,7 +136,6 @@ export default function StrategiesPage() {
       const linkedFunding = meta.fundingInstruments.filter((f: any) => f.programs?.some((p: any) => p.id === id));
       const linkedKnowledge = meta.knowledgeAssets.filter((k: any) => k.programs?.some((p: any) => p.id === id));
       
-      // Participations
       const linkedParticipations = meta.organizations
         .map((org: any) => {
           const part = meta.meta?.programParticipations?.find((pp: any) => pp.programId === id && pp.organizationId === org.id) 
@@ -170,7 +168,6 @@ export default function StrategiesPage() {
       const linkedKnowledge = meta.knowledgeAssets.filter((k: any) => k.initiatives?.some((i: any) => i.id === id));
       const linkedFunding = meta.fundingInstruments.filter((f: any) => f.initiatives?.some((i: any) => i.id === id));
       
-      // Participations
       const linkedParticipations = meta.organizations
         .map((org: any) => {
           const part = org.initiativeParticipations?.find((ip: any) => ip.initiativeId === id);
@@ -178,7 +175,6 @@ export default function StrategiesPage() {
         })
         .filter(Boolean);
 
-      // Impact records linked directly to this initiative via beneficiary engagements or S3 value chains of the initiative
       const linkedEngagements = meta.beneficiaryEngagements.filter((e: any) => e.initiativeId === id);
       const linkedImpacts = meta.impacts.filter((imp: any) => 
         linkedEngagements.some((e: any) => e.beneficiaryId === imp.beneficiaryId)
@@ -280,7 +276,7 @@ export default function StrategiesPage() {
   if (loading) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
         <p className="text-muted text-sm font-medium animate-pulse">Chargement de la gouvernance stratégique...</p>
       </div>
     );
@@ -300,7 +296,6 @@ export default function StrategiesPage() {
   // Derived dashboard metrics (Transverse Portfolio)
   const totalProgramsBudget = meta.programs.reduce((acc: number, p: any) => acc + (p.budget || 0), 0);
   const totalImpactsCount = meta.impacts.length;
-  const activePrograms = meta.programs.filter((p: any) => p.status === "ACTIVE" || p.status === "ACTIVE" || p.status === "ACTIVE");
   const uniqueOperatorsCount = new Set([
     ...meta.programs.map((p: any) => p.ownerOrganizationId),
     ...meta.initiatives.map((i: any) => i.leadOrganizationId)
@@ -315,6 +310,7 @@ export default function StrategiesPage() {
 
   const getFilteredStrategies = () => {
     return meta.strategies.filter((s: any) => {
+      if (!isEntityTypeVisible("strategy")) return false;
       const matchSearch = filterBySearch(s.name, s.code);
       if (filterFiliere) {
         return matchSearch && s.filieresS3?.some((f: any) => f.id === parseInt(filterFiliere));
@@ -344,13 +340,13 @@ export default function StrategiesPage() {
           const stratPriorities = meta.strategicPriorities.filter((p: any) => p.strategyId === strat.id);
 
           return (
-            <div key={strat.id} className="space-y-1.5 border-l-2 border-teal-500/10 pl-2">
+            <div key={strat.id} className="space-y-1.5 border-l border-teal-650/20 pl-2">
               <div 
                 className={cn(
                   "flex items-center justify-between p-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border",
                   isSelected 
-                    ? "bg-primary/10 border-primary/40 text-primary shadow-sm" 
-                    : "bg-surface/50 border-muted/20 text-text hover:bg-glass/80"
+                    ? "bg-teal-500/10 border-teal-500/30 text-teal-650 shadow-xs" 
+                    : "bg-surface/50 border-muted/25 text-text hover:bg-glass/85"
                 )}
                 onClick={() => setSelectedNode({ type: "strategy", id: strat.id })}
               >
@@ -361,12 +357,12 @@ export default function StrategiesPage() {
                   >
                     {isStratExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                   </button>
-                  <Target className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                  <Target className="h-4 w-4 text-teal-650 shrink-0" />
                   <span className="truncate" title={strat.name}>
                     {strat.code ? `[${strat.code}] ` : ""}{strat.name}
                   </span>
                 </div>
-                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-1">
+                <span className="text-[8px] uppercase px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-700 dark:text-teal-400 shrink-0 ml-1">
                   Stratégie
                 </span>
               </div>
@@ -381,7 +377,6 @@ export default function StrategiesPage() {
                       const isPriorExpanded = expandedNodes[priorKey];
                       const isPriorSelected = selectedNode?.type === "priority" && selectedNode.id === prior.id;
                       
-                      // Find programs linked to this priority, or programs of strategy linked to priority
                       const priorProgs = meta.programs.filter((p: any) => 
                         p.priorities?.some((pr: any) => pr.id === prior.id) ||
                         (p.strategies?.some((s: any) => s.id === strat.id) && prior.strategyId === strat.id)
@@ -393,7 +388,7 @@ export default function StrategiesPage() {
                             className={cn(
                               "flex items-center justify-between p-1.5 rounded-lg text-xs font-semibold cursor-pointer border transition-colors",
                               isPriorSelected
-                                ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-xs"
+                                ? "bg-amber-500/10 border-amber-500/30 text-amber-600 shadow-xs"
                                 : "bg-transparent border-transparent hover:bg-glass/50 text-text/90"
                             )}
                             onClick={() => setSelectedNode({ type: "priority", id: prior.id })}
@@ -430,7 +425,7 @@ export default function StrategiesPage() {
                                         className={cn(
                                           "flex items-center justify-between p-1 rounded-lg text-[11px] font-medium cursor-pointer border transition-colors",
                                           isProgSelected
-                                            ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-600 dark:text-indigo-400"
+                                            ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
                                             : "bg-transparent border-transparent hover:bg-glass/40 text-text/85"
                                         )}
                                         onClick={() => setSelectedNode({ type: "program", id: prog.id })}
@@ -467,7 +462,7 @@ export default function StrategiesPage() {
                                                     className={cn(
                                                       "flex items-center justify-between p-1 rounded-md text-[10px] cursor-pointer border transition-colors",
                                                       isMeasSelected
-                                                        ? "bg-purple-500/10 border-purple-500/40 text-purple-600 dark:text-purple-400"
+                                                        ? "bg-purple-500/10 border-purple-500/30 text-purple-650"
                                                         : "bg-transparent border-transparent hover:bg-glass/30 text-text/80"
                                                     )}
                                                     onClick={() => setSelectedNode({ type: "measure", id: meas.id })}
@@ -500,7 +495,7 @@ export default function StrategiesPage() {
                                                               className={cn(
                                                                 "flex items-center justify-between p-0.5 px-1.5 rounded-md text-[9px] cursor-pointer border transition-colors",
                                                                 isInitSelected
-                                                                  ? "bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400"
+                                                                  ? "bg-rose-500/10 border-rose-500/30 text-rose-600"
                                                                   : "bg-transparent border-transparent hover:bg-glass/20 text-text/75"
                                                               )}
                                                               onClick={() => setSelectedNode({ type: "initiative", id: init.id })}
@@ -509,9 +504,9 @@ export default function StrategiesPage() {
                                                                 <Zap className="h-2 w-2 text-rose-500 shrink-0" />
                                                                 <span className="truncate" title={init.name}>{init.name}</span>
                                                               </div>
-                                                              <span className="text-[6px] uppercase px-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-455 shrink-0 ml-1">
+                                                              <span className="text-[6px] uppercase px-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0 ml-1">
                                                                 Init
-                                                               </span>
+                                                              </span>
                                                             </div>
                                                           );
                                                         })
@@ -548,29 +543,29 @@ export default function StrategiesPage() {
     return (
       <div className="space-y-6">
         <div className="bg-glass/30 border border-muted/20 rounded-2xl p-5 shadow-xs">
-          <h3 className="text-sm font-black uppercase text-muted tracking-wider mb-4">
+          <h3 className="text-xs font-black uppercase text-muted tracking-wider mb-4">
             Tableau de Bord Stratégique Transverse
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatCard 
+            <PITStatCard 
               label="Budget Total Programmes" 
               value={`${totalProgramsBudget.toLocaleString()} €`} 
-              Icon={Coins} 
-              color="teal" 
+              icon={Coins} 
+              themeColor="teal" 
               description="Consolidated public programs budget"
             />
-            <StatCard 
+            <PITStatCard 
               label="Indicateurs d'Impact Actifs" 
               value={totalImpactsCount} 
-              Icon={TrendingUp} 
-              color="emerald" 
+              icon={TrendingUp} 
+              themeColor="emerald" 
               description="Cumul des réalisations sur le terrain"
             />
-            <StatCard 
+            <PITStatCard 
               label="Opérateurs & Consortia" 
               value={uniqueOperatorsCount} 
-              Icon={Building2} 
-              color="amber" 
+              icon={Building2} 
+              themeColor="amber" 
               description="Acteurs publics mobilisés"
             />
           </div>
@@ -589,11 +584,11 @@ export default function StrategiesPage() {
                 <div key={prog.id} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold">
                     <span className="text-text truncate max-w-[280px]">{prog.name}</span>
-                    <span className="text-primary font-bold">{(prog.budget || 0).toLocaleString()} €</span>
+                    <span className="text-teal-650 font-bold">{(prog.budget || 0).toLocaleString()} €</span>
                   </div>
                   <div className="h-1.5 w-full bg-glass rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-teal-500 to-indigo-500 rounded-full" 
+                      className="h-full bg-gradient-to-r from-teal-700 to-indigo-500 rounded-full" 
                       style={{ width: `${pct}%` }} 
                     />
                   </div>
@@ -613,7 +608,6 @@ export default function StrategiesPage() {
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {meta.strategicValueChains.map((vc: any) => {
-              // Count how many strategies / programs / initiatives are connected
               const connectedStrats = meta.strategies.filter((s: any) => s.filieresS3?.some((f: any) => f.id === vc.id)).length;
               const connectedProgs = meta.programs.filter((p: any) => p.filieresS3?.some((f: any) => f.id === vc.id)).length;
               const connectedInits = meta.initiatives.filter((i: any) => i.filieresS3?.some((f: any) => f.id === vc.id)).length;
@@ -666,7 +660,7 @@ export default function StrategiesPage() {
             <p className="font-extrabold text-text flex items-center gap-1.5 mt-0.5">
               <span className={cn(
                 "h-2 w-2 rounded-full",
-                details.status === "ACTIVE" || details.status === "ACTIVE" ? "bg-emerald-500" : "bg-amber-500"
+                details.status === "ACTIVE" ? "bg-emerald-500" : "bg-amber-500"
               )} />
               {details.status}
             </p>
@@ -675,7 +669,7 @@ export default function StrategiesPage() {
           {details.budget !== undefined && (
             <div className="border border-muted/10 rounded-xl p-3 space-y-1 bg-glass/5">
               <span className="text-[9px] uppercase font-bold text-muted">Budget Encodé</span>
-              <p className="font-extrabold text-primary flex items-center gap-1 mt-0.5">
+              <p className="font-extrabold text-teal-650 flex items-center gap-1 mt-0.5">
                 <Coins className="h-3.5 w-3.5" />
                 {details.budget ? `${details.budget.toLocaleString()} €` : "Non spécifié"}
               </p>
@@ -709,7 +703,7 @@ export default function StrategiesPage() {
                 href={details.website} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1 mt-0.5 hover:underline break-all"
+                className="font-bold text-teal-650 flex items-center gap-1 mt-0.5 hover:underline break-all"
               >
                 <Globe className="h-3.5 w-3.5" />
                 {details.website}
@@ -721,7 +715,7 @@ export default function StrategiesPage() {
             <div className="border border-muted/10 rounded-xl p-3 space-y-1 bg-glass/5 col-span-1 md:col-span-2">
               <span className="text-[9px] uppercase font-bold text-muted">Pilote de la Politique</span>
               <p className="font-bold text-text flex items-center gap-1.5 mt-0.5">
-                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <Building2 className="h-3.5 w-3.5 text-teal-650" />
                 {details.ownerOrganization.name}
               </p>
             </div>
@@ -733,7 +727,7 @@ export default function StrategiesPage() {
             <span className="text-[9px] uppercase font-bold text-muted">Filières S3 Alignées</span>
             <div className="flex flex-wrap gap-1.5">
               {details.linkedFilieres.map((f: any) => (
-                <span key={f.id} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                <span key={f.id} className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-400">
                   {f.name}
                 </span>
               ))}
@@ -743,141 +737,108 @@ export default function StrategiesPage() {
       </div>
     );
 
-    // Relations Tab Content
-    const relationsContent = (
-      <div className="space-y-4">
-        {type === "strategy" && (
-          <>
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Priorités Régionales</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedPriorities?.map((p: any) => (
-                  <RelationshipCard 
-                    key={p.id} 
-                    title={p.name} 
-                    relationType="Priorité" 
-                    Icon={Award} 
-                    description={p.description}
-                  />
-                ))}
-                {details.linkedPriorities?.length === 0 && <p className="text-xs text-muted italic">Aucune priorité.</p>}
-              </div>
-            </div>
+    // Relations Tab Content using PITRelationsPanel
+    const relationSections: any[] = [];
 
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Programmes Stratégiques</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedProgs?.map((p: any) => (
-                  <RelationshipCard 
-                    key={p.id} 
-                    title={p.name} 
-                    relationType="Programme" 
-                    Icon={Layers} 
-                    description={p.budget ? `Budget: ${p.budget.toLocaleString()} €` : undefined}
-                  />
-                ))}
-                {details.linkedProgs?.length === 0 && <p className="text-xs text-muted italic">Aucun programme.</p>}
-              </div>
-            </div>
-          </>
-        )}
+    if (type === "strategy") {
+      relationSections.push({
+        title: "Priorités Régionales",
+        items: (details.linkedPriorities || []).map((p: any) => ({
+          id: p.id,
+          title: p.name,
+          relationType: "Priorité",
+          Icon: Award,
+          description: p.description
+        }))
+      });
+      relationSections.push({
+        title: "Programmes Opérationnels",
+        items: (details.linkedProgs || []).map((p: any) => ({
+          id: p.id,
+          title: p.name,
+          relationType: "Programme",
+          Icon: Layers,
+          description: p.budget ? `Budget: ${p.budget.toLocaleString()} €` : undefined
+        }))
+      });
+    } else if (type === "priority") {
+      if (details.strategy) {
+        relationSections.push({
+          title: "Politique Générale",
+          items: [{
+            id: details.strategy.id,
+            title: details.strategy.name,
+            relationType: "Stratégie",
+            Icon: Target
+          }]
+        });
+      }
+      relationSections.push({
+        title: "Programmes Opérationnels Rattachés",
+        items: (details.linkedProgs || []).map((p: any) => ({
+          id: p.id,
+          title: p.name,
+          relationType: "Programme",
+          Icon: Layers
+        }))
+      });
+    } else if (type === "program") {
+      relationSections.push({
+        title: "Politiques et Priorités",
+        items: [
+          ...(details.linkedStrats || []).map((s: any) => ({
+            id: s.id,
+            title: s.name,
+            relationType: "Stratégie",
+            Icon: Target
+          })),
+          ...(details.linkedPriorities || []).map((p: any) => ({
+            id: p.id,
+            title: p.name,
+            relationType: "Priorité",
+            Icon: Award
+          }))
+        ]
+      });
+      relationSections.push({
+        title: "Consortium Opérationnel (Organisations)",
+        items: (details.linkedParticipations || []).map((p: any) => ({
+          id: p.org.id,
+          title: p.org.name,
+          relationType: p.role || "Opérateur",
+          Icon: Building2,
+          badge: p.status
+        }))
+      });
+    } else if (type === "initiative") {
+      if (details.measure) {
+        relationSections.push({
+          title: "Mesure de rattachement",
+          items: [{
+            id: details.measure.id,
+            title: details.measure.name,
+            relationType: "Mesure",
+            Icon: Scale,
+            description: details.measure.description
+          }]
+        });
+      }
+      relationSections.push({
+        title: "Services Publics Offerts (CPSV)",
+        items: (details.linkedServices || []).map((s: any) => ({
+          id: s.id,
+          title: s.name,
+          relationType: "Service Public",
+          Icon: FileText,
+          description: s.code
+        }))
+      });
+    }
 
-        {type === "priority" && (
-          <>
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Politique Générale</h4>
-              <RelationshipCard 
-                title={details.strategy?.name} 
-                relationType="Stratégie" 
-                Icon={Target} 
-              />
-            </div>
+    const relationsTab = <PITRelationsPanel sections={relationSections} />;
 
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Programmes rattachés</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedProgs?.map((p: any) => (
-                  <RelationshipCard 
-                    key={p.id} 
-                    title={p.name} 
-                    relationType="Programme" 
-                    Icon={Layers} 
-                  />
-                ))}
-                {details.linkedProgs?.length === 0 && <p className="text-xs text-muted italic">Aucun programme.</p>}
-              </div>
-            </div>
-          </>
-        )}
-
-        {type === "program" && (
-          <>
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Politiques et Priorités</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedStrats?.map((s: any) => (
-                  <RelationshipCard key={s.id} title={s.name} relationType="Stratégie" Icon={Target} />
-                ))}
-                {details.linkedPriorities?.map((p: any) => (
-                  <RelationshipCard key={p.id} title={p.name} relationType="Priorité" Icon={Award} />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Consortium Opérationnel (Organisations)</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedParticipations?.map((p: any) => (
-                  <RelationshipCard 
-                    key={p.org.id} 
-                    title={p.org.name} 
-                    relationType={p.role || "Opérateur"} 
-                    Icon={Building2} 
-                    badge={p.status}
-                  />
-                ))}
-                {details.linkedParticipations?.length === 0 && <p className="text-xs text-muted italic">Aucun opérateur enrôlé.</p>}
-              </div>
-            </div>
-          </>
-        )}
-
-        {type === "initiative" && (
-          <>
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Mesure de rattachement</h4>
-              {details.measure && (
-                <RelationshipCard 
-                  title={details.measure.name} 
-                  relationType="Mesure" 
-                  Icon={Scale} 
-                  description={details.measure.description}
-                />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Services Publics Offerts (CPSV)</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {details.linkedServices?.map((s: any) => (
-                  <RelationshipCard 
-                    key={s.id} 
-                    title={s.name} 
-                    relationType="Service Public" 
-                    Icon={FileText} 
-                    description={s.code}
-                  />
-                ))}
-                {details.linkedServices?.length === 0 && <p className="text-xs text-muted italic">Aucun service public.</p>}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-
-    // Activity & Impacts Tab Content
-    const activityContent = (
+    // Impact / Activity Tab Content
+    const impactContent = (
       <div className="space-y-4">
         {type === "initiative" ? (
           <div className="space-y-3">
@@ -892,7 +853,7 @@ export default function StrategiesPage() {
                       <p className="text-muted text-[10px]">{ind?.name}</p>
                       {imp.textValue && <p className="text-text italic font-medium mt-1">{imp.textValue}</p>}
                     </div>
-                    <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded text-xs shrink-0">
+                    <span className="font-bold text-teal-650 bg-teal-500/10 px-2 py-0.5 rounded text-xs shrink-0">
                       {imp.numericValue !== null ? `${imp.numericValue} ${ind?.unit || ""}` : "Validé"}
                     </span>
                   </div>
@@ -911,7 +872,7 @@ export default function StrategiesPage() {
       </div>
     );
 
-    // Knowledge Assets Tab Content
+    // Knowledge Assets Tab Content (Metadata)
     const knowledgeContent = (
       <div className="space-y-3 text-xs">
         <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Actifs de Connaissance Liés (D4WMO)</h4>
@@ -920,11 +881,11 @@ export default function StrategiesPage() {
             <div key={k.id} className="border border-muted/10 rounded-xl p-3.5 bg-glass/10 flex items-start justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <BookOpen className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                  <BookOpen className="h-4 w-4 text-teal-650 shrink-0" />
                   <span className="font-extrabold text-text truncate">{k.title}</span>
                 </div>
                 <p className="text-muted text-[10px] line-clamp-2 leading-relaxed">{k.description}</p>
-                <span className="inline-block text-[8px] font-bold uppercase bg-teal-500/10 text-teal-600 dark:text-teal-400 px-1.5 py-0.2 rounded mt-1">
+                <span className="inline-block text-[8px] font-bold uppercase bg-teal-500/10 text-teal-700 dark:text-teal-400 px-1.5 py-0.2 rounded mt-1">
                   {k.type}
                 </span>
               </div>
@@ -933,7 +894,7 @@ export default function StrategiesPage() {
                   href={k.url} 
                   target="_blank" 
                   rel="noreferrer" 
-                  className="px-2.5 py-1 text-[10px] font-extrabold bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-xs shrink-0 cursor-pointer"
+                  className="px-2.5 py-1 text-[10px] font-extrabold bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg shadow-xs shrink-0 cursor-pointer text-center no-underline border-0"
                 >
                   Ouvrir
                 </a>
@@ -948,78 +909,247 @@ export default function StrategiesPage() {
     );
 
     return (
-      <EntityDetailPanel 
+      <PITDetailLayout 
         title={details.name}
         subtitle={`${type.toUpperCase()} ${details.code ? `• Code: ${details.code}` : ""}`}
         badge={
           <span className={cn(
             "text-[9px] uppercase font-black px-2.5 py-0.5 rounded-full",
-            type === "strategy" && "bg-teal-500/10 text-teal-600 dark:text-teal-400",
-            type === "priority" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-            type === "program" && "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-            type === "measure" && "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-            type === "initiative" && "bg-rose-500/10 text-rose-600 dark:text-rose-455",
+            type === "strategy" && "bg-teal-500/10 text-teal-750",
+            type === "priority" && "bg-amber-500/10 text-amber-600",
+            type === "program" && "bg-indigo-500/10 text-indigo-600",
+            type === "measure" && "bg-purple-500/10 text-purple-600",
+            type === "initiative" && "bg-rose-500/10 text-rose-600",
           )}>
             {type}
           </span>
         }
         overviewTab={overviewContent}
-        relationsTab={relationsContent}
-        activityTab={activityContent}
+        relationsTab={relationsTab}
+        impactTab={impactContent}
         metadataTab={knowledgeContent}
       />
     );
   };
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader 
-        title="Gouvernance & Alignement Stratégique" 
-        description="Faites le lien entre les politiques stratégiques (S3, Circular Wallonia) et leur déploiement sur le territoire wallon."
-        Icon={Target}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <button 
-              onClick={() => setIsStrategyModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 rounded-lg cursor-pointer transition-colors shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nouvelle Stratégie
-            </button>
-            <button 
-              onClick={() => setIsProgramModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer transition-colors shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nouveau Programme
-            </button>
-            <button 
-              onClick={() => setIsMeasureModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold text-white bg-purple-600 hover:bg-purple-700 rounded-lg cursor-pointer transition-colors shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nouvelle Mesure
-            </button>
-            <button 
-              onClick={() => setIsInitiativeModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer transition-colors shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nouvelle Initiative
-            </button>
+  // Helper form layout builders using FormSection format for PITForm
+  const strategySections: FormSection[] = [
+    {
+      id: "general",
+      title: "Informations Générales",
+      subtitle: "Identité de la politique stratégique",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nom de la stratégie *</label>
+            <input required type="text" value={stratForm.name} onChange={e => setStratForm({...stratForm, name: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
           </div>
-        }
-      />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Code / Sigle</label>
+              <input type="text" value={stratForm.code} onChange={e => setStratForm({...stratForm, code: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pilote (Institution)</label>
+              <select value={stratForm.ownerOrganizationId} onChange={e => setStratForm({...stratForm, ownerOrganizationId: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700">
+                <option value="">Sélectionner</option>
+                {meta?.organizations?.map((o: any) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Description *</label>
+            <textarea required rows={3} value={stratForm.description} onChange={e => setStratForm({...stratForm, description: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700 resize-none" />
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "dates_links",
+      title: "Dates & Références",
+      subtitle: "Horizon temporel et documentation",
+      fields: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Date de début</label>
+              <input type="date" value={stratForm.startDate} onChange={e => setStratForm({...stratForm, startDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Date de fin</label>
+              <input type="date" value={stratForm.endDate} onChange={e => setStratForm({...stratForm, endDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Site Web</label>
+            <input type="url" placeholder="https://" value={stratForm.website} onChange={e => setStratForm({...stratForm, website: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "alignments",
+      title: "Alignements S3",
+      subtitle: "Filières régionales concernées",
+      fields: (
+        <div>
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Filières S3 impliquées</label>
+          <div className="grid grid-cols-2 gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
+            {meta?.strategicValueChains?.map((vc: any) => (
+              <label key={vc.id} className="flex items-center gap-2 font-medium cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  checked={stratForm.filiereS3Ids.includes(vc.id)} 
+                  onChange={e => {
+                    const ids = e.target.checked 
+                      ? [...stratForm.filiereS3Ids, vc.id]
+                      : stratForm.filiereS3Ids.filter(id => id !== vc.id);
+                    setStratForm({...stratForm, filiereS3Ids: ids});
+                  }}
+                  className="w-3.5 h-3.5 accent-teal-650"
+                />
+                {vc.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  ];
 
-      <PageToolbar 
+  const programSections: FormSection[] = [
+    {
+      id: "general",
+      title: "Informations Générales",
+      subtitle: "Détails opérationnels du programme",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nom du programme *</label>
+            <input required type="text" value={progForm.name} onChange={e => setProgForm({...progForm, name: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Code</label>
+              <input type="text" value={progForm.code} onChange={e => setProgForm({...progForm, code: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Institution Pilote</label>
+              <select value={progForm.ownerOrganizationId} onChange={e => setProgForm({...progForm, ownerOrganizationId: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700">
+                <option value="">Sélectionner</option>
+                {meta?.organizations?.map((o: any) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Description *</label>
+            <textarea required rows={3} value={progForm.description} onChange={e => setProgForm({...progForm, description: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700 resize-none" />
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "budget_dates",
+      title: "Financement & Dates",
+      subtitle: "Budget alloué et enveloppes temporelles",
+      fields: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Budget (€)</label>
+              <input type="number" value={progForm.budget} onChange={e => setProgForm({...progForm, budget: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Début</label>
+              <input type="date" value={progForm.startDate} onChange={e => setProgForm({...progForm, startDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Fin</label>
+              <input type="date" value={progForm.endDate} onChange={e => setProgForm({...progForm, endDate: e.target.value})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-750 rounded-lg text-xs outline-none text-text focus:ring-1 focus:ring-teal-700" />
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "strategies",
+      title: "Rattachement Stratégique",
+      subtitle: "Politiques cadres reliées",
+      fields: (
+        <div>
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Politiques rattachées (Stratégies) *</label>
+          <div className="grid grid-cols-2 gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
+            {meta?.strategies?.map((strat: any) => (
+              <label key={strat.id} className="flex items-center gap-2 font-medium cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  checked={progForm.strategyIds.includes(strat.id)} 
+                  onChange={e => {
+                    const ids = e.target.checked 
+                      ? [...progForm.strategyIds, strat.id]
+                      : progForm.strategyIds.filter(id => id !== strat.id);
+                    setProgForm({...progForm, strategyIds: ids});
+                  }}
+                  className="w-3.5 h-3.5 accent-teal-650"
+                />
+                {strat.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <PITLayout
+      category="POLITIQUES PUBLIQUES"
+      title="Gouvernance & Alignement Stratégique"
+      description="Faites le lien entre les politiques stratégiques régionales (S3, Circular Wallonia) et leur déploiement sur le territoire wallon."
+      pageIcon={Target}
+      breadcrumb={[
+        { label: "Tableau de bord", href: "/" },
+        { label: "Gouvernance" }
+      ]}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button 
+            onClick={() => setIsStrategyModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 text-xs font-extrabold text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-xl cursor-pointer transition-all shadow-xs border-0"
+          >
+            <Plus className="h-4 w-4" /> Nouvelle Stratégie
+          </button>
+          <button 
+            onClick={() => setIsProgramModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4.5 py-2.5 text-xs font-extrabold text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-xl cursor-pointer transition-all shadow-xs border-0"
+          >
+            <Plus className="h-4 w-4" /> Nouveau Programme
+          </button>
+        </div>
+      }
+    >
+      <PITFilterBar 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Rechercher par nom ou code..."
-        filterValue={filterFiliere}
-        onFilterChange={setFilterFiliere}
-        filterLabel="Toutes les filières S3"
-        filterOptions={meta.strategicValueChains.map((f: any) => ({ value: String(f.id), label: f.name }))}
+        selectFilters={[
+          {
+            id: "filiere",
+            label: "Toutes les filières S3",
+            value: filterFiliere,
+            onChange: setFilterFiliere,
+            options: meta?.strategicValueChains?.map((f: any) => ({ value: String(f.id), label: f.name })) || []
+          }
+        ]}
         extraControls={
           selectedNode && (
             <button 
               onClick={() => setSelectedNode(null)}
-              className="text-xs font-extrabold text-muted hover:text-text cursor-pointer bg-glass px-3 py-1.5 rounded-lg border border-muted/20"
+              className="text-xs font-extrabold text-muted hover:text-text cursor-pointer bg-glass px-3.5 py-2.5 rounded-xl border border-muted/20"
             >
               Retour au Portfolio
             </button>
@@ -1029,8 +1159,8 @@ export default function StrategiesPage() {
 
       <SplitLayout 
         leftPane={
-          <div className="bg-glass border border-muted/20 rounded-2xl p-4 shadow-sm space-y-4">
-            <h3 className="font-extrabold text-xs text-text uppercase tracking-wider text-muted border-b border-muted/10 pb-2">
+          <div className="bg-glass border border-muted/20 rounded-2xl p-5 shadow-xs space-y-4">
+            <h3 className="font-extrabold text-xs text-text uppercase tracking-wider text-muted border-b border-muted/10 pb-2.5">
               Arborescence Stratégique (Territoire ↔ S3)
             </h3>
             {renderTree()}
@@ -1039,83 +1169,38 @@ export default function StrategiesPage() {
         rightPane={
           selectedNode ? renderDetailCockpit() : renderTransverseDashboard()
         }
+        leftColSpan={5}
       />
 
       {/* STRATEGY CREATION MODAL */}
       {isStrategyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-surface border border-muted/20 rounded-2xl p-6 max-w-lg w-full relative shadow-card space-y-4 max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <div className="flex justify-between items-center border-b border-muted/20 pb-3">
-              <h3 className="text-sm font-black text-text uppercase flex items-center gap-2">
-                <Target className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                Créer une Nouvelle Politique Stratégique
-              </h3>
-              <button onClick={() => setIsStrategyModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer">
+          <div className="bg-surface border border-muted/25 rounded-2xl p-6 max-w-4xl w-full relative shadow-card max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <div className="absolute right-4 top-4 z-10">
+              <button onClick={() => setIsStrategyModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer p-1.5 rounded-lg hover:bg-glass">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateStrategy} className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Nom de la stratégie *</label>
-                <input required type="text" value={stratForm.name} onChange={e => setStratForm({...stratForm, name: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Code / Sigle</label>
-                  <input type="text" value={stratForm.code} onChange={e => setStratForm({...stratForm, code: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
+            <PITForm 
+              title="Créer une Nouvelle Politique Stratégique"
+              sections={strategySections}
+              onSubmit={handleCreateStrategy}
+              onCancel={() => setIsStrategyModalOpen(false)}
+              submitLabel="Créer la stratégie"
+              infoPanel={
+                <div className="space-y-4">
+                  <p>
+                    <strong>Cadre Stratégique PIT :</strong> Les stratégies représentent le plus haut niveau d'orientation politique régionale.
+                  </p>
+                  <p>
+                    Elles s'alignent avec les objectifs européens (Pacte Vert, Décennie Numérique) et fédèrent les opérateurs régionaux autour de filières prioritaires.
+                  </p>
+                  <div className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl text-teal-700 dark:text-teal-400">
+                    N'oubliez pas d'indiquer l'institution publique pilote pour assurer la traçabilité de la gouvernance.
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Pilote (Institution)</label>
-                  <select value={stratForm.ownerOrganizationId} onChange={e => setStratForm({...stratForm, ownerOrganizationId: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text">
-                    <option value="">Sélectionner</option>
-                    {meta.organizations.map((o: any) => (
-                      <option key={o.id} value={o.id}>{o.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Description *</label>
-                <textarea required rows={3} value={stratForm.description} onChange={e => setStratForm({...stratForm, description: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de début</label>
-                  <input type="date" value={stratForm.startDate} onChange={e => setStratForm({...stratForm, startDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de fin</label>
-                  <input type="date" value={stratForm.endDate} onChange={e => setStratForm({...stratForm, endDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Site Web</label>
-                <input type="url" placeholder="https://" value={stratForm.website} onChange={e => setStratForm({...stratForm, website: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Filières S3 impliquées</label>
-                <div className="grid grid-cols-2 gap-1.5 p-2 border border-muted/20 rounded-lg bg-glass/10">
-                  {meta.strategicValueChains.map((vc: any) => (
-                    <label key={vc.id} className="flex items-center gap-1.5 font-medium cursor-pointer text-[10px]">
-                      <input 
-                        type="checkbox" 
-                        checked={stratForm.filiereS3Ids.includes(vc.id)} 
-                        onChange={e => {
-                          const ids = e.target.checked 
-                            ? [...stratForm.filiereS3Ids, vc.id]
-                            : stratForm.filiereS3Ids.filter(id => id !== vc.id);
-                          setStratForm({...stratForm, filiereS3Ids: ids});
-                        }} 
-                      />
-                      {vc.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-extrabold py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
-                Valider et Créer
-              </button>
-            </form>
+              }
+            />
           </div>
         </div>
       )}
@@ -1123,249 +1208,32 @@ export default function StrategiesPage() {
       {/* PROGRAM CREATION MODAL */}
       {isProgramModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-surface border border-muted/20 rounded-2xl p-6 max-w-lg w-full relative shadow-card space-y-4 max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <div className="flex justify-between items-center border-b border-muted/20 pb-3">
-              <h3 className="text-sm font-black text-text uppercase flex items-center gap-2">
-                <Layers className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                Créer un Nouveau Programme Opérationnel
-              </h3>
-              <button onClick={() => setIsProgramModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer">
+          <div className="bg-surface border border-muted/25 rounded-2xl p-6 max-w-4xl w-full relative shadow-card max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <div className="absolute right-4 top-4 z-10">
+              <button onClick={() => setIsProgramModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer p-1.5 rounded-lg hover:bg-glass">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateProgram} className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Nom du programme *</label>
-                <input required type="text" value={progForm.name} onChange={e => setProgForm({...progForm, name: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Code</label>
-                  <input type="text" value={progForm.code} onChange={e => setProgForm({...progForm, code: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
+            <PITForm 
+              title="Créer un Nouveau Programme Opérationnel"
+              sections={programSections}
+              onSubmit={handleCreateProgram}
+              onCancel={() => setIsProgramModalOpen(false)}
+              submitLabel="Créer le programme"
+              infoPanel={
+                <div className="space-y-4">
+                  <p>
+                    <strong>Programmes & Budgets :</strong> Un programme porte une enveloppe budgétaire publique allouée à la concrétisation d'une ou plusieurs stratégies.
+                  </p>
+                  <p>
+                    Un programme regroupe des mesures d'aide concrètes, implémentées par des agences territoriales partenaires (AWEX, AdN, WE...).
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Institution Pilote</label>
-                  <select value={progForm.ownerOrganizationId} onChange={e => setProgForm({...progForm, ownerOrganizationId: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text">
-                    <option value="">Sélectionner</option>
-                    {meta.organizations.map((o: any) => (
-                      <option key={o.id} value={o.id}>{o.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Description *</label>
-                <textarea required rows={3} value={progForm.description} onChange={e => setProgForm({...progForm, description: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Budget (€)</label>
-                  <input type="number" value={progForm.budget} onChange={e => setProgForm({...progForm, budget: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de début</label>
-                  <input type="date" value={progForm.startDate} onChange={e => setProgForm({...progForm, startDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de fin</label>
-                  <input type="date" value={progForm.endDate} onChange={e => setProgForm({...progForm, endDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Politiques rattachées (Stratégies) *</label>
-                <div className="grid grid-cols-2 gap-1.5 p-2 border border-muted/20 rounded-lg bg-glass/10">
-                  {meta.strategies.map((strat: any) => (
-                    <label key={strat.id} className="flex items-center gap-1.5 font-medium cursor-pointer text-[10px]">
-                      <input 
-                        type="checkbox" 
-                        checked={progForm.strategyIds.includes(strat.id)} 
-                        onChange={e => {
-                          const ids = e.target.checked 
-                            ? [...progForm.strategyIds, strat.id]
-                            : progForm.strategyIds.filter(id => id !== strat.id);
-                          setProgForm({...progForm, strategyIds: ids});
-                        }} 
-                      />
-                      {strat.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
-                Créer le Programme
-              </button>
-            </form>
+              }
+            />
           </div>
         </div>
       )}
-
-      {/* MEASURE CREATION MODAL */}
-      {isMeasureModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-surface border border-muted/20 rounded-2xl p-6 max-w-lg w-full relative shadow-card space-y-4 max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <div className="flex justify-between items-center border-b border-muted/20 pb-3">
-              <h3 className="text-sm font-black text-text uppercase flex items-center gap-2">
-                <Scale className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                Créer une Nouvelle Mesure
-              </h3>
-              <button onClick={() => setIsMeasureModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateMeasure} className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Nom de la mesure *</label>
-                <input required type="text" value={measForm.name} onChange={e => setMeasForm({...measForm, name: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Code</label>
-                  <input type="text" value={measForm.code} onChange={e => setMeasForm({...measForm, code: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Budget (€)</label>
-                  <input type="number" value={measForm.budget} onChange={e => setMeasForm({...measForm, budget: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Description *</label>
-                <textarea required rows={3} value={measForm.description} onChange={e => setMeasForm({...measForm, description: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Programmes rattachés *</label>
-                <div className="grid grid-cols-2 gap-1.5 p-2 border border-muted/20 rounded-lg bg-glass/10">
-                  {meta.programs.map((p: any) => (
-                    <label key={p.id} className="flex items-center gap-1.5 font-medium cursor-pointer text-[10px]">
-                      <input 
-                        type="checkbox" 
-                        checked={measForm.programIds.includes(p.id)} 
-                        onChange={e => {
-                          const ids = e.target.checked 
-                            ? [...measForm.programIds, p.id]
-                            : measForm.programIds.filter(id => id !== p.id);
-                          setMeasForm({...measForm, programIds: ids});
-                        }} 
-                      />
-                      {p.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
-                Créer la Mesure
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* INITIATIVE CREATION MODAL */}
-      {isInitiativeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-surface border border-muted/20 rounded-2xl p-6 max-w-lg w-full relative shadow-card space-y-4 max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <div className="flex justify-between items-center border-b border-muted/20 pb-3">
-              <h3 className="text-sm font-black text-text uppercase flex items-center gap-2">
-                <Zap className="h-5 w-5 text-rose-600 dark:text-rose-400" />
-                Créer une Nouvelle Initiative Territoriale
-              </h3>
-              <button onClick={() => setIsInitiativeModalOpen(false)} className="text-muted hover:text-text border-0 bg-transparent cursor-pointer">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateInitiative} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1 col-span-2">
-                  <label className="font-bold text-muted">Nom de l'initiative *</label>
-                  <input required type="text" value={initForm.name} onChange={e => setInitForm({...initForm, name: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Mesure de rattachement *</label>
-                  <select required value={initForm.measureId} onChange={e => setInitForm({...initForm, measureId: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text">
-                    <option value="">Sélectionner</option>
-                    {meta.measures.map((m: any) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Code</label>
-                  <input type="text" value={initForm.code} onChange={e => setInitForm({...initForm, code: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-muted">Description *</label>
-                <textarea required rows={2} value={initForm.description} onChange={e => setInitForm({...initForm, description: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Lead Opérateur</label>
-                  <select value={initForm.leadOrganizationId} onChange={e => setInitForm({...initForm, leadOrganizationId: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text">
-                    <option value="">Sélectionner</option>
-                    {meta.organizations.map((o: any) => (
-                      <option key={o.id} value={o.id}>{o.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de début</label>
-                  <input type="date" value={initForm.startDate} onChange={e => setInitForm({...initForm, startDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Date de fin</label>
-                  <input type="date" value={initForm.endDate} onChange={e => setInitForm({...initForm, endDate: e.target.value})} className="w-full bg-glass border border-muted/30 rounded-lg p-2 text-text" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Territoires Couverts</label>
-                  <div className="max-h-[100px] overflow-y-auto p-1.5 border border-muted/20 rounded-lg bg-glass/10">
-                    {meta.territories.map((t: any) => (
-                      <label key={t.id} className="flex items-center gap-1.5 font-medium cursor-pointer text-[9px] mb-0.5">
-                        <input 
-                          type="checkbox" 
-                          checked={initForm.territoryIds.includes(t.id)} 
-                          onChange={e => {
-                            const ids = e.target.checked 
-                              ? [...initForm.territoryIds, t.id]
-                              : initForm.territoryIds.filter(id => id !== t.id);
-                            setInitForm({...initForm, territoryIds: ids});
-                          }} 
-                        />
-                        {t.name} ({t.type})
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-muted">Services Publics (CPSV)</label>
-                  <div className="max-h-[100px] overflow-y-auto p-1.5 border border-muted/20 rounded-lg bg-glass/10">
-                    {meta.services.map((s: any) => (
-                      <label key={s.id} className="flex items-center gap-1.5 font-medium cursor-pointer text-[9px] mb-0.5">
-                        <input 
-                          type="checkbox" 
-                          checked={initForm.serviceIds.includes(s.id)} 
-                          onChange={e => {
-                            const ids = e.target.checked 
-                              ? [...initForm.serviceIds, s.id]
-                              : initForm.serviceIds.filter(id => id !== s.id);
-                            setInitForm({...initForm, serviceIds: ids});
-                          }} 
-                        />
-                        {s.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
-                Créer l'Initiative
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+    </PITLayout>
   );
 }

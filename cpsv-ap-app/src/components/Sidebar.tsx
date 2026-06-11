@@ -21,6 +21,7 @@ import {
   Target,
   LineChart
 } from "lucide-react";
+import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Home },
@@ -42,31 +43,54 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { activePerspective } = usePerspective();
+
+  const filteredNavigation = navigation.filter(item => {
+    if (activePerspective === "all") return true;
+    if (["/", "/graph", "/guide", "/settings"].includes(item.href)) return true;
+    
+    if (activePerspective === "strategic") {
+      return ["/strategies", "/pilotage"].includes(item.href);
+    }
+    if (activePerspective === "operational") {
+      return ["/beneficiaries", "/activities", "/services", "/journeys", "/recommender"].includes(item.href);
+    }
+    if (activePerspective === "territorial") {
+      return ["/beneficiaries", "/services", "/value-chains", "/ecosystems"].includes(item.href);
+    }
+    if (activePerspective === "data") {
+      return ["/datasets", "/knowledge-assets"].includes(item.href);
+    }
+    if (activePerspective === "transformation") {
+      return ["/beneficiaries", "/services", "/journeys", "/recommender"].includes(item.href);
+    }
+    return true;
+  });
 
   return (
-    <aside className="w-64 bg-surface p-4 border-r border-muted hidden md:flex flex-col h-screen sticky top-0">
-      <div className="flex items-center justify-center border-b border-muted mb-2 py-0.5">
+    <aside className="w-64 bg-surface p-4 border-r border-muted/20 hidden md:flex flex-col h-screen sticky top-0">
+      <div className="flex items-center justify-center border-b border-muted/10 mb-4 py-1.5">
         <img 
           src="/logo.png?v=3" 
           alt="PIT Wallonie" 
-          className="w-full h-auto object-contain bg-transparent"
+          className="w-full h-auto object-contain bg-transparent max-h-12"
         />
       </div>
-      <nav className="space-y-1.5 flex-1 overflow-y-auto">
-        {navigation.map((item) => {
+      <nav className="space-y-1 flex-1 overflow-y-auto scrollbar-thin">
+        {filteredNavigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center space-x-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs font-bold transition-all duration-200",
                 isActive 
-                  ? "bg-gradient-to-r from-primary/10 to-amber-500/10 border-l-2 border-primary text-text shadow-sm" 
+                  ? "bg-gradient-to-r from-teal-500/10 to-amber-500/5 border-l-2 border-teal-605 text-text shadow-xs" 
                   : "text-muted hover:bg-glass hover:text-text"
               )}
             >
-              <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted")} />
+              <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-teal-600 dark:text-teal-400" : "text-muted")} />
               <span>{item.name}</span>
             </Link>
           );

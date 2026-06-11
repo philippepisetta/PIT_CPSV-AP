@@ -18,7 +18,7 @@ import {
   Sparkles,
   BookOpen
 } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
+import PITLayout from "@/design-system/PITLayout";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -156,12 +156,13 @@ export default function GuidePage() {
   const StepIcon = current.icon;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader 
-        title="Guide d'Utilisation Interactif" 
-        description="Suivez les 8 étapes clés de la méthodologie PIT Wallonie pour structurer le pilotage territorial, aligner vos aides publiques et mesurer l'impact réel."
-        Icon={Compass}
-      />
+    <PITLayout
+      category="METHODOLOGIE"
+      title="Guide d'Utilisation Interactif"
+      description="Suivez les 8 étapes clés de la méthodologie PIT Wallonie pour structurer le pilotage territorial, aligner vos aides publiques et mesurer l'impact réel."
+      pageIcon={Compass}
+      breadcrumb={[{ label: "Guide interactif" }]}
+    >
 
       {/* PROGRESS BAR */}
       <div className="bg-glass border border-muted/20 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-4">
@@ -284,6 +285,6 @@ export default function GuidePage() {
           </div>
         </div>
       </div>
-    </div>
+    </PITLayout>
   );
 }

@@ -1,41 +1,31 @@
 // src/app/activities/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { 
   Building2, 
   Plus, 
-  Calendar, 
   Users, 
   Star, 
   Share2, 
-  TrendingUp, 
   FileText, 
   X, 
-  CheckCircle,
-  HelpCircle,
-  Briefcase,
-  Layers,
-  MapPin,
-  Clock,
-  Compass,
+  Layers, 
+  Compass, 
   FileCheck,
-  Award,
-  Link2,
   Info
 } from "lucide-react";
 
-import PageHeader from "@/components/ui/PageHeader";
-import PageToolbar from "@/components/ui/PageToolbar";
+import PITLayout from "@/design-system/PITLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITEntityCard from "@/design-system/PITEntityCard";
+import PITDetailLayout from "@/design-system/PITDetailLayout";
+import PITRelationsPanel from "@/design-system/PITRelationsPanel";
+import PITForm, { FormSection } from "@/design-system/PITForm";
 import SplitLayout from "@/components/ui/SplitLayout";
-import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
-import RelationshipCard from "@/components/ui/RelationshipCard";
 import Timeline, { TimelineItem } from "@/components/ui/Timeline";
-import ReferenceSelector from "@/components/ui/ReferenceSelector";
-import MultiTagSelector from "@/components/ui/MultiTagSelector";
-import OutcomeEditor from "@/components/ui/OutcomeEditor";
 import { fetchWithCache, invalidateClientCache } from "@/lib/api";
+import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 
 interface PublicService {
   id: number;
@@ -107,6 +97,7 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { isEntityTypeVisible } = usePerspective();
 
   // Données
   const [meta, setMeta] = useState<{
@@ -312,6 +303,8 @@ export default function ActivitiesPage() {
   // Filtrer les données selon recherche
   const filterList = (list: any[], keyName: string) => {
     return list.filter(item => {
+      if (!isEntityTypeVisible("activity")) return false;
+
       const query = searchQuery.toLowerCase();
       if (keyName === "individual") {
         return item.service?.name.toLowerCase().includes(query) || 
@@ -361,54 +354,42 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Item List */}
-      <div className="rounded-2xl bg-glass border border-muted/20 p-4 max-h-[60vh] overflow-y-auto space-y-1.5">
-        {activeTab === "individual" && filteredIndividual.map(item => {
-          const isSelected = selectedIndividual?.id === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setSelectedIndividual(item)}
-              className={`w-full text-left p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
-                isSelected ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" : "hover:bg-glass text-muted hover:text-text"
-              }`}
-            >
-              <p className="font-bold text-xs truncate">{item.service?.name}</p>
-              <p className="text-[10px] text-muted truncate mt-0.5">Bénéficiaire : {item.beneficiary?.name}</p>
-            </button>
-          );
-        })}
+      <div className="rounded-2xl bg-glass border border-muted/20 p-4 max-h-[60vh] overflow-y-auto space-y-2.5">
+        {activeTab === "individual" && filteredIndividual.map(item => (
+          <PITEntityCard
+            key={item.id}
+            title={item.service?.name}
+            description={`Bénéficiaire : ${item.beneficiary?.name}`}
+            icon={FileCheck}
+            type="activity"
+            isSelected={selectedIndividual?.id === item.id}
+            onClick={() => setSelectedIndividual(item)}
+          />
+        ))}
 
-        {activeTab === "collective" && filteredCollective.map(item => {
-          const isSelected = selectedCollective?.id === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setSelectedCollective(item)}
-              className={`w-full text-left p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
-                isSelected ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" : "hover:bg-glass text-muted hover:text-text"
-              }`}
-            >
-              <p className="font-bold text-xs truncate">{item.title}</p>
-              <p className="text-[10px] text-muted truncate mt-0.5">{item.service?.name}</p>
-            </button>
-          );
-        })}
+        {activeTab === "collective" && filteredCollective.map(item => (
+          <PITEntityCard
+            key={item.id}
+            title={item.title}
+            description={item.service?.name}
+            icon={Users}
+            type="activity"
+            isSelected={selectedCollective?.id === item.id}
+            onClick={() => setSelectedCollective(item)}
+          />
+        ))}
 
-        {activeTab === "secondline" && filteredSecondLine.map(item => {
-          const isSelected = selectedSecondLine?.id === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setSelectedSecondLine(item)}
-              className={`w-full text-left p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
-                isSelected ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" : "hover:bg-glass text-muted hover:text-text"
-              }`}
-            >
-              <p className="font-bold text-xs truncate">{item.title}</p>
-              <p className="text-[10px] text-muted truncate mt-0.5">Lead : {item.leadOperator?.name}</p>
-            </button>
-          );
-        })}
+        {activeTab === "secondline" && filteredSecondLine.map(item => (
+          <PITEntityCard
+            key={item.id}
+            title={item.title}
+            description={`Lead : ${item.leadOperator?.name}`}
+            icon={Share2}
+            type="activity"
+            isSelected={selectedSecondLine?.id === item.id}
+            onClick={() => setSelectedSecondLine(item)}
+          />
+        ))}
 
         {activeTab === "individual" && filteredIndividual.length === 0 && <p className="text-center py-6 text-xs text-muted italic">Aucun accompagnement.</p>}
         {activeTab === "collective" && filteredCollective.length === 0 && <p className="text-center py-6 text-xs text-muted italic">Aucun atelier.</p>}
@@ -426,11 +407,11 @@ export default function ActivitiesPage() {
       const overviewTab = (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1">
+            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1 mt-1">
               <span className="text-[9px] font-bold uppercase text-muted">Bénéficiaire</span>
               <p className="font-bold text-text">{d.beneficiary?.name}</p>
             </div>
-            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1">
+            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1 mt-1">
               <span className="text-[9px] font-bold uppercase text-muted">Conseiller / Opérateur</span>
               <p className="font-bold text-text">{d.operator?.name} ({d.operator?.type})</p>
             </div>
@@ -452,7 +433,7 @@ export default function ActivitiesPage() {
             {d.impact && (
               <div className="space-y-1 bg-glass/20 p-3 rounded-xl border border-muted/10">
                 <span className="text-[9px] font-bold uppercase text-muted block">Impact constaté</span>
-                <p className="text-xs font-bold text-teal-600 dark:text-teal-400">{d.impact}</p>
+                <p className="text-xs font-bold text-teal-700 dark:text-teal-400">{d.impact}</p>
               </div>
             )}
           </div>
@@ -462,7 +443,7 @@ export default function ActivitiesPage() {
               <span className="text-[9px] font-bold uppercase text-muted block">Évolution de la maturité</span>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(d.maturityDelta).map(([axis, delta]: [string, any]) => (
-                  <span key={axis} className="px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold text-[10px] border border-teal-500/15">
+                  <span key={axis} className="px-2 py-0.5 rounded bg-teal-500/10 text-teal-650 font-bold text-[10px] border border-teal-500/15">
                     {axis.toUpperCase()} : {delta?.before} ➔ {delta?.after}
                   </span>
                 ))}
@@ -472,34 +453,41 @@ export default function ActivitiesPage() {
         </div>
       );
 
-      const relationsTab = (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <RelationshipCard
-            title={d.service?.name}
-            relationType="Service Public associé"
-            Icon={FileText}
-          />
-          <RelationshipCard
-            title={d.beneficiary?.name}
-            relationType="Bénéficiaire accompagné"
-            Icon={Building2}
-          />
-        </div>
-      );
+      const relationSections = [
+        {
+          title: "Alignements Métier",
+          items: [
+            {
+              id: d.service?.id,
+              title: d.service?.name,
+              relationType: "Service Public associé",
+              Icon: FileText
+            },
+            {
+              id: d.beneficiary?.id,
+              title: d.beneficiary?.name,
+              relationType: "Bénéficiaire accompagné",
+              Icon: Building2
+            }
+          ]
+        }
+      ];
+
+      const relationsTab = <PITRelationsPanel sections={relationSections} />;
 
       const metadataTab = (
         <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-          <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/delivery/{d.id}</span></p>
+          <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/delivery/{d.id}</span></p>
           <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:ServiceDelivery</span></p>
           <p className="text-text">Date d'accompagnement : <span className="font-bold">{new Date(d.date).toLocaleDateString()}</span></p>
         </div>
       );
 
       return (
-        <EntityDetailPanel
+        <PITDetailLayout
           title={d.service?.name}
           subtitle={`Délivré par ${d.operator?.name}`}
-          badge={<span className="text-[9px] font-bold uppercase text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Individuel (Niveau 1)</span>}
+          badge={<span className="text-[9px] font-bold uppercase text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full">Individuel (Niveau 1)</span>}
           overviewTab={overviewTab}
           relationsTab={relationsTab}
           metadataTab={metadataTab}
@@ -551,51 +539,50 @@ export default function ActivitiesPage() {
         </div>
       );
 
-      const relationsTab = (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <RelationshipCard
-              title={d.service?.name}
-              relationType="Service public de support"
-              Icon={FileText}
-            />
-            <RelationshipCard
-              title={d.operator?.name}
-              relationType="Organisateur"
-              Icon={Building2}
-            />
-          </div>
-          {d.companies && d.companies.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-[9px] font-bold uppercase text-muted block">Entreprises inscrites de la PIT</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {d.companies.map(c => (
-                  <RelationshipCard
-                    key={c.id}
-                    title={c.name}
-                    relationType="Entreprise participante"
-                    Icon={Building2}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
+      const relationSections = [
+        {
+          title: "Alignements Métier",
+          items: [
+            {
+              id: d.service?.id,
+              title: d.service?.name,
+              relationType: "Service public de support",
+              Icon: FileText
+            },
+            {
+              id: d.operator?.id,
+              title: d.operator?.name,
+              relationType: "Organisateur",
+              Icon: Building2
+            }
+          ]
+        },
+        {
+          title: "Entreprises inscrites de la PIT",
+          items: (d.companies || []).map(c => ({
+            id: c.id,
+            title: c.name,
+            relationType: "Entreprise participante",
+            Icon: Building2
+          }))
+        }
+      ];
+
+      const relationsTab = <PITRelationsPanel sections={relationSections} />;
 
       const metadataTab = (
         <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-          <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/collective-delivery/{d.id}</span></p>
+          <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/collective-delivery/{d.id}</span></p>
           <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:CollectiveDelivery</span></p>
           <p className="text-text">Date de session : <span className="font-bold">{new Date(d.date).toLocaleDateString()}</span></p>
         </div>
       );
 
       return (
-        <EntityDetailPanel
+        <PITDetailLayout
           title={d.title}
           subtitle={`Organisé par ${d.operator?.name}`}
-          badge={<span className="text-[9px] font-bold uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">Collectif (Niveau 2)</span>}
+          badge={<span className="text-[9px] font-bold uppercase text-emerald-650 bg-emerald-500/10 px-2 py-0.5 rounded-full">Collectif (Niveau 2)</span>}
           overviewTab={overviewTab}
           relationsTab={relationsTab}
           metadataTab={metadataTab}
@@ -610,11 +597,11 @@ export default function ActivitiesPage() {
       const overviewTab = (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1">
+            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1 mt-1">
               <span className="text-[9px] font-bold uppercase text-muted">Territoire couvert</span>
               <p className="font-bold text-text">{d.territoryCovered || "Wallonie"}</p>
             </div>
-            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1">
+            <div className="bg-glass/20 border border-muted/10 p-3 rounded-xl text-xs space-y-1 mt-1">
               <span className="text-[9px] font-bold uppercase text-muted">Collaborations créées</span>
               <p className="font-bold text-text">{d.collaborationsCount} collaborations</p>
             </div>
@@ -636,41 +623,40 @@ export default function ActivitiesPage() {
         </div>
       );
 
-      const relationsTab = (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <RelationshipCard
-              title={d.service?.name}
-              relationType="Mission Cadre"
-              Icon={FileText}
-            />
-            <RelationshipCard
-              title={d.leadOperator?.name}
-              relationType="Opérateur Pilote (Lead)"
-              Icon={Building2}
-            />
-          </div>
-          {d.operatorsMobilized && d.operatorsMobilized.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-[9px] font-bold uppercase text-muted block">Opérateurs partenaires mobilisés</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {d.operatorsMobilized.map(op => (
-                  <RelationshipCard
-                    key={op.id}
-                    title={op.name}
-                    relationType={op.type}
-                    Icon={Building2}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
+      const relationSections = [
+        {
+          title: "Alignements Métier",
+          items: [
+            {
+              id: d.service?.id,
+              title: d.service?.name,
+              relationType: "Mission Cadre",
+              Icon: FileText
+            },
+            {
+              id: d.leadOperator?.id,
+              title: d.leadOperator?.name,
+              relationType: "Opérateur Pilote (Lead)",
+              Icon: Building2
+            }
+          ]
+        },
+        {
+          title: "Opérateurs partenaires mobilisés",
+          items: (d.operatorsMobilized || []).map(op => ({
+            id: op.id,
+            title: op.name,
+            relationType: op.type,
+            Icon: Building2
+          }))
+        }
+      ];
+
+      const relationsTab = <PITRelationsPanel sections={relationSections} />;
 
       const metadataTab = (
         <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-          <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">https://pit.wallonie.be/id/secondline/{d.id}</span></p>
+          <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/secondline/{d.id}</span></p>
           <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:SecondLineMission</span></p>
           <p className="text-text">Début : <span className="font-bold">{new Date(d.startDate).toLocaleDateString()}</span></p>
           {d.endDate && <p className="text-text">Fin : <span className="font-bold">{new Date(d.endDate).toLocaleDateString()}</span></p>}
@@ -678,10 +664,10 @@ export default function ActivitiesPage() {
       );
 
       return (
-        <EntityDetailPanel
+        <PITDetailLayout
           title={d.title}
           subtitle={`Piloté par ${d.leadOperator?.name}`}
-          badge={<span className="text-[9px] font-bold uppercase text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded">Structure (Niveau 3)</span>}
+          badge={<span className="text-[9px] font-bold uppercase text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full">Structure (Niveau 3)</span>}
           overviewTab={overviewTab}
           relationsTab={relationsTab}
           metadataTab={metadataTab}
@@ -690,37 +676,246 @@ export default function ActivitiesPage() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Journal des Interventions & Activités"
-        description="Gérez et analysez le flux d'activités opérationnelles territoriales réparties sur 3 niveaux d'intervention de la PIT."
-        Icon={Compass}
-        actions={
-          <div className="flex items-center gap-2">
-            {activeTab === "collective" && (
-              <button 
-                onClick={() => setShowCollForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
-              >
-                <Plus className="h-4 w-4" />
-                Nouvelle session
-              </button>
-            )}
-            {activeTab === "secondline" && (
-              <button 
-                onClick={() => setShowSecForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
-              >
-                <Plus className="h-4 w-4" />
-                Nouvelle mission
-              </button>
-            )}
+  // Form Section definitions for creation
+  const collectiveSections: FormSection[] = [
+    {
+      id: "general",
+      title: "Informations Générales",
+      subtitle: "Détails de l'atelier collectif",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Service / Intervention collectif *</label>
+            <select required value={colServiceId} onChange={e => setColServiceId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+              <option value="">Sélectionner</option>
+              {collectiveServices.map(s => (
+                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+              ))}
+            </select>
           </div>
-        }
-      />
 
-      <PageToolbar
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Titre de la session / événement *</label>
+            <input required value={colTitle} onChange={e => setColTitle(e.target.value)} type="text" placeholder="ex: Workshop IA Agroalimentaire" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Opérateur / Animateur *</label>
+              <select required value={colOperatorId} onChange={e => setColOperatorId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+                <option value="">Sélectionner</option>
+                {meta.organizations.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Date de session</label>
+              <input value={colDate} onChange={e => setColDate(e.target.value)} type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "stats",
+      title: "Audience & Satisfaction",
+      subtitle: "Gains de visibilité et retours",
+      fields: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Audience (Partic.)</label>
+              <input value={colParticipants} onChange={e => setColParticipants(e.target.value)} type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-xs text-text outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">PMEs impactées</label>
+              <input value={colCompanies} onChange={e => setColCompanies(e.target.value)} type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-xs text-text outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Satisfaction (0-5)</label>
+              <input value={colSatisfaction} onChange={e => setColSatisfaction(e.target.value)} type="number" min={0} max={5} step="0.1" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-xs text-text outline-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Leads initiés</label>
+              <input value={colLeads} onChange={e => setColLeads(e.target.value)} type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Statut</label>
+              <select value={colStatus} onChange={e => setColStatus(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+                <option value="PLANNED">Planifié</option>
+                <option value="IN_PROGRESS">En cours</option>
+                <option value="COMPLETED">Fait / Complété</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "followup",
+      title: "Suivi & Notes",
+      subtitle: "Suites de l'atelier et remarques",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">PMEs de la PIT participantes</label>
+            <select multiple value={colSelectedCompanyIds.map(String)} onChange={e => setColSelectedCompanyIds(Array.from(e.target.selectedOptions, o => Number(o.value)))} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-xs text-text outline-none h-24">
+              {meta.beneficiaries.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Plan de suivi / Next steps</label>
+            <input value={colNextSteps} onChange={e => setColNextSteps(e.target.value)} type="text" placeholder="ex: Relancer les participants sous 15 jours" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Notes additionnelles</label>
+            <textarea value={colNotes} onChange={e => setColNotes(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none h-16 resize-none" />
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const secondLineSections: FormSection[] = [
+    {
+      id: "general",
+      title: "Informations Générales",
+      subtitle: "Identité de la mission cadre",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Mission de deuxième ligne *</label>
+            <select required value={secServiceId} onChange={e => setSecServiceId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+              <option value="">Sélectionner</option>
+              {secondLineServices.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Titre de la mission *</label>
+            <input required value={secTitle} onChange={e => setSecTitle(e.target.value)} type="text" placeholder="ex: Conception de l'ontologie d4wmo" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Opérateur Pilote (Lead) *</label>
+              <select required value={secLeadOperatorId} onChange={e => setSecLeadOperatorId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+                <option value="">Sélectionner</option>
+                {meta.organizations.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Statut</label>
+              <select value={secStatus} onChange={e => setSecStatus(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
+                <option value="PLANNED">Planifié</option>
+                <option value="IN_PROGRESS">En cours</option>
+                <option value="COMPLETED">Fait / Complété</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "mobilisation",
+      title: "Mobilisation & Territoire",
+      subtitle: "Partenaires impliqués et zone d'action",
+      fields: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Date de début</label>
+              <input value={secStartDate} onChange={e => setSecStartDate(e.target.value)} type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Date de fin</label>
+              <input value={secEndDate} onChange={e => setSecEndDate(e.target.value)} type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Territoire couvert</label>
+              <input value={secTerritory} onChange={e => setSecTerritory(e.target.value)} type="text" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Collaborations (Nombre)</label>
+              <input value={secCollabsCount} onChange={e => setSecCollabsCount(e.target.value)} type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Opérateurs mobilisés</label>
+            <select multiple value={secSelectedOperatorIds.map(String)} onChange={e => setSecSelectedOperatorIds(Array.from(e.target.selectedOptions, o => Number(o.value)))} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-xs text-text outline-none h-24">
+              {meta.organizations.map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "deliverables",
+      title: "Livrables & Notes",
+      subtitle: "Outputs et remarques opérationnelles",
+      fields: (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Livrables / Référentiels produits</label>
+            <textarea value={secDeliverables} onChange={e => setSecDeliverables(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none h-16 resize-none" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Notes additionnelles</label>
+            <textarea value={secNotes} onChange={e => setSecNotes(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none h-16 resize-none" />
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <PITLayout
+      category="JOURNAL D'INTERVENTIONS"
+      title="Journal des Interventions & Activités"
+      description="Gérez et analysez le flux d'activités opérationnelles territoriales réparties sur 3 niveaux d'intervention de la PIT."
+      pageIcon={Compass}
+      breadcrumb={[
+        { label: "Tableau de bord", href: "/" },
+        { label: "Activités" }
+      ]}
+      actions={
+        <div className="flex items-center gap-2">
+          {activeTab === "collective" && (
+            <button 
+              onClick={() => setShowCollForm(true)}
+              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
+            >
+              <Plus className="h-4 w-4" /> Nouvelle session
+            </button>
+          )}
+          {activeTab === "secondline" && (
+            <button 
+              onClick={() => setShowSecForm(true)}
+              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
+            >
+              <Plus className="h-4 w-4" /> Nouvelle mission
+            </button>
+          )}
+        </div>
+      }
+    >
+      <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Rechercher une activité, un service, un bénéficiaire ou un opérateur..."
@@ -734,199 +929,63 @@ export default function ActivitiesPage() {
 
       {/* MODAL AJOUT COLLECTIF */}
       {showCollForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-surface border border-muted rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-muted/20 pb-4">
-              <h3 className="text-lg font-bold text-text flex items-center gap-2">
-                <Users className="h-5 w-5 text-teal-600" />
-                Enregistrer une Session Collective
-              </h3>
-              <button onClick={() => setShowCollForm(false)} className="p-1 rounded hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-muted/25 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
+            <div className="absolute right-4 top-4 z-10">
+              <button onClick={() => setShowCollForm(false)} className="p-1 rounded-lg hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <form onSubmit={handleAddCollective} className="space-y-4">
-              <ReferenceSelector
-                label="Service / Intervention collectif *"
-                value={colServiceId}
-                onChange={setColServiceId}
-                options={collectiveServices.map(s => ({ id: s.id, name: `${s.name} (${s.code})` }))}
-                required
-              />
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Titre de la session / événement *</label>
-                <input required value={colTitle} onChange={e => setColTitle(e.target.value)} type="text" placeholder="ex: Workshop IA Agroalimentaire Liège" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <ReferenceSelector
-                  label="Opérateur / Animateur *"
-                  value={colOperatorId}
-                  onChange={setColOperatorId}
-                  options={meta.organizations}
-                  required
-                />
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Date de session</label>
-                  <input value={colDate} onChange={e => setColDate(e.target.value)} type="date" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
+            <PITForm
+              title="Enregistrer une Session Collective"
+              sections={collectiveSections}
+              onSubmit={handleAddCollective}
+              onCancel={() => setShowCollForm(false)}
+              submitLabel="Enregistrer la session"
+              infoPanel={
+                <div className="space-y-4">
+                  <p>
+                    <strong>Niveau 2 : Actions Collectives.</strong> Enregistrez les sessions de formation, ateliers (workshops) ou webinaires.
+                  </p>
+                  <p>
+                    Les indicateurs d'audience (satisfaction, leads) alimentent directement le cockpit de pilotage stratégique de la Wallonie.
+                  </p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Audience (Partic.)</label>
-                  <input value={colParticipants} onChange={e => setColParticipants(e.target.value)} type="number" className="w-full bg-glass border border-muted/30 rounded-xl p-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">PMEs impactées</label>
-                  <input value={colCompanies} onChange={e => setColCompanies(e.target.value)} type="number" className="w-full bg-glass border border-muted/30 rounded-xl p-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Satisfaction (0-5)</label>
-                  <input value={colSatisfaction} onChange={e => setColSatisfaction(e.target.value)} type="number" min={0} max={5} step="0.1" className="w-full bg-glass border border-muted/30 rounded-xl p-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Leads initiés</label>
-                  <input value={colLeads} onChange={e => setColLeads(e.target.value)} type="number" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Statut</label>
-                  <select value={colStatus} onChange={e => setColStatus(e.target.value)} className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text">
-                    <option value="PLANNED">Planifié</option>
-                    <option value="OPEN_FOR_REGISTRATION">Inscriptions ouvertes</option>
-                    <option value="IN_PROGRESS">En cours</option>
-                    <option value="COMPLETED">Terminé / Réalisé</option>
-                    <option value="CANCELLED">Annulé</option>
-                  </select>
-                </div>
-              </div>
-
-              <MultiTagSelector
-                label="Entreprises participantes de la PIT"
-                options={meta.beneficiaries}
-                selectedIds={colSelectedCompanyIds}
-                onChange={setColSelectedCompanyIds}
-                color="teal"
-              />
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted block">Plan d'action / Prochaines étapes</label>
-                <textarea value={colNextSteps} onChange={e => setColNextSteps(e.target.value)} placeholder="ex: Programmer les diagnostics individuels..." className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text h-16" />
-              </div>
-
-              <div className="border-t border-muted/20 pt-4 flex justify-end gap-3 text-sm">
-                <button type="button" onClick={() => setShowCollForm(false)} className="px-4 py-2 border border-muted hover:bg-glass rounded-xl font-semibold text-muted hover:text-text transition-all cursor-pointer bg-transparent">
-                  Annuler
-                </button>
-                <button type="submit" className="px-5 py-2 bg-teal-600 text-white rounded-xl font-bold shadow-md hover:bg-teal-750 transition-all cursor-pointer border-0">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+              }
+            />
           </div>
         </div>
       )}
 
-      {/* MODAL AJOUT DEUXIEME LIGNE */}
+      {/* MODAL AJOUT MISSION DEUXIEME LIGNE */}
       {showSecForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-surface border border-muted rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-muted/20 pb-4">
-              <h3 className="text-lg font-bold text-text flex items-center gap-2">
-                <Share2 className="h-5 w-5 text-teal-600" />
-                Enregistrer une Mission d'Écosystème
-              </h3>
-              <button onClick={() => setShowSecForm(false)} className="p-1 rounded hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-muted/25 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
+            <div className="absolute right-4 top-4 z-10">
+              <button onClick={() => setShowSecForm(false)} className="p-1 rounded-lg hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <form onSubmit={handleAddSecondLine} className="space-y-4">
-              <ReferenceSelector
-                label="Service / Mission de deuxième ligne *"
-                value={secServiceId}
-                onChange={setSecServiceId}
-                options={secondLineServices.map(s => ({ id: s.id, name: `${s.name} (${s.code})` }))}
-                required
-              />
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Nom / Titre de la mission *</label>
-                <input required value={secTitle} onChange={e => setSecTitle(e.target.value)} type="text" placeholder="ex: Coordination du Cluster IA Wallon" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <ReferenceSelector
-                  label="Opérateur porteur principal *"
-                  value={secLeadOperatorId}
-                  onChange={setSecLeadOperatorId}
-                  options={meta.organizations}
-                  required
-                />
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Date de début</label>
-                  <input value={secStartDate} onChange={e => setSecStartDate(e.target.value)} type="date" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
+            <PITForm
+              title="Enregistrer une mission de deuxième ligne"
+              sections={secondLineSections}
+              onSubmit={handleAddSecondLine}
+              onCancel={() => setShowSecForm(false)}
+              submitLabel="Enregistrer la mission"
+              infoPanel={
+                <div className="space-y-4">
+                  <p>
+                    <strong>Niveau 3 : Deuxième ligne.</strong> Concerne les collaborations de structure (ex: production de référentiels d'interopérabilité, gouvernance du knowledge graph).
+                  </p>
+                  <p>
+                    Ces missions n'impliquent pas directement de PME mais structurent la plateforme d'intelligence territoriale.
+                  </p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Collaborations créées</label>
-                  <input value={secCollabsCount} onChange={e => setSecCollabsCount(e.target.value)} type="number" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Couverture géographique</label>
-                  <input value={secTerritory} onChange={e => setSecTerritory(e.target.value)} type="text" placeholder="ex: Wallonie, Hainaut" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Date de fin (optionnelle)</label>
-                  <input value={secEndDate} onChange={e => setSecEndDate(e.target.value)} type="date" className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Statut de la mission</label>
-                  <select value={secStatus} onChange={e => setSecStatus(e.target.value)} className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text">
-                    <option value="PLANNED">Planifié</option>
-                    <option value="IN_PROGRESS">En cours</option>
-                    <option value="COMPLETED">Terminé</option>
-                    <option value="SUSPENDED">Suspendu</option>
-                    <option value="CANCELLED">Annulé</option>
-                  </select>
-                </div>
-              </div>
-
-              <MultiTagSelector
-                label="Opérateurs mobilisés"
-                options={meta.organizations}
-                selectedIds={secSelectedOperatorIds}
-                onChange={setSecSelectedOperatorIds}
-                color="purple"
-              />
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted block">Livrables / Référentiels produits</label>
-                <textarea value={secDeliverables} onChange={e => setSecDeliverables(e.target.value)} placeholder="ex: Production du guide méthodologique..." className="w-full bg-glass border border-muted/30 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-teal-500 text-text h-16" />
-              </div>
-
-              <div className="border-t border-muted/20 pt-4 flex justify-end gap-3 text-sm">
-                <button type="button" onClick={() => setShowSecForm(false)} className="px-4 py-2 border border-muted hover:bg-glass rounded-xl font-semibold text-muted hover:text-text transition-all cursor-pointer bg-transparent">
-                  Annuler
-                </button>
-                <button type="submit" className="px-5 py-2 bg-teal-600 text-white rounded-xl font-bold shadow-md hover:bg-teal-750 transition-all cursor-pointer border-0">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+              }
+            />
           </div>
         </div>
       )}
-    </div>
+    </PITLayout>
   );
 }

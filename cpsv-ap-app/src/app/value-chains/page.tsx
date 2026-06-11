@@ -1,26 +1,20 @@
 // src/app/value-chains/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { 
   Network, 
-  Layers, 
   Building2, 
-  FileText,
-  HelpCircle,
-  TrendingUp,
-  Sparkles,
-  ArrowRight,
-  Share2,
-  Compass
+  FileText 
 } from "lucide-react";
 
-import PageHeader from "@/components/ui/PageHeader";
-import PageToolbar from "@/components/ui/PageToolbar";
+import PITLayout from "@/design-system/PITLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITEntityCard from "@/design-system/PITEntityCard";
+import PITRelationsPanel from "@/design-system/PITRelationsPanel";
+import PITDetailLayout from "@/design-system/PITDetailLayout";
 import SplitLayout from "@/components/ui/SplitLayout";
-import EntityDetailPanel from "@/components/ui/EntityDetailPanel";
-import RelationshipCard from "@/components/ui/RelationshipCard";
+import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 
 interface ValueChainStage {
   id: number;
@@ -64,6 +58,7 @@ export default function ValueChainsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { isEntityTypeVisible } = usePerspective();
 
   useEffect(() => {
     async function loadData() {
@@ -114,6 +109,8 @@ export default function ValueChainsPage() {
 
   // Filtrer les chaînes de valeur
   const filteredValueChains = valueChains.filter(vc => {
+    if (!isEntityTypeVisible("valuechain")) return false;
+
     const query = searchQuery.toLowerCase();
     return vc.name.toLowerCase().includes(query) || 
            (vc.description && vc.description.toLowerCase().includes(query));
@@ -130,32 +127,22 @@ export default function ValueChainsPage() {
 
   // --- PANNEAU GAUCHE : LISTE DES FILIERES ---
   const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-2 flex items-center gap-1.5">
-        <Network className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+      <div className="text-xs font-bold text-muted uppercase tracking-wider px-1">
         Filières Stratégiques ({filteredValueChains.length})
-      </h3>
-      <div className="space-y-1.5">
-        {filteredValueChains.map((vc) => {
-          const isSelected = selectedChain?.id === vc.id;
-          return (
-            <button
-              key={vc.id}
-              onClick={() => setSelectedChain(vc)}
-              className={`w-full text-left flex items-start space-x-3 p-3 rounded-xl transition-all duration-200 cursor-pointer border-0 bg-transparent ${
-                isSelected 
-                  ? "bg-primary/10 border-l-4 border-primary text-text shadow-sm" 
-                  : "hover:bg-glass text-muted hover:text-text"
-              }`}
-            >
-              <Network className={`h-5 w-5 shrink-0 mt-0.5 ${isSelected ? "text-primary" : "text-muted"}`} />
-              <div className="truncate flex-1">
-                <p className="font-bold text-sm truncate">{vc.name}</p>
-                <p className="text-xs text-muted/80 truncate mt-0.5">{vc.description || "Pas de description"}</p>
-              </div>
-            </button>
-          );
-        })}
+      </div>
+      <div className="space-y-2.5">
+        {filteredValueChains.map((vc) => (
+          <PITEntityCard
+            key={vc.id}
+            title={vc.name}
+            description={vc.description}
+            icon={Network}
+            type="filiere"
+            isSelected={selectedChain?.id === vc.id}
+            onClick={() => setSelectedChain(vc)}
+          />
+        ))}
         {filteredValueChains.length === 0 && (
           <div className="text-center py-8 text-xs text-muted italic">
             Aucune filière ne correspond.
@@ -197,7 +184,6 @@ export default function ValueChainsPage() {
           
           <div className="space-y-4">
             {categories.map((cat, idx) => {
-              // Trouver les services et bénéficiaires liés à ce maillon précis dans la filière
               const catStages = stages.filter(st => st.category === cat.name);
               const stageIds = catStages.map(st => st.id);
 
@@ -205,22 +191,22 @@ export default function ValueChainsPage() {
               const catBenefs = filiereBenefs.filter(b => b.stages.some(st => stageIds.includes(st.id)));
 
               return (
-                <div key={idx} className="bg-glass/20 border border-muted/10 rounded-xl p-4 space-y-3 shadow-sm hover:shadow transition-shadow">
+                <div key={idx} className="bg-glass/20 border border-muted/10 rounded-xl p-4 space-y-3 shadow-xs hover:shadow-sm transition-all duration-200">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                     <div>
                       <h5 className="text-xs font-black text-text">{cat.name}</h5>
                       <p className="text-[10px] text-muted">{cat.desc}</p>
                     </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-full self-start sm:self-center">
+                    <span className="text-[9px] font-bold px-2.5 py-0.5 bg-teal-500/10 text-teal-650 dark:text-teal-400 rounded-full self-start sm:self-center">
                       Étape {idx + 1}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-muted/5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-muted/10 text-xs">
                     {/* Services */}
                     <div className="space-y-1.5">
-                      <span className="font-semibold text-muted text-[10px] flex items-center gap-1">
-                        <FileText className="h-3 w-3 text-primary" />
+                      <span className="font-bold text-muted text-[9px] uppercase tracking-wider flex items-center gap-1">
+                        <FileText className="h-3.5 w-3.5 text-teal-605" />
                         Accompagnements ({catServices.length}) :
                       </span>
                       <div className="flex flex-wrap gap-1">
@@ -235,8 +221,8 @@ export default function ValueChainsPage() {
 
                     {/* Bénéficiaires */}
                     <div className="space-y-1.5">
-                      <span className="font-semibold text-muted text-[10px] flex items-center gap-1">
-                        <Building2 className="h-3 w-3 text-amber-500" />
+                      <span className="font-bold text-muted text-[9px] uppercase tracking-wider flex items-center gap-1">
+                        <Building2 className="h-3.5 w-3.5 text-amber-500" />
                         Entreprises actives ({catBenefs.length}) :
                       </span>
                       <div className="flex flex-wrap gap-1">
@@ -257,57 +243,46 @@ export default function ValueChainsPage() {
       </div>
     );
 
-    // 2. Relations Tab : Public services and listed active PMEs
-    const relationsTab = (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Services de support de la filière</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {filiereServices.map(s => (
-              <RelationshipCard
-                key={s.id}
-                title={s.name}
-                relationType={`Code : ${s.code}`}
-                Icon={FileText}
-                onClick={() => window.location.href = `/services?id=${s.id}`}
-              />
-            ))}
-            {filiereServices.length === 0 && <p className="text-xs text-muted italic p-2">Aucun service public spécifiquement affecté à cette filière S3.</p>}
-          </div>
-        </div>
+    // 2. Relations Tab using PITRelationsPanel
+    const sections = [
+      {
+        title: "Services de support de la filière",
+        items: filiereServices.map(s => ({
+          id: s.id,
+          title: s.name,
+          relationType: `Code : ${s.code}`,
+          Icon: FileText,
+          onClick: () => window.location.href = `/services?id=${s.id}`
+        }))
+      },
+      {
+        title: "Membres et acteurs économiques territoriaux",
+        items: filiereBenefs.map(b => ({
+          id: b.id,
+          title: b.name,
+          relationType: `Taille : ${b.size}`,
+          Icon: Building2,
+          onClick: () => window.location.href = `/beneficiaries?id=${b.id}`
+        }))
+      }
+    ];
 
-        <div className="space-y-2">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Membres et acteurs économiques territoriaux</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {filiereBenefs.map(b => (
-              <RelationshipCard
-                key={b.id}
-                title={b.name}
-                relationType={`Taille : ${b.size}`}
-                Icon={Building2}
-                onClick={() => window.location.href = `/beneficiaries?id=${b.id}`}
-              />
-            ))}
-            {filiereBenefs.length === 0 && <p className="text-xs text-muted italic p-2">Aucun bénéficiaire déclaré dans cette filière.</p>}
-          </div>
-        </div>
-      </div>
-    );
+    const relationsTab = <PITRelationsPanel sections={sections} />;
 
     // 3. Metadata Tab
     const metadataTab = (
       <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-        <p className="text-text">URI : <span className="font-mono text-teal-600 dark:text-teal-400">{vc.uri || `https://pit.wallonie.be/id/value-chain/${vc.id}`}</span></p>
+        <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">{vc.uri || `https://pit.wallonie.be/id/value-chain/${vc.id}`}</span></p>
         <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:StrategicValueChain</span></p>
         <p className="text-text">Filière S3 ID : <span className="font-bold">{vc.id}</span></p>
       </div>
     );
 
     return (
-      <EntityDetailPanel
+      <PITDetailLayout
         title={vc.name}
         subtitle="Spécialisation Intelligente (S3) Wallonie"
-        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded">Filière S3 Régionale</span>}
+        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-650 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full">Filière S3 Régionale</span>}
         overviewTab={overviewTab}
         relationsTab={relationsTab}
         metadataTab={metadataTab}
@@ -316,14 +291,17 @@ export default function ValueChainsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Filières & Chaînes de Valeur S3"
-        description="Visualisez la structure des filières industrielles stratégiques wallonnes et l'ancrage territorial des PME et des accompagnements publics à chaque phase de valeur."
-        Icon={Network}
-      />
-
-      <PageToolbar
+    <PITLayout
+      category="OBSERVATOIRE TERRITORIAL"
+      title="Filières & Chaînes de Valeur S3"
+      description="Visualisez la structure des filières industrielles stratégiques wallonnes et l'ancrage territorial des PME et des accompagnements publics à chaque phase de valeur."
+      pageIcon={Network}
+      breadcrumb={[
+        { label: "Tableau de bord", href: "/" },
+        { label: "Filières S3" }
+      ]}
+    >
+      <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Rechercher une filière stratégique S3 par nom ou description..."
@@ -334,6 +312,6 @@ export default function ValueChainsPage() {
         rightPane={renderDetailPanel()}
         leftColSpan={4}
       />
-    </div>
+    </PITLayout>
   );
 }

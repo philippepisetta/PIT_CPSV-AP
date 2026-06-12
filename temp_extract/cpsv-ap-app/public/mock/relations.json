@@ -1,0 +1,9 @@
+{
+  "relations": [
+    { "source": "svc-1", "target": "org-1", "type": "producedBy" },
+    { "source": "svc-2", "target": "org-2", "type": "producedBy" },
+    { "source": "svc-3", "target": "org-3", "type": "producedBy" },
+    { "source": "svc-4", "target": "org-1", "type": "producedBy" },
+    { "source": "svc-5", "target": "org-2", "type": "producedBy" }
+  ]
+}

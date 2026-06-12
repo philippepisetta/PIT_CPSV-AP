@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PITStatCard from "@/design-system/PITStatCard";
+import { useV2Contributions } from "@/hooks/useV2Queries";
+import PITImpactPanel from "@/design-system/PITImpactPanel";
 
 interface PublicService {
   id: number;
@@ -121,6 +123,7 @@ export default function JourneyModelsView({
   const [transformationFilter, setTransformationFilter] = useState<string>("All");
   const [domainFilter, setDomainFilter] = useState<string>("All");
   const [showDrawer, setShowDrawer] = useState(false);
+  const { data: contributionsData } = useV2Contributions("journeys", selectedJourney ? selectedJourney.id : null);
 
   // Filtered Journeys
   const filteredJourneys = useMemo(() => {
@@ -564,6 +567,18 @@ export default function JourneyModelsView({
                     </div>
                   </div>
                 </div>
+
+                {/* Mesure d'Impact & Contributions */}
+                {selectedJourney && (
+                  <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block select-none">
+                      Mesure d'Impact & Contributions (v3.4.1)
+                    </span>
+                    <div className="bg-gray-50/30 dark:bg-gray-950/10 p-4 rounded-xl border border-gray-100 dark:border-gray-850">
+                      <PITImpactPanel data={contributionsData} />
+                    </div>
+                  </div>
+                )}
 
                 {/* 5. Detailed Steps & Services timeline */}
                 <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-700">

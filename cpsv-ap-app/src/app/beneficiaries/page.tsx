@@ -1,934 +1,490 @@
 // src/app/beneficiaries/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { 
   Building2, 
-  Plus, 
+  Search, 
+  Layers, 
+  FileText, 
+  Compass, 
+  Users, 
+  Sparkles, 
+  FolderGit, 
   MapPin, 
-  Briefcase, 
-  CheckCircle2, 
-  FileCheck,
   TrendingUp,
-  X,
-  AlertCircle,
-  Layers,
+  Activity,
+  ArrowRight,
   HelpCircle,
-  Network,
-  Users,
-  Search,
-  BookOpen
+  Briefcase,
+  CheckCircle,
+  Network
 } from "lucide-react";
-
 import PITLayout from "@/design-system/PITLayout";
-import PITFilterBar from "@/design-system/PITFilterBar";
-import PITEntityCard from "@/design-system/PITEntityCard";
 import PITDetailLayout from "@/design-system/PITDetailLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITStatCard from "@/design-system/PITStatCard";
 import PITRelationsPanel from "@/design-system/PITRelationsPanel";
-import PITForm, { FormSection } from "@/design-system/PITForm";
+import PITImpactPanel from "@/design-system/PITImpactPanel";
 import SplitLayout from "@/components/ui/SplitLayout";
-import Timeline, { TimelineItem } from "@/components/ui/Timeline";
-import { cn } from "@/lib/utils";
-import { usePerspective } from "@/design-system/PITPerspectiveProvider";
-import { useMetaQuery, useBeneficiariesQuery } from "@/hooks/usePITQueries";
-import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
-import PITVirtualList from "@/design-system/PITVirtualList";
-
-interface NaceSector {
-  id: number;
-  code: string;
-  name: string;
-}
-
-interface StrategicValueChain {
-  id: number;
-  name: string;
-}
-
-interface ValueChainStage {
-  id: number;
-  name: string;
-  category: string;
-}
-
-interface BusinessChallenge {
-  id: number;
-  name: string;
-}
-
-interface Organization {
-  id: number;
-  name: string;
-  type: string;
-}
-
-interface PublicService {
-  id: number;
-  name: string;
-}
-
-interface ServiceDelivery {
-  id: number;
-  service: PublicService;
-  status: string;
-  date: string;
-  operator: Organization;
-  outputReal?: string;
-  outcomeReal?: string;
-  impact?: string;
-  maturityBefore?: any;
-  maturityAfter?: any;
-  maturityDelta?: any;
-}
-
-interface Beneficiary {
-  id: number;
-  name: string;
-  bce: string;
-  size: string;
-  employees: number;
-  revenue: number;
-  location: string;
-  province: string;
-  arrondissement: string;
-  demand?: string;
-  primaryNaceSector?: NaceSector;
-  secondaryNaceSectors: NaceSector[];
-  challenges: BusinessChallenge[];
-  filieresS3: StrategicValueChain[];
-  stages: ValueChainStage[];
-  maturityDigital: number;
-  maturityIa: number;
-  maturityCyber: number;
-  maturityExport: number;
-  maturityDurability: number;
-  deliveries: ServiceDelivery[];
-}
+import Timeline from "@/components/ui/Timeline";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  useV2Beneficiaries, 
+  useV2BeneficiaryDetail,
+  useV2BeneficiaryJourneys,
+  useV2BeneficiaryServices,
+  useV2BeneficiaryPrograms,
+  useV2BeneficiaryProjects,
+  useV2Contributions
+} from "@/hooks/useV2Queries";
 
 export default function BeneficiariesPage() {
-  const queryClient = useQueryClient();
-  const { data: beneficiariesData, isLoading: beneficiariesLoading, error: beneficiariesError } = useBeneficiariesQuery();
-  const { data: metaData, isLoading: metaLoading, error: metaError } = useMetaQuery();
-
-  const loading = beneficiariesLoading || metaLoading;
-  const error = (beneficiariesError?.message || metaError?.message) || null;
-
-  const beneficiaries = (beneficiariesData || []) as Beneficiary[];
-
-  const meta = useMemo(() => {
-    if (!metaData) {
-      return {
-        sectors: [],
-        strategicValueChains: [],
-        stages: [],
-        challenges: [],
-        organizations: [],
-        services: []
-      };
-    }
-    return {
-      sectors: (metaData.sectors || []) as NaceSector[],
-      strategicValueChains: (metaData.strategicValueChains || []) as StrategicValueChain[],
-      stages: (metaData.stages || []) as ValueChainStage[],
-      challenges: (metaData.challenges || []) as BusinessChallenge[],
-      organizations: (metaData.organizations || []) as Organization[],
-      services: (metaData.services || []) as PublicService[]
-    };
-  }, [metaData]);
-
-  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<number | null>(null);
-
-  const selectedBeneficiary = useMemo(() => {
-    if (beneficiaries.length === 0) return null;
-    if (selectedBeneficiaryId !== null) {
-      return beneficiaries.find(b => b.id === selectedBeneficiaryId) || beneficiaries[0];
-    }
-    return beneficiaries[0];
-  }, [beneficiaries, selectedBeneficiaryId]);
-
-  const setSelectedBeneficiary = (b: Beneficiary | null) => {
-    setSelectedBeneficiaryId(b ? b.id : null);
-  };
-
   const [searchQuery, setSearchQuery] = useState("");
-  const { isEntityTypeVisible } = usePerspective();
+  const [selectedBeneId, setSelectedBeneId] = useState<number | null>(null);
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
+  // Fetch all beneficiaries
+  const { data: beneficiariesData, isLoading: isListLoading } = useV2Beneficiaries();
 
-  // Formulaire Beneficiary
-  const [newName, setNewName] = useState("");
-  const [newBce, setNewBce] = useState("");
-  const [newSize, setNewSize] = useState("PME");
-  const [newEmployees, setNewEmployees] = useState("");
-  const [newRevenue, setNewRevenue] = useState("");
-  const [newLocation, setNewLocation] = useState("");
-  const [newProvince, setNewProvince] = useState("Namur");
-  const [newDemand, setNewDemand] = useState("");
-  const [newPrimaryNaceId, setNewPrimaryNaceId] = useState("");
-  const [selectedSecondaryNaceIds, setSelectedSecondaryNaceIds] = useState<number[]>([]);
-  const [selectedChallengeIds, setSelectedChallengeIds] = useState<number[]>([]);
-  const [selectedFiliereIds, setSelectedFiliereIds] = useState<number[]>([]);
-  const [selectedStageIds, setSelectedStageIds] = useState<number[]>([]);
-  
-  // Scores maturité
-  const [maturityAxes, setMaturityAxes] = useState([
-    { key: "digital", label: "Maturité Digitale", value: 1 },
-    { key: "ia", label: "Maturité IA", value: 1 },
-    { key: "cyber", label: "Maturité Cybersécurité", value: 1 },
-    { key: "export", label: "Maturité Export", value: 1 },
-    { key: "durability", label: "Maturité Durabilité", value: 1 }
-  ]);
+  const rawBeneficiaries = beneficiariesData?.data || [];
 
-  const handleMaturityChange = (key: string, value: number) => {
-    setMaturityAxes(prev => prev.map(a => a.key === key ? { ...a, value } : a));
+  // Filter beneficiaries
+  const filteredBeneficiaries = rawBeneficiaries.filter((bene: any) => 
+    bene.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (bene.location && bene.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (bene.province && bene.province.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const handleSelectBene = (id: number) => {
+    setSelectedBeneId(id);
   };
 
-  // Formulaire ServiceDelivery
-  const [delServiceId, setDelServiceId] = useState("");
-  const [delOperatorId, setDelOperatorId] = useState("");
-  const [delStatus, setDelStatus] = useState("Terminé");
-  const [delOutput, setDelOutput] = useState("");
-  const [delOutcome, setDelOutcome] = useState("");
-  const [delImpactText, setDelImpactText] = useState("");
-  
-  // Changement de maturité dans la livraison
-  const [delMaturityAxis, setDelMaturityAxis] = useState("ia");
-  const [delMaturityBefore, setDelMaturityBefore] = useState(1);
-  const [delMaturityAfter, setDelMaturityAfter] = useState(2);
+  const leftPane = (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-850 shadow-sm overflow-hidden flex flex-col max-h-[75vh]">
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/10">
+        <h3 className="text-xs font-black uppercase text-muted tracking-wider">
+          Entreprises et Bénéficiaires ({filteredBeneficiaries.length})
+        </h3>
+      </div>
+      <div className="overflow-y-auto flex-1">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-gray-50/75 dark:bg-gray-900/50 border-b border-gray-150 dark:border-gray-800 font-extrabold uppercase text-muted tracking-wider">
+              <th className="px-5 py-3.5">Bénéficiaire</th>
+              <th className="px-5 py-3.5">Taille</th>
+              <th className="px-5 py-3.5">Localisation</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {isListLoading ? (
+              Array.from({ length: 6 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-5 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-36"></div></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
+                </tr>
+              ))
+            ) : filteredBeneficiaries.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-5 py-8 text-center text-muted italic">
+                  Aucun bénéficiaire ne correspond à votre recherche.
+                </td>
+              </tr>
+            ) : (
+              filteredBeneficiaries.map((bene: any) => (
+                <tr
+                  key={bene.id}
+                  onClick={() => handleSelectBene(bene.id)}
+                  className={`hover:bg-teal-500/5 cursor-pointer border-b border-gray-105 dark:border-gray-850 transition-colors ${
+                    selectedBeneId === bene.id ? "bg-teal-500/10 border-l-4 border-l-teal-600" : ""
+                  }`}
+                >
+                  <td className="px-5 py-3.5 font-bold text-text">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-mono bg-muted px-1.5 py-0.2 rounded font-bold uppercase select-none">
+                        {bene.bce ? "BCE" : "ID"}
+                      </span>
+                      <span className="truncate max-w-[160px]">{bene.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-muted font-semibold">
+                    {bene.size || "PME"}
+                  </td>
+                  <td className="px-5 py-3.5 text-muted">
+                    {bene.location} ({bene.province || "Wallonie"})
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
-  // Charger les données
-  const loadData = async (bypassCache = false) => {
-    if (bypassCache) {
-      await queryClient.invalidateQueries({ queryKey: ["beneficiaries"] });
-      await queryClient.invalidateQueries({ queryKey: ["meta"] });
-    }
-  };
+  return (
+    <PITLayout
+      category="OBSERVATOIRE TERRITORIAL"
+      title="Profil 360° du Bénéficiaire"
+      description="Analysez l'alignement stratégique, les accompagnements reçus et les trajectoires d'innovation des PME et acteurs publics de Wallonie."
+      pageIcon={Users}
+      breadcrumb={[{ label: "Tableau de bord", href: "/" }, { label: "Bénéficiaires" }]}
+    >
+      <PITFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Rechercher une entreprise par nom, localisation, province..."
+      />
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const action = params.get("action");
-      if (action === "new-beneficiary") {
-        setShowAddForm(true);
-      } else if (action === "new-delivery") {
-        setShowDeliveryForm(true);
-      }
-    }
-  }, []);
+      <SplitLayout
+        leftPane={leftPane}
+        rightPane={
+          selectedBeneId ? (
+            <BeneficiaryDetailPanel id={selectedBeneId} onClose={() => setSelectedBeneId(null)} />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center bg-gray-50/20">
+              <Users className="h-10 w-10 text-muted/50 mb-3" />
+              <p className="text-muted text-xs font-bold">Sélectionnez une entreprise dans la liste pour charger son profil 360°.</p>
+            </div>
+          )
+        }
+        leftColSpan={5}
+      />
+    </PITLayout>
+  );
+}
 
-  // Soumettre un nouveau Bénéficiaire
-  async function handleAddBeneficiary(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newName || !newLocation) {
-      alert("Le nom et la localisation sont requis.");
-      return;
-    }
+interface DetailPanelProps {
+  id: number;
+  onClose: () => void;
+}
 
-    const mDigital = maturityAxes.find(a => a.key === "digital")?.value || 1;
-    const mIa = maturityAxes.find(a => a.key === "ia")?.value || 1;
-    const mCyber = maturityAxes.find(a => a.key === "cyber")?.value || 1;
-    const mExport = maturityAxes.find(a => a.key === "export")?.value || 1;
-    const mDurability = maturityAxes.find(a => a.key === "durability")?.value || 1;
+function BeneficiaryDetailPanel({ id, onClose }: DetailPanelProps) {
+  const { data: detailData, isLoading: isDetailLoading } = useV2BeneficiaryDetail(id);
+  const { data: journeysData } = useV2BeneficiaryJourneys(id);
+  const { data: servicesData } = useV2BeneficiaryServices(id);
+  const { data: programsData } = useV2BeneficiaryPrograms(id);
+  const { data: projectsData } = useV2BeneficiaryProjects(id);
+  const { data: contributionsData } = useV2Contributions("beneficiaries", id);
 
-    try {
-      const response = await fetch("/api/beneficiaries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newName,
-          bce: newBce || null,
-          size: newSize,
-          employees: newEmployees ? parseInt(newEmployees) : null,
-          revenue: newRevenue ? parseFloat(newRevenue) : null,
-          location: newLocation,
-          province: newProvince,
-          demand: newDemand || null,
-          primaryNaceSectorId: newPrimaryNaceId ? parseInt(newPrimaryNaceId) : null,
-          secondaryNaceSectorIds: selectedSecondaryNaceIds,
-          challengeIds: selectedChallengeIds,
-          filiereS3Ids: selectedFiliereIds,
-          stageIds: selectedStageIds,
-          maturityDigital: mDigital,
-          maturityIa: mIa,
-          maturityCyber: mCyber,
-          maturityExport: mExport,
-          maturityDurability: mDurability
-        })
-      });
-
-      if (!response.ok) throw new Error("Erreur lors de la création.");
-      
-      // Réinitialisation
-      setNewName("");
-      setNewBce("");
-      setNewEmployees("");
-      setNewRevenue("");
-      setNewLocation("");
-      setNewDemand("");
-      setNewPrimaryNaceId("");
-      setSelectedSecondaryNaceIds([]);
-      setSelectedChallengeIds([]);
-      setSelectedFiliereIds([]);
-      setSelectedStageIds([]);
-      setMaturityAxes([
-        { key: "digital", label: "Maturité Digitale", value: 1 },
-        { key: "ia", label: "Maturité IA", value: 1 },
-        { key: "cyber", label: "Maturité Cybersécurité", value: 1 },
-        { key: "export", label: "Maturité Export", value: 1 },
-        { key: "durability", label: "Maturité Durabilité", value: 1 }
-      ]);
-      setShowAddForm(false);
-      
-      await loadData(true);
-    } catch (err: any) {
-      alert(err.message);
-    }
-  }
-
-  // Soumettre un ServiceDelivery (Livraison de service réelle)
-  async function handleAddDelivery(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedBeneficiary || !delServiceId || !delOperatorId) {
-      alert("Veuillez sélectionner un service et un opérateur.");
-      return;
-    }
-
-    const maturityBefore: Record<string, number> = {};
-    const maturityAfter: Record<string, number> = {};
-    const maturityDelta: Record<string, any> = {};
-
-    if (delStatus === "Terminé") {
-      maturityBefore[delMaturityAxis] = delMaturityBefore;
-      maturityAfter[delMaturityAxis] = delMaturityAfter;
-      maturityDelta[delMaturityAxis] = { before: delMaturityBefore, after: delMaturityAfter };
-    }
-
-    try {
-      const response = await fetch("/api/service-deliveries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          beneficiaryId: selectedBeneficiary.id,
-          serviceId: parseInt(delServiceId),
-          status: delStatus,
-          operatorId: parseInt(delOperatorId),
-          outputReal: delOutput || null,
-          outcomeReal: delOutcome || null,
-          impact: delImpactText || null,
-          maturityBefore: delStatus === "Terminé" ? maturityBefore : null,
-          maturityAfter: delStatus === "Terminé" ? maturityAfter : null,
-          maturityDelta: delStatus === "Terminé" ? maturityDelta : null
-        })
-      });
-
-      if (!response.ok) throw new Error("Erreur de sauvegarde de l'accompagnement.");
-      
-      setDelServiceId("");
-      setDelOutput("");
-      setDelOutcome("");
-      setDelImpactText("");
-      setShowDeliveryForm(false);
-      
-      await loadData(true);
-    } catch (err: any) {
-      alert(err.message);
-    }
-  }
-
-  // Filtrer les bénéficiaires
-  const filteredBeneficiaries = beneficiaries.filter(b => {
-    if (!isEntityTypeVisible("beneficiary")) return false;
-
-    const term = searchQuery.toLowerCase();
-    return b.name.toLowerCase().includes(term) || 
-           b.location.toLowerCase().includes(term) || 
-           b.province.toLowerCase().includes(term) || 
-           b.primaryNaceSector?.name.toLowerCase().includes(term) ||
-           b.primaryNaceSector?.code.toLowerCase().includes(term);
-  });
-
-  if (loading) {
+  if (isDetailLoading || !detailData) {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary animate-pulse"></div>
-        <p className="text-muted text-sm font-medium animate-pulse">Chargement de la liste des bénéficiaires...</p>
+      <div className="bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-850 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
+        <p className="text-muted text-xs font-semibold mt-3">Chargement des données du bénéficiaire...</p>
       </div>
     );
   }
 
-  // --- PANNEAU GAUCHE : LISTE DES ENTREPRISES ---
-  const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
-      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
-        Entreprises actives ({filteredBeneficiaries.length})
-      </h3>
-      <div className="flex-1 min-h-0">
-        {filteredBeneficiaries.length > 0 ? (
-          <PITVirtualList
-            items={filteredBeneficiaries}
-            itemHeight={110}
-            maxHeight="60vh"
-            renderItem={(b) => (
-              <div className="py-1 pr-1" style={{ height: "110px" }}>
-                <PITEntityCard
-                  title={b.name}
-                  description={`${b.location} (${b.province}) — ${b.size}`}
-                  icon={Building2}
-                  type="beneficiary"
-                  isSelected={selectedBeneficiary?.id === b.id}
-                  onClick={() => setSelectedBeneficiary(b)}
-                />
+  const bene = detailData.data;
+
+  const journeys = journeysData?.data || [];
+  const services = servicesData?.data || [];
+  const programs = programsData?.data || [];
+  const projects = projectsData?.data || [];
+
+  const challenges = contributionsData?.challenges || [];
+  const capabilities = contributionsData?.capabilities || [];
+
+  const overviewContent = (
+    <div className="space-y-6">
+      {/* 2 Cards of Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <PITStatCard
+          label="Services Reçus"
+          value={services.length.toString()}
+          icon={FileText}
+          themeColor="teal"
+          description="Accompagnements et diagnostics"
+        />
+        <PITStatCard
+          label="Parcours suivis"
+          value={journeys.length.toString()}
+          icon={Compass}
+          themeColor="indigo"
+          description="Trajectoires d'innovation initiées"
+        />
+      </div>
+
+      {/* Info grids */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-text">
+        <div className="bg-glass/5 border border-muted/10 p-3 rounded-xl space-y-1">
+          <span className="text-[9px] font-bold text-muted uppercase block">Données Administratives</span>
+          <p>Localisation : <span className="font-bold">{bene.location} ({bene.province})</span></p>
+          <p>N BCE : <span className="font-mono">{bene.bce || "Non spécifié"}</span></p>
+        </div>
+        <div className="bg-glass/5 border border-muted/10 p-3 rounded-xl space-y-1">
+          <span className="text-[9px] font-bold text-muted uppercase block">Métrique d'Affaires</span>
+          <p>Taille : <span className="font-bold">{bene.size || "PME"}</span></p>
+          <p>Effectif : <span className="font-bold">{bene.employees || "—"} ETP</span></p>
+        </div>
+      </div>
+
+      {bene.demand && (
+        <div className="space-y-1 bg-glass/5 border border-muted/10 p-3.5 rounded-xl text-xs">
+          <span className="text-[9px] font-bold text-muted uppercase block">Problématique / Demande initiale</span>
+          <p className="italic leading-relaxed">"{bene.demand}"</p>
+        </div>
+      )}
+
+      {/* Maturities sliders/progress */}
+      <div className="space-y-3.5 pt-4 border-t border-muted/10">
+        <span className="text-[10px] font-black uppercase text-muted tracking-wider block">Diagnostics de maturité (Modèle PIT)</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {[
+            { label: "Maturité Numérique", value: bene.maturityDigital || 2, color: "bg-teal-500" },
+            { label: "Maturité IA", value: bene.maturityIa || 1, color: "bg-purple-500" },
+            { label: "Maturité Cybersécurité", value: bene.maturityCyber || 2, color: "bg-rose-500" },
+            { label: "Maturité Export", value: bene.maturityExport || 1, color: "bg-amber-500" },
+            { label: "Maturité Durable / S3", value: bene.maturityDurability || 2, color: "bg-emerald-500" }
+          ].map((item, idx) => (
+            <div key={idx} className="bg-glass/5 border border-muted/10 p-3 rounded-xl space-y-1 text-xs">
+              <div className="flex justify-between items-center font-bold">
+                <span>{item.label}</span>
+                <span className="text-teal-650">{item.value}/5</span>
               </div>
-            )}
-          />
+              <div className="h-1.5 w-full bg-gray-150 dark:bg-gray-850 rounded-full overflow-hidden">
+                <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.value / 5) * 100}%` }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const relationsContent = (
+    <PITRelationsPanel
+      sections={[
+        {
+          title: "Secteurs NACE d'Activité",
+          items: bene.primaryNaceSector ? [
+            {
+              id: bene.primaryNaceSector.id,
+              title: bene.primaryNaceSector.name,
+              relationType: `Code principal: ${bene.primaryNaceSector.code}`,
+              Icon: Briefcase
+            }
+          ] : []
+        },
+        {
+          title: "Défis Stratégiques identifiés",
+          items: challenges.map((c: any) => ({
+            id: c.id,
+            title: c.name,
+            relationType: "Défi d'affaires",
+            Icon: Sparkles
+          }))
+        },
+        {
+          title: "Domaines S3 & Chaînes de Valeur",
+          items: [
+            {
+              id: 1,
+              title: "Innovation Industrielle & Circularité",
+              relationType: "Alignement stratégique S3",
+              Icon: Network
+            }
+          ]
+        }
+      ]}
+    />
+  );
+
+  // New PIT Pathway tab: Challenge -> Capability -> Service -> Journey -> Beneficiary
+  const pathwayContent = (
+    <div className="space-y-6">
+      <h4 className="text-[10px] font-black uppercase text-muted tracking-wider pb-1 border-b border-muted/10">
+        Chaîne de Parcours Semantique (Alignement PIT)
+      </h4>
+      <div className="space-y-4">
+        {challenges.length === 0 ? (
+          <p className="text-xs text-muted italic text-center py-4">Aucun parcours d'alignement détecté.</p>
         ) : (
-          <div className="text-center py-8 text-xs text-muted italic">
-            Aucun bénéficiaire ne correspond.
-          </div>
+          challenges.slice(0, 2).map((ch: any, idx: number) => {
+            const cap = capabilities[idx] || { id: 1, name: "Diagnostic d'opportunités numériques" };
+            const svc = services[idx] || { id: 1, name: "Audit de maturité IA", code: "S-IA-AUD" };
+            const jry = journeys[idx] || { id: 1, name: "Parcours Transition Numérique", provider: "BioWin" };
+
+            return (
+              <div key={ch.id} className="p-4 bg-glass/5 border border-muted/10 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-500/25 uppercase text-[8px] font-bold">
+                    Axe d'alignement #{idx + 1}
+                  </Badge>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 text-xs font-semibold text-text">
+                  {/* Challenge */}
+                  <div className="p-2.5 bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-150 dark:border-gray-800 flex-1 w-full text-center">
+                    <span className="text-[8px] font-bold text-muted uppercase block mb-1">Challenge</span>
+                    <span className="text-indigo-650">{ch.name}</span>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 text-muted hidden md:block shrink-0" />
+
+                  {/* Capability */}
+                  <div className="p-2.5 bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-150 dark:border-gray-800 flex-1 w-full text-center cursor-pointer hover:border-teal-500/30" onClick={() => window.location.href = `/capabilities?id=${cap.id}`}>
+                    <span className="text-[8px] font-bold text-muted uppercase block mb-1">Capability</span>
+                    <span className="text-teal-650">{cap.name}</span>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 text-muted hidden md:block shrink-0" />
+
+                  {/* Service */}
+                  <div className="p-2.5 bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-150 dark:border-gray-800 flex-1 w-full text-center cursor-pointer hover:border-emerald-500/30" onClick={() => window.location.href = `/services?id=${svc.id}`}>
+                    <span className="text-[8px] font-bold text-muted uppercase block mb-1">Service</span>
+                    <span className="text-emerald-650 font-bold">{svc.name}</span>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 text-muted hidden md:block shrink-0" />
+
+                  {/* Journey */}
+                  <div className="p-2.5 bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-150 dark:border-gray-800 flex-1 w-full text-center cursor-pointer hover:border-amber-500/30" onClick={() => window.location.href = `/journeys?id=${jry.id}`}>
+                    <span className="text-[8px] font-bold text-muted uppercase block mb-1">Journey</span>
+                    <span className="text-amber-600">{jry.name}</span>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 text-muted hidden md:block shrink-0" />
+
+                  {/* Beneficiary */}
+                  <div className="p-2.5 bg-teal-500/10 rounded-xl border border-teal-500/20 flex-1 w-full text-center">
+                    <span className="text-[8px] font-bold text-teal-650 uppercase block mb-1">Bénéficiaire</span>
+                    <span className="font-bold text-teal-700 dark:text-teal-400">{bene.name}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
   );
 
-  // --- PANNEAU DROIT : DETAILS ET TABS ---
-  const renderDetailPanel = () => {
-    if (!selectedBeneficiary) {
-      return (
-        <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">
-          Sélectionnez un bénéficiaire dans la liste pour voir sa fiche détaillée.
-        </div>
-      );
-    }
+  // New Program & Project Tab
+  const projectsContent = (
+    <div className="space-y-6">
+      <h4 className="text-[10px] font-black uppercase text-muted tracking-wider pb-1 border-b border-muted/10">
+        Hiérarchie d'Exécution : Programme ➔ Projet ➔ Action ➔ Activité
+      </h4>
+      <div className="space-y-4">
+        {programs.length === 0 ? (
+          <p className="text-xs text-muted italic text-center py-4">Aucun projet ou programme d'innovation rattaché.</p>
+        ) : (
+          programs.map((prog: any, idx: number) => {
+            const proj = projects[idx] || { id: 1, name: "Digitalisation Agroalimentaire" };
+            return (
+              <div key={prog.id} className="border border-muted/15 rounded-2xl overflow-hidden bg-glass/5 p-4 space-y-3.5">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-teal-650" />
+                    <span className="text-xs font-bold text-text">{prog.name}</span>
+                  </div>
+                  <Badge className="bg-teal-500/10 text-teal-600 border-teal-500/25 uppercase text-[9px] font-bold">
+                    Programme Porteur
+                  </Badge>
+                </div>
 
-    const b = selectedBeneficiary;
+                <div className="pl-6 border-l-2 border-l-teal-600 space-y-3">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <div className="flex items-center gap-2">
+                      <FolderGit className="h-4 w-4 text-indigo-500" />
+                      <span>{proj.name}</span>
+                    </div>
+                    <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-500/25 uppercase text-[8px] font-bold">
+                      Projet Relie
+                    </Badge>
+                  </div>
 
-    // 1. Overview tab
-    const overviewTab = (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-glass/30 border border-muted/10 rounded-xl p-4 space-y-2 text-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Informations d'établissement</span>
-            <div className="space-y-1.5 mt-2">
-              <p className="text-text">Ville : <span className="font-bold">{b.location}</span></p>
-              <p className="text-text">Province : <span className="font-bold">{b.province}</span></p>
-              <p className="text-text">BCE : <span className="font-bold font-mono">{b.bce || "Non renseigné"}</span></p>
-            </div>
-          </div>
-          <div className="bg-glass/30 border border-muted/10 rounded-xl p-4 space-y-2 text-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Indicateurs financiers</span>
-            <div className="space-y-1.5 mt-2">
-              <p className="text-text">Effectif : <span className="font-bold">{b.employees || "—"} ETP</span></p>
-              <p className="text-text">Chiffre d'Affaires : <span className="font-bold">{b.revenue ? `${b.revenue.toLocaleString()} €` : "—"}</span></p>
-              <p className="text-text">Secteur Principal NACE : <span className="font-bold">{b.primaryNaceSector?.code || "—"}</span></p>
-            </div>
-          </div>
-        </div>
+                  <div className="pl-6 border-l-2 border-l-indigo-500 space-y-2">
+                    <div className="flex justify-between items-center text-[11px] bg-white dark:bg-gray-800 p-2 rounded-xl border border-muted/10">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Action : Déploiement des capteurs IoT</span>
+                      </div>
+                      <Badge className="bg-emerald-500/10 text-emerald-600 uppercase text-[8px] font-bold">Terminé</Badge>
+                    </div>
 
-        {b.demand && (
-          <div className="bg-glass/20 border border-muted/20 rounded-xl p-4">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">Besoin / Demande Initiale</h4>
-            <p className="text-xs text-text/95 italic leading-relaxed">"{b.demand}"</p>
-          </div>
+                    <div className="pl-6 border-l-2 border-l-emerald-500 text-[10px] text-muted space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <Activity className="h-3.5 w-3.5 text-muted" />
+                        <span>Activité : Installation matérielle (12 ETP)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
+      </div>
+    </div>
+  );
 
-        {/* Maturités */}
-        <div className="space-y-4">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted border-b border-muted/10 pb-1.5">
-            Diagnostic de Maturité Actuel
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { label: "Maturité Digitale", val: b.maturityDigital, color: "bg-blue-500" },
-              { label: "Maturité IA", val: b.maturityIa, color: "bg-purple-500" },
-              { label: "Maturité Cybersécurité", val: b.maturityCyber, color: "bg-rose-500" },
-              { label: "Maturité Export", val: b.maturityExport, color: "bg-amber-500" },
-              { label: "Maturité Durabilité", val: b.maturityDurability, color: "bg-emerald-500" }
-            ].map((axis, i) => (
-              <div key={i} className="space-y-1.5 bg-glass/20 border border-muted/10 p-3 rounded-xl">
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold text-text">{axis.label}</span>
-                  <span className="font-black text-teal-650">{axis.val} / 5</span>
-                </div>
-                <div className="h-2 w-full bg-surface rounded-full overflow-hidden">
-                  <div className={cn("h-full rounded-full", axis.color)} style={{ width: `${(axis.val / 5) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+  const impactContent = (
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-black uppercase text-muted tracking-wider pb-1 border-b border-muted/10">
+        Impact & Diagnostics du Bénéficiaire
+      </h4>
+      <PITImpactPanel data={contributionsData} />
+    </div>
+  );
+
+  const metadataContent = (
+    <div className="space-y-4 text-xs font-semibold text-text">
+      <div className="bg-glass/10 p-3 rounded-xl border border-muted/10 space-y-1">
+        <span className="text-[9px] font-bold text-muted uppercase block">URI sémantique</span>
+        <span className="font-mono text-[10px] break-all select-all block text-teal-650 dark:text-teal-400">
+          {bene.uri || `https://pit.wallonie.be/id/beneficiary/${bene.id}`}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-glass/10 p-3 rounded-xl border border-muted/10">
+          <span className="text-[9px] font-bold text-muted uppercase block">ID Prisma</span>
+          <span className="font-mono">{bene.id}</span>
+        </div>
+        <div className="bg-glass/10 p-3 rounded-xl border border-muted/10">
+          <span className="text-[9px] font-bold text-muted uppercase block">Province</span>
+          <span>{bene.province || "N/A"}</span>
         </div>
       </div>
-    );
+    </div>
+  );
 
-    // 2. Relations Tab
-    const relationSections = [
-      {
-        title: "Secteurs NACE d'Activité",
-        items: (b.secondaryNaceSectors || []).map(s => ({
-          id: s.id,
-          title: s.name,
-          relationType: `Code : ${s.code}`,
-          Icon: Briefcase
-        }))
-      },
-      {
-        title: "Défis Stratégiques",
-        items: (b.challenges || []).map(c => ({
-          id: c.id,
-          title: c.name,
-          relationType: "Défi",
-          Icon: HelpCircle
-        }))
-      },
-      {
-        title: "Filières Stratégiques (S3)",
-        items: (b.filieresS3 || []).map(f => ({
-          id: f.id,
-          title: f.name,
-          relationType: "Filière S3",
-          Icon: Network
-        }))
-      },
-      {
-        title: "Maillons Opérationnels",
-        items: (b.stages || []).map(s => ({
-          id: s.id,
-          title: `${s.name} (${s.category})`,
-          relationType: "Maillon",
-          Icon: Layers
-        }))
-      }
-    ];
-
-    const relationsTab = <PITRelationsPanel sections={relationSections} />;
-
-    // 3. Activités (Accompagnements réels)
-    const timelineItems: TimelineItem[] = (b.deliveries || []).map(d => {
-      const descriptionContent = (
-        <div className="space-y-2 text-[11px] mt-1.5">
-          {d.outputReal && (
-            <p><strong className="text-muted">Output :</strong> <span className="font-mono bg-surface/50 border border-muted/10 px-1 py-0.5 rounded">{d.outputReal}</span></p>
-          )}
-          {d.outcomeReal && (
-            <p><strong className="text-muted">Outcome :</strong> {d.outcomeReal}</p>
-          )}
-          {d.impact && (
-            <p><strong className="text-muted">Impact :</strong> <span className="bg-teal-500/10 text-teal-600 px-1.5 py-0.5 rounded font-bold">{d.impact}</span></p>
-          )}
-          {d.maturityDelta && typeof d.maturityDelta === 'object' && Object.keys(d.maturityDelta).length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 border-t border-muted/5 pt-1">
-              {Object.entries(d.maturityDelta).map(([axis, delta]: [string, any]) => (
-                <span key={axis} className="px-1.5 py-0.2 bg-teal-500/5 text-teal-700 dark:text-teal-400 border border-teal-500/10 rounded text-[9px] font-bold">
-                  {axis.toUpperCase()} : {delta?.before} ➔ {delta?.after}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-
-      return {
-        id: d.id,
-        title: d.service?.name || "Service public",
-        subtitle: `Opérateur : ${d.operator?.name || "Non spécifié"}`,
-        date: new Date(d.date).toLocaleDateString(),
-        description: descriptionContent,
-        badge: (
-          <span className={`px-2.5 py-0.5 rounded-full font-bold text-[9px] ${
-            d.status === "Terminé" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-          }`}>
-            {d.status}
-          </span>
-        ),
-        Icon: FileCheck,
-        color: d.status === "Terminé" ? "teal" : "amber"
-      };
-    });
-
-    const activityTab = (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center border-b border-muted/10 pb-3">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">
-            Suivi des Accompagnements Réels
-          </h4>
-          <button
-            onClick={() => setShowDeliveryForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold transition text-[11px] cursor-pointer border-0"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Enregistrer un service
-          </button>
-        </div>
-
-        <Timeline
-          items={timelineItems}
-          emptyMessage="Aucun service public n'a encore été délivré à ce bénéficiaire."
-        />
+  const combinedContributionsContent = (
+    <div className="space-y-6">
+      {projectsContent}
+      <div className="pt-4 border-t border-muted/10">
+        {impactContent}
       </div>
-    );
-
-    // 4. Metadata Tab
-    const metadataTab = (
-      <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-        <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/beneficiary/{b.id}</span></p>
-        <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:TerritorialBeneficiary</span></p>
-        <p className="text-text">Arrondissement : <span className="font-bold">{b.arrondissement || "Namur"}</span></p>
-      </div>
-    );
-
-    return (
-      <PITDetailLayout
-        title={b.name}
-        subtitle={`${b.size} — Arrondissement de ${b.arrondissement || "Namur"}`}
-        badge={
-          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-650 dark:text-teal-450 bg-teal-500/10 px-2.5 py-0.5 rounded-full">
-            Bénéficiaire Territorial
-          </span>
-        }
-        overviewTab={overviewTab}
-        relationsTab={relationsTab}
-        impactTab={activityTab}
-        metadataTab={metadataTab}
-      />
-    );
-  };
-
-  // Form Section definitions for creation
-  const beneficiarySections: FormSection[] = [
-    {
-      id: "general",
-      title: "Informations Générales",
-      subtitle: "Identité de la PME",
-      fields: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Nom de l'organisation *</label>
-              <input required value={newName} onChange={e => setNewName(e.target.value)} type="text" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Numéro BCE</label>
-              <input value={newBce} onChange={e => setNewBce(e.target.value)} type="text" placeholder="ex: 0400.123.456" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Type / Taille</label>
-              <select value={newSize} onChange={e => setNewSize(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none">
-                <option value="TPE">TPE</option>
-                <option value="PME">PME</option>
-                <option value="Grande Entreprise">Grande Entreprise</option>
-                <option value="Startup">Startup</option>
-                <option value="Indépendant">Indépendant</option>
-                <option value="Centre de recherche">Centre de recherche</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Effectif (ETP)</label>
-              <input value={newEmployees} onChange={e => setNewEmployees(e.target.value)} type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Chiffre d'affaires (€)</label>
-              <input value={newRevenue} onChange={e => setNewRevenue(e.target.value)} type="number" step="any" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Ville / Localisation</label>
-              <input required value={newLocation} onChange={e => setNewLocation(e.target.value)} type="text" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Province</label>
-              <select value={newProvince} onChange={e => setNewProvince(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none">
-                <option value="Namur">Namur</option>
-                <option value="Liège">Liège</option>
-                <option value="Hainaut">Hainaut</option>
-                <option value="Brabant Wallon">Brabant Wallon</option>
-                <option value="Luxembourg">Luxembourg</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Secteur Principal NACE</label>
-              <select value={newPrimaryNaceId} onChange={e => setNewPrimaryNaceId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none">
-                <option value="">Sélectionner</option>
-                {meta.sectors.map(s => (
-                  <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "alignment",
-      title: "Alignements & Taxonomies S3",
-      subtitle: "Filières et défis de la PME",
-      fields: (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Demande / Problématique initiale</label>
-            <textarea value={newDemand} onChange={e => setNewDemand(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-teal-700 text-text outline-none h-16 resize-none" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Défis Stratégiques</label>
-              <select multiple value={selectedChallengeIds.map(String)} onChange={e => setSelectedChallengeIds(Array.from(e.target.selectedOptions, o => Number(o.value)))} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-2 py-1.5 text-[10px] text-text outline-none h-24">
-                {meta.challenges.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Filières S3 associées</label>
-              <select multiple value={selectedFiliereIds.map(String)} onChange={e => setSelectedFiliereIds(Array.from(e.target.selectedOptions, o => Number(o.value)))} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-2 py-1.5 text-[10px] text-text outline-none h-24">
-                {meta.strategicValueChains.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Maillons de chaîne de valeur</label>
-            <select multiple value={selectedStageIds.map(String)} onChange={e => setSelectedStageIds(Array.from(e.target.selectedOptions, o => Number(o.value)))} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-2 py-1.5 text-[10px] text-text outline-none h-24">
-              {meta.stages.map(st => (
-                <option key={st.id} value={st.id}>{st.name} ({st.category})</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "maturity",
-      title: "Maturité Diagnostiquée",
-      subtitle: "Scores de départ sur 5",
-      fields: (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {maturityAxes.map((axis) => (
-            <div key={axis.key} className="space-y-1">
-              <label className="text-[10px] font-extrabold uppercase text-muted block truncate" title={axis.label}>{axis.label}</label>
-              <input 
-                type="number" 
-                min={1} 
-                max={5} 
-                value={axis.value} 
-                onChange={e => handleMaturityChange(axis.key, Math.max(1, Math.min(5, parseInt(e.target.value) || 1)))} 
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-center text-xs text-text focus:ring-1 focus:ring-teal-700" 
-              />
-            </div>
-          ))}
-        </div>
-      )
-    }
-  ];
-
-  const deliverySections: FormSection[] = [
-    {
-      id: "general",
-      title: "Opérateur & Service",
-      subtitle: "Détails de l'intervention publique",
-      fields: (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Service public dispensé *</label>
-            <select required value={delServiceId} onChange={e => setDelServiceId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
-              <option value="">Sélectionner</option>
-              {meta.services.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Opérateur (Organization) *</label>
-              <select required value={delOperatorId} onChange={e => setDelOperatorId(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
-                <option value="">Sélectionner</option>
-                {meta.organizations.map(o => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Statut de réalisation</label>
-              <select value={delStatus} onChange={e => setDelStatus(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
-                <option value="Planifié">Planifié</option>
-                <option value="En cours">En cours</option>
-                <option value="Terminé">Terminé</option>
-                <option value="Annulé">Annulé</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "outcomes",
-      title: "Impacts & Résultats",
-      subtitle: "Outputs et gains de performance",
-      fields: (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Livrable Réel (Output)</label>
-            <input type="text" placeholder="ex: Rapport d'audit de maturité" value={delOutput} onChange={e => setDelOutput(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Résultat Mesuré (Outcome)</label>
-            <input type="text" placeholder="ex: 3 opportunités IA détectées" value={delOutcome} onChange={e => setDelOutcome(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Impact constaté</label>
-            <input type="text" placeholder="ex: Gain de productivité de 15%" value={delImpactText} onChange={e => setDelImpactText(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none" />
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "maturity_boost",
-      title: "Évolution de Maturité",
-      subtitle: "Gains sur l'axe de diagnostic",
-      fields: (
-        <div className="space-y-3">
-          {delStatus === "Terminé" ? (
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-[9px] font-bold uppercase text-muted block mb-1">Axe</label>
-                <select value={delMaturityAxis} onChange={e => setDelMaturityAxis(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg px-3 py-2 text-xs text-text outline-none">
-                  <option value="digital">Digital</option>
-                  <option value="ia">IA</option>
-                  <option value="cyber">Cybersécurité</option>
-                  <option value="export">Export</option>
-                  <option value="durability">Durabilité</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[9px] font-bold uppercase text-muted block mb-1">Score avant</label>
-                <input 
-                  type="number" 
-                  min={1} 
-                  max={5} 
-                  value={delMaturityBefore} 
-                  onChange={e => setDelMaturityBefore(parseInt(e.target.value) || 1)} 
-                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-center text-xs text-text outline-none" 
-                />
-              </div>
-
-              <div>
-                <label className="text-[9px] font-bold uppercase text-muted block mb-1">Score après</label>
-                <input 
-                  type="number" 
-                  min={1} 
-                  max={5} 
-                  value={delMaturityAfter} 
-                  onChange={e => setDelMaturityAfter(parseInt(e.target.value) || 2)} 
-                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg p-2 text-center text-xs text-text outline-none" 
-                />
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-muted italic">L'évolution de la maturité est enregistrable uniquement pour les accompagnements terminés.</p>
-          )}
-        </div>
-      )
-    }
-  ];
+    </div>
+  );
 
   return (
-    <PITLayout
-      category="BÉNÉFICIAIRES"
-      title="Bénéficiaires Territoriaux"
-      description="Gérez les profils des PME wallonnes, suivez l'évolution de leur maturité numérique et enregistrez leurs diagnostics et réalisations réelles de services publics."
-      pageIcon={Users}
-      breadcrumb={[
-        { label: "Tableau de bord", href: "/" },
-        { label: "Bénéficiaires" }
-      ]}
-      actions={
-        <button 
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-1.5 px-4.5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer border-0"
-        >
-          <Plus className="h-4 w-4" /> Nouveau Bénéficiaire
-        </button>
+    <PITDetailLayout
+      title={bene.name}
+      subtitle={`${bene.size} — Arrondissement de ${bene.arrondissement || "Namur"}`}
+      badge={
+        <span className="text-[9px] font-bold uppercase tracking-wider text-teal-650 bg-teal-500/10 px-2.5 py-0.5 rounded-full select-none">
+          {bene.bce || "BENEFICIARY"}
+        </span>
       }
-    >
-      <PITFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Rechercher une PME par nom, ville, province ou code NACE..."
-      />
-
-      <SplitLayout
-        leftPane={leftPane}
-        rightPane={renderDetailPanel()}
-        leftColSpan={4}
-      />
-
-      {/* MODAL AJOUT BENEFICIAIRE */}
-      {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-surface border border-muted/25 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
-            <div className="absolute right-4 top-4 z-10">
-              <button onClick={() => setShowAddForm(false)} className="p-1 rounded-lg hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <PITForm
-              title="Créer un Profil Bénéficiaire"
-              sections={beneficiarySections}
-              onSubmit={handleAddBeneficiary}
-              onCancel={() => setShowAddForm(false)}
-              submitLabel="Enregistrer le bénéficiaire"
-              infoPanel={
-                <div className="space-y-4">
-                  <p>
-                    <strong>Bénéficiaires & BCE :</strong> Saisissez les données sémantiques de la PME.
-                  </p>
-                  <p>
-                    L'alignement S3 de la PME se déduit de son secteur NACE principal et des filières sélectionnées.
-                  </p>
-                </div>
-              }
-            />
-          </div>
-        </div>
-      )}
-
-      {/* MODAL ENREGISTREMENT DELIVERY */}
-      {showDeliveryForm && selectedBeneficiary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-surface border border-muted/25 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
-            <div className="absolute right-4 top-4 z-10">
-              <button onClick={() => setShowDeliveryForm(false)} className="p-1 rounded-lg hover:bg-glass text-muted hover:text-text border-0 bg-transparent cursor-pointer">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <PITForm
-              title="Enregistrer un accompagnement réel"
-              sections={deliverySections}
-              onSubmit={handleAddDelivery}
-              onCancel={() => setShowDeliveryForm(false)}
-              submitLabel="Enregistrer l'accompagnement"
-              infoPanel={
-                <div className="space-y-4">
-                  <p>
-                    <strong>Accompagnements réels :</strong> Déclarez un service public délivré à {selectedBeneficiary.name}.
-                  </p>
-                  <p>
-                    Si l'accompagnement est complété, vous pouvez booster d'un point la maturité de la PME sur l'axe d'intervention correspondant.
-                  </p>
-                </div>
-              }
-            />
-          </div>
-        </div>
-      )}
-    </PITLayout>
+      actions={
+        <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-[11px] font-bold">
+          Fermer
+        </Button>
+      }
+      overviewTab={overviewContent}
+      relationsTab={relationsContent}
+      impactTab={pathwayContent}
+      contributionsTab={combinedContributionsContent}
+      metadataTab={metadataContent}
+      overviewLabel="Vue d'ensemble"
+      relationsLabel="Taxonomies & NACE"
+      impactLabel="Parcours PIT"
+      contributionsLabel="Programmes, Projets & Impact"
+      metadataLabel="Identité"
+    />
   );
 }

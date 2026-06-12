@@ -1,281 +1,377 @@
 // src/app/ecosystems/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { 
-  Share2, 
   Globe, 
+  Search, 
   Building2, 
+  Layers, 
   FileText, 
   Compass, 
-  Layers, 
-  Sparkles,
-  AlertCircle
+  Users, 
+  FolderGit, 
+  MapPin, 
+  Sparkles, 
+  TrendingUp,
+  Share2
 } from "lucide-react";
-
 import PITLayout from "@/design-system/PITLayout";
-import PITFilterBar from "@/design-system/PITFilterBar";
-import PITEntityCard from "@/design-system/PITEntityCard";
-import PITRelationsPanel from "@/design-system/PITRelationsPanel";
 import PITDetailLayout from "@/design-system/PITDetailLayout";
+import PITFilterBar from "@/design-system/PITFilterBar";
+import PITStatCard from "@/design-system/PITStatCard";
+import PITRelationsPanel from "@/design-system/PITRelationsPanel";
+import PITImpactPanel from "@/design-system/PITImpactPanel";
 import SplitLayout from "@/components/ui/SplitLayout";
-import { usePerspective } from "@/design-system/PITPerspectiveProvider";
-import { useEcosystemsQuery } from "@/hooks/usePITQueries";
-import PITVirtualList from "@/design-system/PITVirtualList";
-
-interface Organization {
-  id: number;
-  name: string;
-  type: string;
-  description?: string;
-}
-
-interface PublicService {
-  id: number;
-  name: string;
-  code: string;
-}
-
-interface Journey {
-  id: number;
-  name: string;
-  provider: string;
-}
-
-interface StrategicValueChain {
-  id: number;
-  name: string;
-}
-
-interface BusinessChallenge {
-  id: number;
-  name: string;
-}
-
-interface Ecosystem {
-  id: number;
-  name: string;
-  description: string;
-  mission?: string;
-  territory?: string;
-  actors: Organization[];
-  services: PublicService[];
-  journeys: Journey[];
-  filieresS3: StrategicValueChain[];
-  challenges: BusinessChallenge[];
-}
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  useV2Ecosystems, 
+  useV2EcosystemDetail,
+  useV2Contributions
+} from "@/hooks/useV2Queries";
 
 export default function EcosystemsPage() {
-  const { data: ecosystemsData, isLoading: loading, error: queryError } = useEcosystemsQuery();
-  const ecosystems = ecosystemsData || [];
-  const [selectedEcosystem, setSelectedEcosystem] = useState<Ecosystem | null>(null);
-  
   const [searchQuery, setSearchQuery] = useState("");
-  const { isEntityTypeVisible } = usePerspective();
+  const [selectedEcoId, setSelectedEcoId] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (ecosystems.length > 0 && !selectedEcosystem) {
-      setSelectedEcosystem(ecosystems[0]);
-    }
-  }, [ecosystems, selectedEcosystem]);
+  // Fetch all ecosystems
+  const { data: ecosystemsData, isLoading: isListLoading } = useV2Ecosystems();
 
-  if (loading) {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <p className="text-muted text-sm font-medium animate-pulse">Chargement des écosystèmes régionaux...</p>
-      </div>
-    );
-  }
+  const rawEcosystems = ecosystemsData?.data || [];
 
-  // Filtrer les écosystèmes
-  const filteredEcosystems = (ecosystems as Ecosystem[]).filter(e => {
-    if (!isEntityTypeVisible("ecosystem")) return false;
+  // Filter ecosystems
+  const filteredEcosystems = rawEcosystems.filter((eco: any) => 
+    eco.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (eco.description && eco.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-    const query = searchQuery.toLowerCase();
-    return e.name.toLowerCase().includes(query) || 
-           e.description.toLowerCase().includes(query) || 
-           (e.territory && e.territory.toLowerCase().includes(query));
-  });
+  const handleSelectEco = (id: number) => {
+    setSelectedEcoId(id);
+  };
 
-  // --- PANNEAU GAUCHE : LISTE DES ECOSYSTEMES ---
   const leftPane = (
-    <div className="rounded-2xl bg-glass border border-muted/20 p-5 space-y-4 max-h-[70vh] flex flex-col">
-      <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted px-1 pb-2 border-b border-muted/10">
-        Écosystèmes Territoriaux ({filteredEcosystems.length})
-      </h3>
-      <div className="flex-1 min-h-0">
-        {filteredEcosystems.length > 0 ? (
-          <PITVirtualList
-            items={filteredEcosystems}
-            itemHeight={110}
-            maxHeight="60vh"
-            renderItem={(e) => (
-              <div className="py-1 pr-1" style={{ height: "110px" }}>
-                <PITEntityCard
-                  title={e.name}
-                  description={e.description}
-                  icon={Globe}
-                  type="ecosystem"
-                  subtitle={e.territory || "Wallonie"}
-                  isSelected={selectedEcosystem?.id === e.id}
-                  onClick={() => setSelectedEcosystem(e)}
-                />
-              </div>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-150 dark:border-gray-850 shadow-sm overflow-hidden flex flex-col max-h-[75vh]">
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/10">
+        <h3 className="text-xs font-black uppercase text-muted tracking-wider">
+          Écosystèmes Territoriaux ({filteredEcosystems.length})
+        </h3>
+      </div>
+      <div className="overflow-y-auto flex-1">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-gray-50/75 dark:bg-gray-900/50 border-b border-gray-150 dark:border-gray-800 font-extrabold uppercase text-muted tracking-wider">
+              <th className="px-5 py-3.5">Nom / Label</th>
+              <th className="px-5 py-3.5">Échelle Territoire</th>
+              <th className="px-5 py-3.5">Catégorie</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {isListLoading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-5 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-36"></div></td>
+                  <td className="px-5 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td className="px-5 py-4"><div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-16"></div></td>
+                </tr>
+              ))
+            ) : filteredEcosystems.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-5 py-8 text-center text-muted italic">
+                  Aucun écosystème ne correspond à votre recherche.
+                </td>
+              </tr>
+            ) : (
+              filteredEcosystems.map((eco: any) => (
+                <tr
+                  key={eco.id}
+                  onClick={() => handleSelectEco(eco.id)}
+                  className={`hover:bg-teal-500/5 cursor-pointer border-b border-gray-105 dark:border-gray-850 transition-colors ${
+                    selectedEcoId === eco.id ? "bg-teal-500/10 border-l-4 border-l-teal-600" : ""
+                  }`}
+                >
+                  <td className="px-5 py-3.5 font-bold text-text">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-mono bg-muted px-1.5 py-0.2 rounded font-bold uppercase select-none">
+                        {eco.type?.code || "ECO"}
+                      </span>
+                      <span className="truncate max-w-[180px]">{eco.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-muted font-semibold">
+                    {eco.territory || "Wallonie"}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <Badge variant="outline" className="text-[9px] font-bold uppercase bg-teal-500/10 border-teal-500/25 text-teal-650">
+                      {eco.type?.name || "Réseau"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))
             )}
-          />
-        ) : (
-          <div className="text-center py-8 text-xs text-muted italic">
-            Aucun écosystème ne correspond.
-          </div>
-        )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 
-  // --- PANNEAU DROIT : DETAILS ET TABS ---
-  const renderDetailPanel = () => {
-    if (!selectedEcosystem) {
-      return (
-        <div className="flex flex-col flex-1 items-center justify-center min-h-[40vh] border border-muted/20 border-dashed rounded-2xl bg-glass p-6 text-muted italic">
-          Sélectionnez un écosystème territorial pour afficher son profil.
-        </div>
-      );
-    }
-
-    const e = selectedEcosystem;
-
-    // 1. Overview Tab : Description, mission, challenges and filieres covered
-    const overviewTab = (
-      <div className="space-y-6">
-        <div className="bg-glass/20 border border-muted/10 rounded-xl p-4 text-xs text-text/95 leading-relaxed">
-          {e.description}
-        </div>
-
-        {e.mission && (
-          <div className="bg-glass/10 border border-muted/5 rounded-xl p-4 text-xs flex gap-2">
-            <AlertCircle className="h-4.5 w-4.5 text-teal-650 dark:text-teal-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-muted text-[10px] uppercase block mb-0.5">Mission de l'écosystème</span>
-              <p className="italic text-text/95">"{e.mission}"</p>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          {/* Challenges */}
-          <div className="space-y-2">
-            <span className="font-bold text-muted flex items-center gap-1 text-[10px] uppercase tracking-wider">
-              <Sparkles className="h-3.5 w-3.5 text-teal-650" />
-              Défis d'affaires adressés
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {e.challenges.map(c => (
-                <span key={c.id} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-505 font-semibold border border-blue-500/10 text-[10px]">
-                  {c.name}
-                </span>
-              ))}
-              {e.challenges.length === 0 && <span className="text-muted/65 italic">Aucun défi associé</span>}
-            </div>
-          </div>
-
-          {/* Filières */}
-          <div className="space-y-2">
-            <span className="font-bold text-muted flex items-center gap-1 text-[10px] uppercase tracking-wider">
-              <Layers className="h-3.5 w-3.5 text-amber-500" />
-              Filières S3 couvertes
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {e.filieresS3.map(f => (
-                <span key={f.id} className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-550 font-semibold border border-amber-500/10 text-[10px]">
-                  {f.name}
-                </span>
-              ))}
-              {e.filieresS3.length === 0 && <span className="text-muted/65 italic">Aucune filière S3</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-
-    // 2. Relations Tab using PITRelationsPanel
-    const sections = [
-      {
-        title: "Membres & Acteurs du réseau",
-        items: e.actors.map(actor => ({
-          id: actor.id,
-          title: actor.name,
-          relationType: actor.type,
-          Icon: Building2
-        }))
-      },
-      {
-        title: "Accompagnements (Services) associés",
-        items: e.services.map(s => ({
-          id: s.id,
-          title: s.name,
-          relationType: `Code : ${s.code}`,
-          Icon: FileText,
-          onClick: () => window.location.href = `/services?id=${s.id}`
-        }))
-      },
-      {
-        title: "Parcours d'innovation",
-        items: e.journeys.map(j => ({
-          id: j.id,
-          title: j.name,
-          relationType: `Fourni par ${j.provider}`,
-          Icon: Compass,
-          onClick: () => window.location.href = `/journeys?id=${j.id}`
-        }))
-      }
-    ];
-
-    const relationsTab = <PITRelationsPanel sections={sections} />;
-
-    // 3. Metadata Tab
-    const metadataTab = (
-      <div className="bg-glass/20 border border-muted/10 p-4 rounded-xl text-xs space-y-3">
-        <p className="text-text">URI : <span className="font-mono text-teal-650 dark:text-teal-400">https://pit.wallonie.be/id/ecosystem/{e.id}</span></p>
-        <p className="text-text">Classe : <span className="font-mono bg-glass px-1.5 py-0.5 rounded border border-muted/20">d4wmo:Ecosystem</span></p>
-        <p className="text-text">Territoire cible : <span className="font-bold">{e.territory || "Wallonie"}</span></p>
-      </div>
-    );
-
-    return (
-      <PITDetailLayout
-        title={e.name}
-        subtitle={`Couverture : ${e.territory || "Wallonie"}`}
-        badge={<span className="text-[10px] font-bold uppercase tracking-wider text-teal-650 dark:text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full">Écosystème territorial</span>}
-        overviewTab={overviewTab}
-        relationsTab={relationsTab}
-        metadataTab={metadataTab}
-      />
-    );
-  };
-
   return (
     <PITLayout
       category="OBSERVATOIRE TERRITORIAL"
-      title="Écosystèmes Territoriaux"
-      description="Visualisez les réseaux régionaux, les pôles de compétitivité, les hubs numériques et l'ensemble de leurs acteurs (universités, centres de recherche, outils de financement)."
+      title="Écosystèmes Innovants"
+      description="Visualisez les réseaux régionaux, les pôles de compétitivité, les hubs numériques et l'ensemble de leurs acteurs."
       pageIcon={Share2}
-      breadcrumb={[
-        { label: "Tableau de bord", href: "/" },
-        { label: "Écosystèmes" }
-      ]}
+      breadcrumb={[{ label: "Tableau de bord", href: "/" }, { label: "Écosystèmes" }]}
     >
       <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Rechercher un écosystème par nom, mission ou territoire..."
+        searchPlaceholder="Rechercher un écosystème par nom, description..."
       />
 
       <SplitLayout
         leftPane={leftPane}
-        rightPane={renderDetailPanel()}
-        leftColSpan={4}
+        rightPane={
+          selectedEcoId ? (
+            <EcosystemDetailPanel id={selectedEcoId} onClose={() => setSelectedEcoId(null)} />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center bg-gray-50/20">
+              <Globe className="h-10 w-10 text-muted/50 mb-3" />
+              <p className="text-muted text-xs font-bold">Sélectionnez un écosystème pour afficher ses dimensions.</p>
+            </div>
+          )
+        }
+        leftColSpan={5}
       />
     </PITLayout>
+  );
+}
+
+interface DetailPanelProps {
+  id: number;
+  onClose: () => void;
+}
+
+function EcosystemDetailPanel({ id, onClose }: DetailPanelProps) {
+  const { data: detailData, isLoading: isDetailLoading } = useV2EcosystemDetail(id);
+  const { data: contributionsData } = useV2Contributions("ecosystems", id);
+
+  if (isDetailLoading || !detailData) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-850 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
+        <p className="text-muted text-xs font-semibold mt-3">Chargement des détails de l'écosystème...</p>
+      </div>
+    );
+  }
+
+  const eco = detailData.data;
+
+  const actors = contributionsData?.organizations || [];
+  const services = contributionsData?.services || [];
+  const journeys = contributionsData?.journeys || [];
+  const programs = contributionsData?.programs || [];
+  const projects = contributionsData?.projects || [];
+  const territories = contributionsData?.territories || [];
+  const beneficiaries = contributionsData?.beneficiaries || [];
+  const capabilities = contributionsData?.capabilities || [];
+  const challenges = contributionsData?.challenges || [];
+
+  const overviewContent = (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <PITStatCard
+          label="Membres du réseau"
+          value={actors.length.toString()}
+          icon={Building2}
+          themeColor="indigo"
+          description="Organisations actives recensées"
+        />
+        <PITStatCard
+          label="Accompagnements"
+          value={services.length.toString()}
+          icon={FileText}
+          themeColor="teal"
+          description="Services publics catalogués"
+        />
+      </div>
+
+      <div className="space-y-2.5">
+        <h4 className="text-[10px] font-black uppercase text-muted tracking-wider">Mission de l'écosystème</h4>
+        <p className="text-xs text-text leading-relaxed italic bg-glass/5 p-3 rounded-xl border border-muted/5">
+          "{eco.mission || "Favoriser l'émergence de projets d'innovation territoriaux et accompagner le tissu industriel."}"
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        <h4 className="text-[10px] font-black uppercase text-muted tracking-wider">Description</h4>
+        <p className="text-xs text-text leading-relaxed">
+          {eco.description || "Aucune description sémantique additionnelle renseignée."}
+        </p>
+      </div>
+
+      {/* S3 alignment info */}
+      <div className="space-y-3 pt-4 border-t border-muted/10">
+        <span className="text-[10px] font-black uppercase text-muted tracking-wider block">Alignements Stratégiques S3</span>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge className="bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/25 font-bold uppercase text-[9px] px-2 py-0.5">
+            S3: Innovation Industrielle
+          </Badge>
+          <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/25 font-bold uppercase text-[9px] px-2 py-0.5">
+            Chaîne de valeur : Digital
+          </Badge>
+        </div>
+      </div>
+    </div>
+  );
+
+  const relationsContent = (
+    <PITRelationsPanel
+      sections={[
+        {
+          title: "Défis d'affaires (Challenges)",
+          items: challenges.map((c: any) => ({
+            id: c.id,
+            title: c.name,
+            relationType: "Défi adressé",
+            Icon: Sparkles
+          }))
+        },
+        {
+          title: "Capabilités de l'écosystème",
+          items: capabilities.map((c: any) => ({
+            id: c.id,
+            title: c.name,
+            relationType: "Aptitude technique",
+            Icon: Layers,
+            onClick: () => window.location.href = `/capabilities?id=${c.id}`
+          }))
+        },
+        {
+          title: "Services et Accompagnements",
+          items: services.map((s: any) => ({
+            id: s.id,
+            title: s.name,
+            relationType: s.code || `SVC-${s.id}`,
+            Icon: FileText,
+            onClick: () => window.location.href = `/services?id=${s.id}`
+          }))
+        },
+        {
+          title: "Parcours sémantiques (Journeys)",
+          items: journeys.map((j: any) => ({
+            id: j.id,
+            title: j.name,
+            relationType: j.provider || "Parcours",
+            Icon: Compass,
+            onClick: () => window.location.href = `/journeys?id=${j.id}`
+          }))
+        },
+        {
+          title: "Bénéficiaires associés",
+          items: beneficiaries.map((b: any) => ({
+            id: b.id,
+            title: b.name,
+            relationType: b.size || "Entreprise",
+            Icon: Users,
+            onClick: () => window.location.href = `/beneficiaries?id=${b.id}`
+          }))
+        },
+        {
+          title: "Acteurs & Membres du réseau",
+          items: actors.map((a: any) => ({
+            id: a.id,
+            title: a.name,
+            relationType: a.type || "Acteur",
+            Icon: Building2,
+            onClick: () => window.location.href = `/organizations?id=${a.id}`
+          }))
+        },
+        {
+          title: "Programmes Porteurs",
+          items: programs.map((p: any) => ({
+            id: p.id,
+            title: p.name,
+            relationType: p.code || "Programme",
+            Icon: Layers,
+            onClick: () => window.location.href = `/programs?id=${p.id}`
+          }))
+        },
+        {
+          title: "Projets Rattachés",
+          items: projects.map((p: any) => ({
+            id: p.id,
+            title: p.name,
+            relationType: "Projet d'innovation",
+            Icon: FolderGit
+          }))
+        },
+        {
+          title: "Territoires d'intervention",
+          items: territories.map((t: any) => ({
+            id: t.id,
+            title: t.name,
+            relationType: t.type,
+            Icon: MapPin,
+            onClick: () => window.location.href = `/territories?id=${t.id}`
+          }))
+        }
+      ]}
+    />
+  );
+
+  const impactContent = (
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-black uppercase text-muted tracking-wider pb-1 border-b border-muted/10">
+        Mesure d'impact de l'Écosystème
+      </h4>
+      <PITImpactPanel data={contributionsData} />
+    </div>
+  );
+
+  const metadataContent = (
+    <div className="space-y-4 text-xs font-semibold text-text">
+      <div className="bg-glass/10 p-3 rounded-xl border border-muted/10 space-y-1">
+        <span className="text-[9px] font-bold text-muted uppercase block">URI de référence</span>
+        <span className="font-mono text-[10px] break-all select-all block text-teal-650 dark:text-teal-400">
+          {eco.uri || `https://pit.wallonie.be/id/ecosystem/${eco.id}`}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-glass/10 p-3 rounded-xl border border-muted/10">
+          <span className="text-[9px] font-bold text-muted uppercase block">ID Prisma</span>
+          <span className="font-mono">{eco.id}</span>
+        </div>
+        <div className="bg-glass/10 p-3 rounded-xl border border-muted/10">
+          <span className="text-[9px] font-bold text-muted uppercase block">Type d'Écosystème</span>
+          <span>{eco.type?.name || "Réseau Territorial"}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <PITDetailLayout
+      title={eco.name}
+      subtitle={eco.type?.name || "Réseau régional"}
+      badge={
+        <span className="text-[9px] font-bold uppercase tracking-wider text-teal-650 bg-teal-500/10 px-2.5 py-0.5 rounded-full select-none">
+          {eco.type?.code || "ECOSYSTEM"}
+        </span>
+      }
+      actions={
+        <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-[11px] font-bold">
+          Fermer
+        </Button>
+      }
+      overviewTab={overviewContent}
+      relationsTab={relationsContent}
+      contributionsTab={impactContent}
+      metadataTab={metadataContent}
+      overviewLabel="Vue d'ensemble"
+      relationsLabel="Dimensions & Alignement"
+      contributionsLabel="Mesure d'impact"
+      metadataLabel="Identité"
+    />
   );
 }

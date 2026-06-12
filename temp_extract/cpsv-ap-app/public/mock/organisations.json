@@ -1,0 +1,7 @@
+{
+  "organisations": [
+    { "id": "org-1", "name": "Ville de Liège", "type": "Municipalité" },
+    { "id": "org-2", "name": "Office du Tourisme Wallonie", "type": "Office" },
+    { "id": "org-3", "name": "Agence de la Santé", "type": "Agence" }
+  ]
+}

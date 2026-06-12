@@ -7,6 +7,8 @@ import Wizard from "@/components/encode/Wizard";
 import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge, Route, Edit3, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import CraftEcosystem from "@/components/craft/CraftEcosystem";
+import { useV2Contributions } from "@/hooks/useV2Queries";
+import PITImpactPanel from "@/design-system/PITImpactPanel";
 
 // List of the 10 real Walloon services for absolute reliability and zero API fail risks
 const walloonServices = [
@@ -769,6 +771,8 @@ export default function ServicesContainer() {
   const [servicesList, setServicesList] = useState(walloonServices);
   const [selectedTheme, setSelectedTheme] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<any | null>(null);
+  const serviceIdForQuery = selectedService ? parseInt(selectedService.id) : null;
+  const { data: contributionsData } = useV2Contributions("services", (serviceIdForQuery && !isNaN(serviceIdForQuery)) ? serviceIdForQuery : null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Referentials States
@@ -4299,6 +4303,19 @@ export default function ServicesContainer() {
                     </ul>
                   </div>
                 </div>
+
+                {/* Mesure d'Impact & Contributions */}
+                {selectedService && !isNaN(parseInt(selectedService.id)) && (
+                  <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-teal-500" />
+                      Mesure d'Impact & Contributions (v3.4.1)
+                    </h4>
+                    <div className="bg-gray-50/30 dark:bg-gray-950/10 p-4 rounded-xl border border-gray-100 dark:border-gray-850">
+                      <PITImpactPanel data={contributionsData} />
+                    </div>
+                  </div>
+                )}
 
                 {/* Live JSON-LD Code panel */}
                 <div className="space-y-3">

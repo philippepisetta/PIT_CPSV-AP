@@ -13,6 +13,7 @@ interface PITDetailLayoutProps {
   overviewTab: React.ReactNode;
   relationsTab?: React.ReactNode;
   impactTab?: React.ReactNode;
+  contributionsTab?: React.ReactNode;
   metadataTab: React.ReactNode;
   historyTab?: React.ReactNode;
   actions?: React.ReactNode;
@@ -20,6 +21,7 @@ interface PITDetailLayoutProps {
   overviewLabel?: string;
   relationsLabel?: string;
   impactLabel?: string;
+  contributionsLabel?: string;
   metadataLabel?: string;
 }
 
@@ -30,6 +32,7 @@ export default function PITDetailLayout({
   overviewTab,
   relationsTab,
   impactTab,
+  contributionsTab,
   metadataTab,
   historyTab,
   actions,
@@ -37,6 +40,7 @@ export default function PITDetailLayout({
   overviewLabel,
   relationsLabel,
   impactLabel,
+  contributionsLabel,
   metadataLabel,
 }: PITDetailLayoutProps) {
   const [activeSubTab, setActiveSubTab] = useState<string>("overview");
@@ -48,10 +52,11 @@ export default function PITDetailLayout({
     ];
     if (relationsTab) list.push({ id: "relations", label: relationsLabel || "Relations", icon: Share2 });
     if (impactTab) list.push({ id: "impact", label: impactLabel || "Parcours actifs", icon: TrendingUp });
+    if (contributionsTab) list.push({ id: "contributions", label: contributionsLabel || "Contributions", icon: TrendingUp });
     list.push({ id: "metadata", label: metadataLabel || "Métadonnées", icon: Database });
     if (historyTab) list.push({ id: "history", label: "Historique", icon: Clock });
     return list;
-  }, [relationsTab, impactTab, historyTab, overviewLabel, relationsLabel, impactLabel, metadataLabel]);
+  }, [relationsTab, impactTab, contributionsTab, historyTab, overviewLabel, relationsLabel, impactLabel, contributionsLabel, metadataLabel]);
 
   return (
     <div
@@ -99,6 +104,11 @@ export default function PITDetailLayout({
         {impactTab && (
           <div className={cn(activeSubTab !== "impact" && "hidden")}>
             {impactTab}
+          </div>
+        )}
+        {contributionsTab && (
+          <div className={cn(activeSubTab !== "contributions" && "hidden")}>
+            {contributionsTab}
           </div>
         )}
         <div className={cn(activeSubTab !== "metadata" && "hidden")}>

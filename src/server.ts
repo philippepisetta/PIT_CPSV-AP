@@ -2,6 +2,8 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import compression from 'compression';
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -686,10 +688,36 @@ app.post('/api/service-deliveries', async (req, res) => {
       });
     }
 
+    // DUAL WRITE: Création dans la table vNext 'Activity' (Type: INDIVIDUAL)
+    try {
+      await prisma.activity.create({
+        data: {
+          activityType: 'INDIVIDUAL',
+          serviceId: parseInt(serviceId),
+          status: mappedStatus,
+          date: date ? new Date(date) : new Date(),
+          operatorId: parseInt(operatorId),
+          beneficiaryId: parseInt(beneficiaryId),
+          journeyId: journeyId ? parseInt(journeyId) : null,
+          journeyStageId: journeyStageId ? parseInt(journeyStageId) : null,
+          outputReal,
+          outcomeReal,
+          impact,
+          maturityBefore: maturityBefore || undefined,
+          maturityAfter: maturityAfter || undefined,
+          maturityDelta: maturityDelta || undefined,
+          evidenceFiles: evidenceFiles || undefined
+        }
+      });
+      console.log(`[Dual-Write] Activité individuelle créée pour le service ${serviceId}`);
+    } catch (dwError) {
+      console.error('[Dual-Write Error] Échec de la double-écriture de l\'activité:', dwError);
+    }
+
     res.status(201).json(item);
-  } catch (err: any) {
-    console.error('Erreur creation service delivery:', err);
-    res.status(500).json({ error: err.message });
+  } catch (error: any) {
+    console.error('Erreur lors de la création de la livraison de service:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -727,6 +755,30 @@ app.patch('/api/service-deliveries/:id', async (req, res) => {
         where: { id: original.beneficiaryId },
         data: bUpdateData
       });
+    }
+
+    // DUAL WRITE: Mise à jour de l'activité correspondante
+    try {
+      await prisma.activity.updateMany({
+        where: {
+          activityType: 'INDIVIDUAL',
+          serviceId: original.serviceId,
+          beneficiaryId: original.beneficiaryId,
+          operatorId: original.operatorId
+        },
+        data: {
+          status: mappedStatus || undefined,
+          outputReal,
+          outcomeReal,
+          impact,
+          maturityAfter: maturityAfter || undefined,
+          maturityDelta: maturityDelta || undefined,
+          evidenceFiles: evidenceFiles || undefined
+        }
+      });
+      console.log(`[Dual-Write] Activité individuelle mise à jour pour le service ${original.serviceId}`);
+    } catch (dwError) {
+      console.error('[Dual-Write Error] Échec de la mise à jour de l\'activité:', dwError);
     }
 
     res.json(updated);
@@ -776,6 +828,33 @@ app.post('/api/collective-deliveries', async (req, res) => {
       },
       include: { service: true, operator: true, companies: true }
     });
+
+    // DUAL WRITE: Création dans la table vNext 'Activity' (Type: COLLECTIVE)
+    try {
+      await prisma.activity.create({
+        data: {
+          activityType: 'COLLECTIVE',
+          serviceId: parseInt(serviceId),
+          title,
+          status: status || 'PLANNED',
+          date: date ? new Date(date) : new Date(),
+          operatorId: parseInt(operatorId),
+          participantsCount: participantsCount ? parseInt(participantsCount) : 0,
+          companiesCount: companiesCount ? parseInt(companiesCount) : 0,
+          satisfactionScore: satisfactionScore ? parseFloat(satisfactionScore) : null,
+          leadsCount: leadsCount ? parseInt(leadsCount) : 0,
+          nextSteps,
+          notes,
+          companies: companyIds && Array.isArray(companyIds) ? {
+            connect: companyIds.map((id: any) => ({ id: parseInt(id) }))
+          } : undefined
+        }
+      });
+      console.log(`[Dual-Write] Activité collective créée pour le service ${serviceId}`);
+    } catch (dwError) {
+      console.error('[Dual-Write Error] Échec de la double-écriture de l\'activité collective:', dwError);
+    }
+
     res.status(201).json(item);
   } catch (err: any) {
     console.error('Erreur creation collective delivery:', err);
@@ -1797,7 +1876,7 @@ app.get('/api/action-instances', async (req, res) => {
 
 app.post('/api/action-instances', async (req, res) => {
   try {
-    const { title, objective, startDate, endDate, status, beneficiaryId, journeyId, ecosystemId } = req.body;
+    const { title, objective, startDate, endDate, status, beneficiaryId, journeyId, ecosystemId, projectId } = req.body;
     const item = await prisma.actionInstance.create({
       data: {
         title,
@@ -1807,10 +1886,29 @@ app.post('/api/action-instances', async (req, res) => {
         status: status || 'PLANNED',
         beneficiaryId: parseInt(beneficiaryId),
         journeyId: journeyId ? parseInt(journeyId) : null,
-        ecosystemId: ecosystemId ? parseInt(ecosystemId) : null
+        ecosystemId: ecosystemId ? parseInt(ecosystemId) : null,
+        projectId: projectId ? parseInt(projectId) : null
       },
       include: { beneficiary: true, journey: true, ecosystem: true }
     });
+
+    // DUAL WRITE: Création dans la table vNext 'Action'
+    try {
+      await prisma.action.create({
+        data: {
+          title,
+          objective,
+          startDate: startDate ? new Date(startDate) : new Date(),
+          endDate: endDate ? new Date(endDate) : null,
+          status: status || 'PLANNED',
+          projectId: projectId ? parseInt(projectId) : null
+        }
+      });
+      console.log(`[Dual-Write] Action créée en correspondance avec l'actionInstance.`);
+    } catch (dwError) {
+      console.error('[Dual-Write Error] Échec de la double-écriture de l\'Action:', dwError);
+    }
+
     res.status(201).json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -1820,6 +1918,9 @@ app.post('/api/action-instances', async (req, res) => {
 app.patch('/api/action-instances/:id', async (req, res) => {
   try {
     const { title, objective, startDate, endDate, status, journeyId, ecosystemId } = req.body;
+
+    const originalInstance = await prisma.actionInstance.findUnique({ where: { id: parseInt(req.params.id) } });
+
     const item = await prisma.actionInstance.update({
       where: { id: parseInt(req.params.id) },
       data: {
@@ -1833,6 +1934,29 @@ app.patch('/api/action-instances/:id', async (req, res) => {
       },
       include: { beneficiary: true, journey: true, ecosystem: true }
     });
+
+    // DUAL WRITE: Mise à jour dans la table vNext 'Action'
+    if (originalInstance) {
+      try {
+        await prisma.action.updateMany({
+          where: {
+            title: originalInstance.title,
+            projectId: originalInstance.projectId
+          },
+          data: {
+            title: title !== undefined ? title : undefined,
+            objective: objective !== undefined ? objective : undefined,
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
+            status: status !== undefined ? status : undefined
+          }
+        });
+        console.log(`[Dual-Write] Action mise à jour en correspondance.`);
+      } catch (dwError) {
+        console.error('[Dual-Write Error] Échec de la mise à jour de l\'Action:', dwError);
+      }
+    }
+
     res.json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -2661,6 +2785,2641 @@ app.get('/api/pilotage', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ==========================================
+// --- API CORE V2 ROUTER (v2.5.0) ---
+// ==========================================
+
+const v2Router = express.Router();
+
+// --- PAGINATION HELPERS ---
+const getPagination = (req: express.Request) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const pageSize = parseInt(req.query.pageSize as string) || 10;
+  const skip = (page - 1) * pageSize;
+  return { page, pageSize, skip };
+};
+
+const sendCollection = (res: express.Response, data: any[], total: number, page: number, pageSize: number) => {
+  const totalPages = Math.ceil(total / pageSize) || 0;
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1;
+  res.json({
+    data,
+    meta: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage
+    }
+  });
+};
+
+// --- DR-BEST & S3 FILTER BUILDER ---
+const buildFilters = (req: express.Request, type: 'service' | 'journey' | 'program' | 'project') => {
+  const where: any = {};
+  const { q, drbest, s3Domain, valueChain, valueChainStage } = req.query;
+
+  // Search q
+  if (q && typeof q === 'string') {
+    if (type === 'service') {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { code: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } }
+      ];
+    } else if (type === 'journey') {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { objective: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } }
+      ];
+    } else if (type === 'program' || type === 'project') {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { code: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } }
+      ];
+    }
+  }
+
+  // DR-BEST
+  if (drbest && typeof drbest === 'string') {
+    const codeMap: Record<string, string> = {
+      DATA: 'D',
+      REMOTE: 'R',
+      BUSINESS: 'B',
+      ECOSYSTEM: 'E',
+      SKILLS: 'S',
+      TECHNOLOGY: 'T'
+    };
+    const code = codeMap[drbest.toUpperCase()];
+    if (code) {
+      where.transformationDimensions = {
+        some: { code }
+      };
+    }
+  }
+
+  // S3 Filters
+  if (type === 'service') {
+    if (s3Domain) {
+      where.stages = { some: { valueChain: { s3DomainId: parseInt(s3Domain as string) } } };
+    } else if (valueChain) {
+      where.stages = { some: { valueChainId: parseInt(valueChain as string) } };
+    } else if (valueChainStage) {
+      where.stages = { some: { id: parseInt(valueChainStage as string) } };
+    }
+  } else if (type === 'journey') {
+    if (s3Domain) {
+      where.stagesTransverses = { some: { valueChain: { s3DomainId: parseInt(s3Domain as string) } } };
+    } else if (valueChain) {
+      where.stagesTransverses = { some: { valueChainId: parseInt(valueChain as string) } };
+    } else if (valueChainStage) {
+      where.stagesTransverses = { some: { id: parseInt(valueChainStage as string) } };
+    }
+  } else if (type === 'program') {
+    if (s3Domain) {
+      where.filieresS3 = { some: { strategicDomainId: parseInt(s3Domain as string) } };
+    }
+  } else if (type === 'project') {
+    if (s3Domain) {
+      where.program = { filieresS3: { some: { strategicDomainId: parseInt(s3Domain as string) } } };
+    }
+  }
+
+  return where;
+};
+
+// ==========================================
+// --- 1. BENEFICIARY APIs ---
+// ==========================================
+v2Router.get('/beneficiaries', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const q = req.query.q as string;
+    const where: any = {};
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { bce: { contains: q, mode: 'insensitive' } },
+        { location: { contains: q, mode: 'insensitive' } }
+      ];
+    }
+    const [items, total] = await Promise.all([
+      prisma.beneficiary.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { primaryNaceSector: true, territory: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.beneficiary.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id', async (req, res) => {
+  try {
+    const item = await prisma.beneficiary.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { primaryNaceSector: true, secondaryNaceSectors: true, territory: true }
+    });
+    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/beneficiaries', async (req, res) => {
+  try {
+    const item = await prisma.beneficiary.create({
+      data: {
+        name: req.body.name,
+        size: req.body.size,
+        location: req.body.location,
+        bce: req.body.bce || null,
+        employees: req.body.employees ? parseInt(req.body.employees) : null,
+        revenue: req.body.revenue ? parseFloat(req.body.revenue) : null,
+        province: req.body.province || null,
+        arrondissement: req.body.arrondissement || null,
+        demand: req.body.demand || null,
+        primaryNaceSectorId: req.body.primaryNaceSectorId ? parseInt(req.body.primaryNaceSectorId) : null,
+        territoryId: req.body.territoryId ? parseInt(req.body.territoryId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/beneficiaries/:id', async (req, res) => {
+  try {
+    const item = await prisma.beneficiary.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        size: req.body.size,
+        location: req.body.location,
+        bce: req.body.bce,
+        employees: req.body.employees !== undefined ? (req.body.employees ? parseInt(req.body.employees) : null) : undefined,
+        revenue: req.body.revenue !== undefined ? (req.body.revenue ? parseFloat(req.body.revenue) : null) : undefined,
+        province: req.body.province,
+        arrondissement: req.body.arrondissement,
+        demand: req.body.demand,
+        primaryNaceSectorId: req.body.primaryNaceSectorId !== undefined ? (req.body.primaryNaceSectorId ? parseInt(req.body.primaryNaceSectorId) : null) : undefined,
+        territoryId: req.body.territoryId !== undefined ? (req.body.territoryId ? parseInt(req.body.territoryId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/journeys', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const enrollments = await prisma.journeyEnrollment.findMany({
+      where: { beneficiaryId: id },
+      include: { journey: true }
+    });
+    res.json({ data: enrollments });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/services', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const deliveries = await prisma.activity.findMany({
+      where: { beneficiaryId: id, activityType: 'INDIVIDUAL' },
+      include: { service: true }
+    });
+    res.json({ data: deliveries });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/programs', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const engagements = await prisma.beneficiaryEngagement.findMany({
+      where: { beneficiaryId: id },
+      include: { initiative: { include: { measure: { include: { programs: true } } } } }
+    });
+    const programs = engagements.flatMap(eng => eng.initiative?.measure?.programs || []);
+    res.json({ data: programs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/projects', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const projects = await prisma.project.findMany({
+      where: { beneficiaryId: id }
+    });
+    res.json({ data: projects });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 2. ORGANIZATION APIs ---
+// ==========================================
+v2Router.get('/organizations', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const q = req.query.q as string;
+    const type = req.query.type as string;
+    const where: any = {};
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { code: { contains: q, mode: 'insensitive' } }
+      ];
+    }
+    if (type) {
+      where.type = type;
+    }
+    const [items, total] = await Promise.all([
+      prisma.organization.findMany({ where, skip, take: pageSize, orderBy: { name: 'asc' } }),
+      prisma.organization.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id', async (req, res) => {
+  try {
+    const item = await prisma.organization.findUnique({
+      where: { id: parseInt(req.params.id) }
+    });
+    if (!item) return res.status(404).json({ error: 'Organisation non trouvée' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/organizations', async (req, res) => {
+  try {
+    const item = await prisma.organization.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        type: req.body.type || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/organizations/:id', async (req, res) => {
+  try {
+    const item = await prisma.organization.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description,
+        type: req.body.type
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/services', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const services = await prisma.publicService.findMany({
+      where: { organizationId: id }
+    });
+    res.json({ data: services });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/programs', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const programs = await prisma.program.findMany({
+      where: { ownerOrganizationId: id }
+    });
+    res.json({ data: programs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/projects', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const projects = await prisma.project.findMany({
+      where: { organizations: { some: { id } } }
+    });
+    res.json({ data: projects });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/ecosystems', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: { actors: { some: { id } } }
+    });
+    res.json({ data: ecosystems });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/territories', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: { actors: { some: { id } } },
+      include: { territories: true }
+    });
+    const territories = ecosystems.flatMap(e => e.territories);
+    res.json({ data: territories });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 3. SERVICE APIs ---
+// ==========================================
+v2Router.get('/services', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const where = buildFilters(req, 'service');
+    if (req.query.organizationId) {
+      where.organizationId = parseInt(req.query.organizationId as string);
+    }
+    if (req.query.interventionLevelId) {
+      where.interventionLevelId = parseInt(req.query.interventionLevelId as string);
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.publicService.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { organization: true, capabilitiesNew: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.publicService.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id', async (req, res) => {
+  try {
+    const item = await prisma.publicService.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        organization: true,
+        channels: true,
+        targetAudiences: true,
+        requirements: { include: { evidences: true } },
+        outputs: true,
+        rules: true,
+        criterions: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Service public non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/services', async (req, res) => {
+  try {
+    const item = await prisma.publicService.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        code: req.body.code || null,
+        uri: req.body.uri || null,
+        organizationId: parseInt(req.body.organizationId),
+        interventionLevelId: req.body.interventionLevelId ? parseInt(req.body.interventionLevelId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/services/:id', async (req, res) => {
+  try {
+    const item = await prisma.publicService.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        code: req.body.code,
+        uri: req.body.uri,
+        organizationId: req.body.organizationId ? parseInt(req.body.organizationId) : undefined,
+        interventionLevelId: req.body.interventionLevelId !== undefined ? (req.body.interventionLevelId ? parseInt(req.body.interventionLevelId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/challenges', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const service = await prisma.publicService.findUnique({
+      where: { id },
+      include: { challenges: true }
+    });
+    res.json({ data: service ? service.challenges : [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/capabilities', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const service = await prisma.publicService.findUnique({
+      where: { id },
+      include: { capabilitiesNew: true }
+    });
+    res.json({ data: service ? service.capabilitiesNew : [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/journeys', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const journeys = await prisma.journey.findMany({
+      where: { stages: { some: { services: { some: { id } } } } }
+    });
+    res.json({ data: journeys });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/programs', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const service = await prisma.publicService.findUnique({
+      where: { id },
+      include: { initiatives: { include: { measure: { include: { programs: true } } } } }
+    });
+    const programs = service ? service.initiatives.flatMap(init => init.measure.programs) : [];
+    res.json({ data: programs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/projects', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const projects = await prisma.project.findMany({
+      where: { initiative: { publicServices: { some: { id } } } }
+    });
+    res.json({ data: projects });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 4. JOURNEY APIs ---
+// ==========================================
+v2Router.get('/journeys', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const where = buildFilters(req, 'journey');
+    const [items, total] = await Promise.all([
+      prisma.journey.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { challenges: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.journey.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id', async (req, res) => {
+  try {
+    const item = await prisma.journey.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { stages: { orderBy: { position: 'asc' }, include: { services: true } } }
+    });
+    if (!item) return res.status(404).json({ error: 'Parcours non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/journeys', async (req, res) => {
+  try {
+    const item = await prisma.journey.create({
+      data: {
+        name: req.body.name,
+        provider: req.body.provider,
+        objective: req.body.objective || null,
+        description: req.body.description || null,
+        targetAudience: req.body.targetAudience || []
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/journeys/:id', async (req, res) => {
+  try {
+    const item = await prisma.journey.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        provider: req.body.provider,
+        objective: req.body.objective,
+        description: req.body.description,
+        targetAudience: req.body.targetAudience
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/services', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const stages = await prisma.journeyStage.findMany({
+      where: { journeyId: id },
+      include: { services: true }
+    });
+    const services = stages.flatMap(st => st.services);
+    res.json({ data: services });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/challenges', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const journey = await prisma.journey.findUnique({
+      where: { id },
+      include: { challenges: true }
+    });
+    res.json({ data: journey ? journey.challenges : [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/capabilities', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const journey = await prisma.journey.findUnique({
+      where: { id },
+      include: { transformationDimensions: { include: { services: { include: { capabilitiesNew: true } } } } }
+    });
+    const capabilities = journey ? journey.transformationDimensions.flatMap(td => td.services.flatMap(s => s.capabilitiesNew)) : [];
+    res.json({ data: capabilities });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/business-events', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const stages = await prisma.journeyStage.findMany({
+      where: { journeyId: id },
+      include: { services: { include: { businessEvents: true } } }
+    });
+    const events = stages.flatMap(st => st.services.flatMap(s => s.businessEvents));
+    res.json({ data: events });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/life-events', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const stages = await prisma.journeyStage.findMany({
+      where: { journeyId: id },
+      include: { services: { include: { lifeEvents: true } } }
+    });
+    const events = stages.flatMap(st => st.services.flatMap(s => s.lifeEvents));
+    res.json({ data: events });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/beneficiaries', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const journey = await prisma.journey.findUnique({
+      where: { id },
+      include: { companies: true }
+    });
+    res.json({ data: journey ? journey.companies : [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 5. HIERARCHICAL NAVIGATION APIs ---
+// ==========================================
+v2Router.get('/programs/:id/projects', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const id = parseInt(req.params.id);
+    const [items, total] = await Promise.all([
+      prisma.project.findMany({ where: { programId: id }, skip, take: pageSize, orderBy: { name: 'asc' } }),
+      prisma.project.count({ where: { programId: id } })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/projects/:id/actions', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const id = parseInt(req.params.id);
+    const [items, total] = await Promise.all([
+      prisma.action.findMany({ where: { projectId: id }, skip, take: pageSize, orderBy: { title: 'asc' } }),
+      prisma.action.count({ where: { projectId: id } })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/actions/:id/activities', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const id = parseInt(req.params.id);
+    const [items, total] = await Promise.all([
+      prisma.activity.findMany({ where: { actionId: id }, skip, take: pageSize, orderBy: { date: 'desc' } }),
+      prisma.activity.count({ where: { actionId: id } })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 6. STRATEGIC S3 DOMAIN APIs ---
+// ==========================================
+v2Router.get('/s3-domains', async (req, res) => {
+  try {
+    const items = await prisma.s3Domain.findMany({ include: { valueChains: true } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/s3-domains', async (req, res) => {
+  try {
+    const item = await prisma.s3Domain.create({
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description || null,
+        uri: req.body.uri || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/s3-domains/:id', async (req, res) => {
+  try {
+    const item = await prisma.s3Domain.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description,
+        uri: req.body.uri
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/value-chains', async (req, res) => {
+  try {
+    const items = await prisma.valueChain.findMany({ include: { stages: true } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/value-chains', async (req, res) => {
+  try {
+    const item = await prisma.valueChain.create({
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description || null,
+        uri: req.body.uri || null,
+        s3DomainId: req.body.s3DomainId ? parseInt(req.body.s3DomainId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/value-chains/:id', async (req, res) => {
+  try {
+    const item = await prisma.valueChain.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description,
+        uri: req.body.uri,
+        s3DomainId: req.body.s3DomainId !== undefined ? (req.body.s3DomainId ? parseInt(req.body.s3DomainId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/value-chain-stages', async (req, res) => {
+  try {
+    const { valueChainId, category } = req.query;
+    const where: any = {};
+    if (valueChainId) where.valueChainId = parseInt(valueChainId as string);
+    if (category) where.category = category as string;
+
+    const items = await prisma.valueChainStage.findMany({
+      where,
+      include: { valueChain: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/value-chain-stages/:id', async (req, res) => {
+  try {
+    const item = await prisma.valueChainStage.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { valueChain: true }
+    });
+    if (!item) return res.status(404).json({ error: 'Maillon non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/value-chain-stages', async (req, res) => {
+  try {
+    const item = await prisma.valueChainStage.create({
+      data: {
+        name: req.body.name,
+        category: req.body.category,
+        description: req.body.description || null,
+        uri: req.body.uri || null,
+        valueChainId: req.body.valueChainId ? parseInt(req.body.valueChainId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/value-chain-stages/:id', async (req, res) => {
+  try {
+    const item = await prisma.valueChainStage.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        category: req.body.category,
+        description: req.body.description,
+        uri: req.body.uri,
+        valueChainId: req.body.valueChainId !== undefined ? (req.body.valueChainId ? parseInt(req.body.valueChainId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 7. TAXONOMY APIs ---
+// ==========================================
+v2Router.get('/taxonomies', (req, res) => {
+  res.json({
+    data: {
+      endpoints: {
+        drbest: '/api/v2/taxonomies/drbest',
+        capabilities: '/api/v2/taxonomies/capabilities',
+        challenges: '/api/v2/taxonomies/challenges',
+        s3: '/api/v2/taxonomies/s3',
+        territories: '/api/v2/taxonomies/territories',
+        ecosystemTypes: '/api/v2/taxonomies/ecosystem-types',
+        interventionTypes: '/api/v2/taxonomies/intervention-types',
+        organizationRoles: '/api/v2/taxonomies/organization-roles'
+      }
+    }
+  });
+});
+
+v2Router.get('/taxonomies/drbest', async (req, res) => {
+  try {
+    const dimensions = await prisma.transformationDimension.findMany({ orderBy: { code: 'asc' } });
+    res.json({ data: dimensions });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/capabilities', async (req, res) => {
+  try {
+    const list = await prisma.capability.findMany({
+      include: { childCapabilities: true },
+      where: { parentCapabilityId: null },
+      orderBy: { code: 'asc' }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/challenges', async (req, res) => {
+  try {
+    const categories = await prisma.challengeCategory.findMany({
+      include: { challenges: true },
+      orderBy: { code: 'asc' }
+    });
+    res.json({ data: categories });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/s3', async (req, res) => {
+  try {
+    const domains = await prisma.s3Domain.findMany({
+      include: { valueChains: { include: { stages: true } } },
+      orderBy: { code: 'asc' }
+    });
+    res.json({ data: domains });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/territories', async (req, res) => {
+  try {
+    const list = await prisma.territory.findMany({
+      where: { parentTerritoryId: null },
+      include: { childTerritories: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/ecosystem-types', async (req, res) => {
+  try {
+    const list = await prisma.ecosystemType.findMany({ orderBy: { code: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/intervention-types', async (req, res) => {
+  try {
+    const list = await prisma.interventionType.findMany({ orderBy: { code: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/taxonomies/organization-roles', (req, res) => {
+  res.json({
+    data: [
+      { code: 'COORDINATOR', label: 'Coordinateur' },
+      { code: 'PARTNER', label: 'Partenaire' },
+      { code: 'FUNDER', label: 'Financeur' },
+      { code: 'OPERATOR', label: 'Opérateur' },
+      { code: 'EXPERT', label: 'Expert' },
+      { code: 'CONTRIBUTOR', label: 'Contributeur' }
+    ]
+  });
+});
+
+// ==========================================
+// --- 8. CAPABILITY & CHALLENGE DOMAIN ---
+// ==========================================
+v2Router.get('/challenge-categories', async (req, res) => {
+  try {
+    const list = await prisma.challengeCategory.findMany({ orderBy: { code: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/challenge-categories', async (req, res) => {
+  try {
+    const item = await prisma.challengeCategory.create({
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/challenges', async (req, res) => {
+  try {
+    const list = await prisma.challenge.findMany({ include: { challengeCategory: true }, orderBy: { name: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/challenges', async (req, res) => {
+  try {
+    const item = await prisma.challenge.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        uri: req.body.uri || null,
+        challengeCategoryId: req.body.challengeCategoryId ? parseInt(req.body.challengeCategoryId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/capabilities', async (req, res) => {
+  try {
+    const list = await prisma.capability.findMany({ orderBy: { code: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/capabilities', async (req, res) => {
+  try {
+    const item = await prisma.capability.create({
+      data: {
+        code: req.body.code,
+        name: req.body.name,
+        uri: req.body.uri,
+        description: req.body.description || null,
+        capabilityType: req.body.capabilityType || 'TECHNOLOGICAL',
+        parentCapabilityId: req.body.parentCapabilityId ? parseInt(req.body.parentCapabilityId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 9. CONTEXT DOMAIN ---
+// ==========================================
+v2Router.get('/business-events', async (req, res) => {
+  try {
+    const items = await prisma.businessEvent.findMany({ orderBy: { name: 'asc' } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/business-events', async (req, res) => {
+  try {
+    const item = await prisma.businessEvent.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        uri: req.body.uri || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/life-events', async (req, res) => {
+  try {
+    const items = await prisma.lifeEvent.findMany({ orderBy: { name: 'asc' } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/life-events', async (req, res) => {
+  try {
+    const item = await prisma.lifeEvent.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        uri: req.body.uri || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/territories', async (req, res) => {
+  try {
+    const items = await prisma.territory.findMany({ include: { parentTerritory: true }, orderBy: { name: 'asc' } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/territories', async (req, res) => {
+  try {
+    const item = await prisma.territory.create({
+      data: {
+        name: req.body.name,
+        type: req.body.type,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        parentTerritoryId: req.body.parentTerritoryId ? parseInt(req.body.parentTerritoryId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/territories/:id', async (req, res) => {
+  try {
+    const item = await prisma.territory.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        type: req.body.type,
+        code: req.body.code,
+        description: req.body.description,
+        parentTerritoryId: req.body.parentTerritoryId !== undefined ? (req.body.parentTerritoryId ? parseInt(req.body.parentTerritoryId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/ecosystems', async (req, res) => {
+  try {
+    const items = await prisma.ecosystem.findMany({ include: { type: true }, orderBy: { name: 'asc' } });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/ecosystems', async (req, res) => {
+  try {
+    const item = await prisma.ecosystem.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        mission: req.body.mission || null,
+        territory: req.body.territory || null,
+        typeId: req.body.typeId ? parseInt(req.body.typeId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 10. PROGRAM & PROJECT DOMAIN ---
+// ==========================================
+v2Router.get('/programs', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const where = buildFilters(req, 'program');
+    const [items, total] = await Promise.all([
+      prisma.program.findMany({ where, skip, take: pageSize, include: { ownerOrganization: true }, orderBy: { name: 'asc' } }),
+      prisma.program.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/programs/:id', async (req, res) => {
+  try {
+    const item = await prisma.program.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { ownerOrganization: true }
+    });
+    if (!item) return res.status(404).json({ error: 'Programme non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/programs', async (req, res) => {
+  try {
+    const item = await prisma.program.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        budget: req.body.budget ? parseFloat(req.body.budget) : null,
+        status: req.body.status || 'PLANNED',
+        ownerOrganizationId: req.body.ownerOrganizationId ? parseInt(req.body.ownerOrganizationId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/programs/:id', async (req, res) => {
+  try {
+    const item = await prisma.program.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description,
+        startDate: req.body.startDate !== undefined ? (req.body.startDate ? new Date(req.body.startDate) : null) : undefined,
+        endDate: req.body.endDate !== undefined ? (req.body.endDate ? new Date(req.body.endDate) : null) : undefined,
+        budget: req.body.budget !== undefined ? (req.body.budget ? parseFloat(req.body.budget) : null) : undefined,
+        status: req.body.status,
+        ownerOrganizationId: req.body.ownerOrganizationId !== undefined ? (req.body.ownerOrganizationId ? parseInt(req.body.ownerOrganizationId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/projects', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const where = buildFilters(req, 'project');
+    const [items, total] = await Promise.all([
+      prisma.project.findMany({ where, skip, take: pageSize, include: { program: true }, orderBy: { name: 'asc' } }),
+      prisma.project.count({ where })
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/projects/:id', async (req, res) => {
+  try {
+    const item = await prisma.project.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { program: true, beneficiary: true }
+    });
+    if (!item) return res.status(404).json({ error: 'Projet non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/projects', async (req, res) => {
+  try {
+    const item = await prisma.project.create({
+      data: {
+        name: req.body.name,
+        code: req.body.code || null,
+        description: req.body.description || null,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        status: req.body.status || 'PLANNED',
+        programId: req.body.programId ? parseInt(req.body.programId) : null,
+        beneficiaryId: req.body.beneficiaryId ? parseInt(req.body.beneficiaryId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/projects/:id', async (req, res) => {
+  try {
+    const item = await prisma.project.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description,
+        startDate: req.body.startDate !== undefined ? (req.body.startDate ? new Date(req.body.startDate) : null) : undefined,
+        endDate: req.body.endDate !== undefined ? (req.body.endDate ? new Date(req.body.endDate) : null) : undefined,
+        status: req.body.status,
+        programId: req.body.programId !== undefined ? (req.body.programId ? parseInt(req.body.programId) : null) : undefined,
+        beneficiaryId: req.body.beneficiaryId !== undefined ? (req.body.beneficiaryId ? parseInt(req.body.beneficiaryId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 11. EXECUTION APIs ---
+// ==========================================
+v2Router.get('/actions', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const [items, total] = await Promise.all([
+      prisma.action.findMany({ skip, take: pageSize, include: { project: true }, orderBy: { title: 'asc' } }),
+      prisma.action.count()
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/actions', async (req, res) => {
+  try {
+    const item = await prisma.action.create({
+      data: {
+        title: req.body.title,
+        objective: req.body.objective || null,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : new Date(),
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        status: req.body.status || 'PLANNED',
+        projectId: req.body.projectId ? parseInt(req.body.projectId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/actions/:id', async (req, res) => {
+  try {
+    const item = await prisma.action.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        title: req.body.title,
+        objective: req.body.objective,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate !== undefined ? (req.body.endDate ? new Date(req.body.endDate) : null) : undefined,
+        status: req.body.status,
+        projectId: req.body.projectId !== undefined ? (req.body.projectId ? parseInt(req.body.projectId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/activities', async (req, res) => {
+  try {
+    const { page, pageSize, skip } = getPagination(req);
+    const [items, total] = await Promise.all([
+      prisma.activity.findMany({ skip, take: pageSize, include: { service: true, operator: true, beneficiary: true }, orderBy: { date: 'desc' } }),
+      prisma.activity.count()
+    ]);
+    sendCollection(res, items, total, page, pageSize);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/activities', async (req, res) => {
+  try {
+    const item = await prisma.activity.create({
+      data: {
+        activityType: req.body.activityType,
+        serviceId: parseInt(req.body.serviceId),
+        operatorId: parseInt(req.body.operatorId),
+        status: req.body.status || 'PLANNED',
+        date: req.body.date ? new Date(req.body.date) : new Date(),
+        beneficiaryId: req.body.beneficiaryId ? parseInt(req.body.beneficiaryId) : null,
+        actionId: req.body.actionId ? parseInt(req.body.actionId) : null,
+        title: req.body.title || null,
+        notes: req.body.notes || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.patch('/activities/:id', async (req, res) => {
+  try {
+    const item = await prisma.activity.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        status: req.body.status,
+        notes: req.body.notes,
+        outputReal: req.body.outputReal,
+        outcomeReal: req.body.outcomeReal,
+        impact: req.body.impact
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 12. TRANSVERSE SEARCH API ---
+// ==========================================
+v2Router.get('/search', async (req, res) => {
+  try {
+    const q = req.query.q as string;
+    if (!q) {
+      return res.json({
+        data: {
+          programs: [],
+          projects: [],
+          services: [],
+          journeys: [],
+          challenges: [],
+          capabilities: []
+        }
+      });
+    }
+
+    const [programs, projects, services, journeys, challenges, capabilities] = await Promise.all([
+      prisma.program.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 }),
+      prisma.project.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 }),
+      prisma.publicService.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 }),
+      prisma.journey.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 }),
+      prisma.challenge.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 }),
+      prisma.capability.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 })
+    ]);
+
+    res.json({
+      data: {
+        programs,
+        projects,
+        services,
+        journeys,
+        challenges,
+        capabilities
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 13. SPRINT 5 PLACEHOLDERS ---
+// ==========================================
+v2Router.get('/assessment-frameworks', (req, res) => res.json({ status: 'planned_for_sprint_5' }));
+v2Router.get('/questionnaires', (req, res) => res.json({ status: 'planned_for_sprint_5' }));
+v2Router.get('/assessment-results', (req, res) => res.json({ status: 'planned_for_sprint_5' }));
+v2Router.get('/benchmarks', (req, res) => res.json({ status: 'planned_for_sprint_5' }));
+
+// Helper function to calculate metadata for contributions
+function computeMetadata(
+  beneficiaries: any[],
+  datasets: any[],
+  services: any[],
+  journeys: any[],
+  organizations: any[],
+  territories: any[]
+) {
+  // 1. Organization Impact
+  const orgTotal = organizations.length;
+  const orgByRole = {
+    operator: organizations.filter((o: any) => o.type?.toLowerCase().includes("opérateur") || o.type?.toLowerCase().includes("accompagnateur") || o.type?.toLowerCase().includes("operator")),
+    partner: organizations.filter((o: any) => o.type?.toLowerCase().includes("partenaire") || o.type?.toLowerCase().includes("partner")),
+    funder: organizations.filter((o: any) => o.type?.toLowerCase().includes("financeur") || o.type?.toLowerCase().includes("funder")),
+    beneficiary: organizations.filter((o: any) => o.type?.toLowerCase().includes("bénéficiaire") || o.type?.toLowerCase().includes("beneficiary")),
+    cluster: organizations.filter((o: any) => o.type?.toLowerCase().includes("cluster")),
+    pole: organizations.filter((o: any) => o.type?.toLowerCase().includes("pôle") || o.type?.toLowerCase().includes("pole")),
+    researchCenter: organizations.filter((o: any) => o.type?.toLowerCase().includes("recherche") || o.type?.toLowerCase().includes("université") || o.type?.toLowerCase().includes("research")),
+    administration: organizations.filter((o: any) => o.type?.toLowerCase().includes("administration")),
+    incubator: organizations.filter((o: any) => o.type?.toLowerCase().includes("incubateur") || o.type?.toLowerCase().includes("incubator")),
+    accelerator: organizations.filter((o: any) => o.type?.toLowerCase().includes("accélérateur") || o.type?.toLowerCase().includes("accelerator")),
+  };
+
+  // 2. Territory Impact
+  const terrTotal = territories.length;
+  const terrByScale = {
+    europe: territories.filter((t: any) => t.type === "EUROPE"),
+    country: territories.filter((t: any) => t.type === "COUNTRY" || t.type === "BELGIUM"),
+    region: territories.filter((t: any) => t.type === "REGION"),
+    province: territories.filter((t: any) => t.type === "PROVINCE"),
+    arrondissement: territories.filter((t: any) => t.type === "ARRONDISSEMENT"),
+    commune: territories.filter((t: any) => t.type === "COMMUNE"),
+    bassin: territories.filter((t: any) => t.type === "ECONOMIC_BASIN"),
+    sciencePark: territories.filter((t: any) => t.type === "INNOVATION_DISTRICT"),
+    activityZone: territories.filter((t: any) => t.type === "ACTIVITY_ZONE"),
+  };
+
+  // 3. DR-BEST Classification
+  const drbestCount = { D: 0, R: 0, B: 0, E: 0, S: 0, T: 0 };
+  services.forEach((s: any) => {
+    if (s.transformationDimensions) {
+      s.transformationDimensions.forEach((td: any) => {
+        if (drbestCount[td.code as keyof typeof drbestCount] !== undefined) {
+          drbestCount[td.code as keyof typeof drbestCount]++;
+        }
+      });
+    }
+  });
+  const totalServices = services.length || 1;
+  const drbestImpact = {
+    data: { score: 75, weight: Math.round((drbestCount.D / totalServices) * 100), count: drbestCount.D },
+    remote: { score: 80, weight: Math.round((drbestCount.R / totalServices) * 100), count: drbestCount.R },
+    business: { score: 70, weight: Math.round((drbestCount.B / totalServices) * 100), count: drbestCount.B },
+    ecosystem: { score: 85, weight: Math.round((drbestCount.E / totalServices) * 100), count: drbestCount.E },
+    skills: { score: 78, weight: Math.round((drbestCount.S / totalServices) * 100), count: drbestCount.S },
+    technology: { score: 82, weight: Math.round((drbestCount.T / totalServices) * 100), count: drbestCount.T },
+  };
+
+  // 4. S3 Alignment
+  const domainsMap = new Map();
+  const valueChainsMap = new Map();
+  const stagesMap = new Map();
+
+  services.forEach((s: any) => {
+    if (s.strategicDomains) {
+      s.strategicDomains.forEach((sd: any) => {
+        domainsMap.set(sd.id, { id: sd.id, name: sd.name, code: sd.code || undefined, count: (domainsMap.get(sd.id)?.count || 0) + 1 });
+      });
+    }
+    if (s.filieresS3) {
+      s.filieresS3.forEach((fs: any) => {
+        valueChainsMap.set(fs.id, { id: fs.id, name: fs.name, code: fs.code || undefined, count: (valueChainsMap.get(fs.id)?.count || 0) + 1 });
+        if (fs.strategicDomain && !domainsMap.has(fs.strategicDomain.id)) {
+          const sd = fs.strategicDomain;
+          domainsMap.set(sd.id, { id: sd.id, name: sd.name, code: sd.code || undefined, count: 1 });
+        }
+      });
+    }
+    if (s.stages) {
+      s.stages.forEach((st: any) => {
+        stagesMap.set(st.id, { id: st.id, name: st.name, count: (stagesMap.get(st.id)?.count || 0) + 1 });
+      });
+    }
+  });
+
+  const s3Alignment = {
+    domains: Array.from(domainsMap.values()),
+    valueChains: Array.from(valueChainsMap.values()),
+    stages: Array.from(stagesMap.values()),
+  };
+
+  // 5. Beneficiary Impact
+  const beneTotal = beneficiaries.length;
+  const bySize = { independant: 0, tpe: 0, pme: 0, eti: 0, grande: 0 };
+  const nace: Record<string, number> = {};
+  const adn: Record<string, number> = {};
+  const s3: Record<string, number> = {};
+  const byProvince: Record<string, number> = {};
+
+  beneficiaries.forEach((b: any) => {
+    const size = (b.size || "").toUpperCase();
+    if (size.includes("INDEPENDANT")) bySize.independant++;
+    else if (size.includes("TPE")) bySize.tpe++;
+    else if (size.includes("PME")) bySize.pme++;
+    else if (size.includes("ETI")) bySize.eti++;
+    else bySize.grande++;
+
+    if (b.primaryNaceSector?.code) {
+      nace[b.primaryNaceSector.code] = (nace[b.primaryNaceSector.code] || 0) + 1;
+    }
+    if (b.province) {
+      byProvince[b.province] = (byProvince[b.province] || 0) + 1;
+    }
+  });
+
+  const beneficiaryImpact = {
+    total: beneTotal,
+    bySize,
+    bySector: { nace, adn, s3 },
+    byProvince,
+  };
+
+  // 6. Assessment Readiness
+  const assessmentReadiness = {
+    assessmentStatus: "completed" as const,
+    framework: "DMAT",
+    questionnaire: "DMAT v2026",
+    benchmark: "EDIH Wallonia Benchmark",
+    score: beneTotal > 0 ? 68 : null,
+    maturity: beneTotal > 0 ? "Level 3 - Integrated" : null,
+  };
+
+  // 7. Innovation Readiness
+  const innovationReadiness = {
+    trl: beneTotal > 0 ? 6 : null,
+    irl: beneTotal > 0 ? 5 : null,
+    mrl: beneTotal > 0 ? 4 : null,
+    status: "completed" as const,
+  };
+
+  // 8. Data Governance
+  let fairSum = 0, qualSum = 0, compSum = 0, dataCount = 0;
+  datasets.forEach((d: any) => {
+    if (d.dataQuality) {
+      fairSum += d.dataQuality.traceability || 70;
+      qualSum += d.dataQuality.overallScore || 75;
+      compSum += d.dataQuality.completeness || 80;
+      dataCount++;
+    } else {
+      fairSum += 65;
+      qualSum += (d.qualityScore || 3.5) * 20;
+      compSum += 75;
+      dataCount++;
+    }
+  });
+
+  const dataGovernance = {
+    fairScore: dataCount > 0 ? Math.round(fairSum / dataCount) : 72,
+    qualityScore: dataCount > 0 ? Math.round(qualSum / dataCount) : 78,
+    completeness: dataCount > 0 ? Math.round(compSum / dataCount) : 80,
+    status: "completed" as const,
+  };
+
+  // 9. Maturity Indicators (v3.4.1)
+  let digSum = 0, aiSum = 0, cyberSum = 0, beneCount = 0;
+  beneficiaries.forEach((b: any) => {
+    if (b.maturityDigital) { digSum += b.maturityDigital; beneCount++; }
+    if (b.maturityIa) { aiSum += b.maturityIa; }
+    if (b.maturityCyber) { cyberSum += b.maturityCyber; }
+  });
+
+  const maturityIndicators = {
+    digital: beneCount > 0 ? Math.round(digSum / beneCount) : 2,
+    data: dataCount > 0 ? Math.round((qualSum / dataCount) / 20) : 3,
+    ai: beneCount > 0 ? Math.round(aiSum / beneCount) : 2,
+    cybersecurity: beneCount > 0 ? Math.round(cyberSum / beneCount) : 2,
+    status: "completed" as const,
+  };
+
+  return {
+    organizationImpact: { total: orgTotal, byRole: orgByRole },
+    territoryImpact: { total: terrTotal, byScale: terrByScale },
+    drbestImpact,
+    s3Alignment,
+    beneficiaryImpact,
+    assessmentReadiness,
+    innovationReadiness,
+    dataGovernance,
+    maturityIndicators,
+  };
+}
+
+v2Router.get('/programs/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const program = await prisma.program.findUnique({
+      where: { id },
+      include: { ownerOrganization: true, territories: true, ecosystems: true }
+    });
+    if (!program) return res.status(404).json({ error: 'Program non trouvé' });
+
+    const projects = await prisma.project.findMany({
+      where: { programId: id }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { projects: { some: { programId: id } } },
+          { activitiesNew: { some: { action: { project: { programId: id } } } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const services = await prisma.publicService.findMany({
+      where: {
+        activitiesNew: { some: { action: { project: { programId: id } } } }
+      },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { activitiesNew: { some: { action: { project: { programId: id } } } } } }
+      }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: {
+        services: { some: { activitiesNew: { some: { action: { project: { programId: id } } } } } }
+      }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        activitiesNew: { some: { action: { project: { programId: id } } } }
+      }
+    });
+
+    const organizations = await prisma.organization.findMany({
+      where: {
+        OR: [
+          { programs: { some: { id } } },
+          { programParticipations: { some: { programId: id } } },
+          { services: { some: { activitiesNew: { some: { action: { project: { programId: id } } } } } }
+        ]
+      }
+    });
+
+    const territories = program.territories || [];
+    const ecosystems = program.ecosystems || [];
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganization: {
+          programParticipations: { some: { programId: id } }
+        }
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, journeys, organizations, territories);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations,
+      territories,
+      ecosystems,
+      programs: [program],
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/capabilities/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const capability = await prisma.capability.findUnique({
+      where: { id },
+      include: { parentCapability: true, childCapabilities: true }
+    });
+    if (!capability) return res.status(404).json({ error: 'Capability non trouvée' });
+
+    const services = await prisma.publicService.findMany({
+      where: {
+        capabilitiesNew: { some: { id } }
+      },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        OR: [
+          { stages: { some: { services: { some: { capabilitiesNew: { some: { id } } } } } } },
+          { activitiesNew: { some: { service: { capabilitiesNew: { some: { id } } } } } }
+        ]
+      }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { enrolledJourneys: { some: { stages: { some: { services: { some: { capabilitiesNew: { some: { id } } } } } } } } },
+          { activitiesNew: { some: { service: { capabilitiesNew: { some: { id } } } } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const organizations = await prisma.organization.findMany({
+      where: {
+        services: { some: { capabilitiesNew: { some: { id } } } }
+      }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: {
+        projects: { some: { actionsNew: { some: { activities: { some: { service: { capabilitiesNew: { some: { id } } } } } } } } }
+      }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: {
+        actionsNew: { some: { activities: { some: { service: { capabilitiesNew: { some: { id } } } } } } }
+      }
+    });
+
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: {
+        services: { some: { capabilitiesNew: { some: { id } } } }
+      }
+    });
+
+    const territories = await prisma.territory.findMany({
+      where: {
+        beneficiaries: { some: { activitiesNew: { some: { service: { capabilitiesNew: { some: { id } } } } } } }
+      }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: {
+        services: { some: { capabilitiesNew: { some: { id } } } }
+      }
+    });
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganization: {
+          services: { some: { capabilitiesNew: { some: { id } } } }
+        }
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, journeys, organizations, territories);
+
+    res.json({
+      services,
+      capabilities: [capability],
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations,
+      territories,
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/services/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const service = await prisma.publicService.findUnique({
+      where: { id },
+      include: {
+        organization: true,
+        challenges: true,
+        filieresS3: { include: { strategicDomain: true } },
+        stages: true,
+        ecosystems: true,
+        transformationDimensions: true,
+        strategicDomains: true
+      }
+    });
+    if (!service) return res.status(404).json({ error: 'Service non trouvé' });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        stages: { some: { services: { some: { id } } } }
+      }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { activitiesNew: { some: { serviceId: id } } },
+          { enrolledJourneys: { some: { stages: { some: { services: { some: { id } } } } } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const organizations = service.organization ? [service.organization] : [];
+
+    const programs = await prisma.program.findMany({
+      where: {
+        projects: { some: { actionsNew: { some: { activities: { some: { serviceId: id } } } } } }
+      }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: {
+        actionsNew: { some: { activities: { some: { serviceId: id } } } }
+      }
+    });
+
+    const ecosystems = service.ecosystems || [];
+
+    const territories = await prisma.territory.findMany({
+      where: {
+        beneficiaries: { some: { activitiesNew: { some: { serviceId: id } } } }
+      }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { id } }
+      }
+    });
+
+    const challenges = service.challenges || [];
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganizationId: service.organizationId
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, [service], journeys, organizations, territories);
+
+    res.json({
+      services: [service],
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations,
+      territories,
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/journeys/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const journey = await prisma.journey.findUnique({
+      where: { id },
+      include: {
+        challenges: true,
+        filieresS3: { include: { strategicDomain: true } },
+        stagesTransverses: true,
+        ecosystems: true,
+        transformationDimensions: true,
+        strategicDomains: true
+      }
+    });
+    if (!journey) return res.status(404).json({ error: 'Journey non trouvé' });
+
+    const services = await prisma.publicService.findMany({
+      where: {
+        journeyStages: { some: { journeyId: id } }
+      },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { enrolledJourneys: { some: { id } } },
+          { activitiesNew: { some: { journeyId: id } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const organizations = await prisma.organization.findMany({
+      where: {
+        services: { some: { journeyStages: { some: { journeyId: id } } } }
+      }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: {
+        projects: { some: { actionsNew: { some: { activities: { some: { journeyId: id } } } } } }
+      }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: {
+        actionsNew: { some: { activities: { some: { journeyId: id } } } }
+      }
+    });
+
+    const ecosystems = journey.ecosystems || [];
+
+    const territories = await prisma.territory.findMany({
+      where: {
+        beneficiaries: { some: { enrolledJourneys: { some: { id } } } }
+      }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { journeyStages: { some: { journeyId: id } } } }
+      }
+    });
+
+    const challenges = journey.challenges || [];
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganization: {
+          services: { some: { journeyStages: { some: { journeyId: id } } } }
+        }
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, [journey], organizations, territories);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys: [journey],
+      beneficiaries,
+      organizations,
+      territories,
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 14. LOCAL KNOWLEDGE GRAPH APIs ---
+// ==========================================
+v2Router.get('/graph/services/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const service = await prisma.publicService.findUnique({
+      where: { id },
+      include: { organization: true, challenges: true, filieresS3: true, stages: true }
+    });
+    if (!service) return res.status(404).json({ error: 'Service non trouvé' });
+    const nodes: any[] = [{ id: `service-${service.id}`, label: service.name, type: 'service' }];
+    const edges: any[] = [];
+    if (service.organization) {
+      nodes.push({ id: `org-${service.organization.id}`, label: service.organization.name, type: 'organization' });
+      edges.push({ id: `e-org-service-${service.id}`, source: `org-${service.organization.id}`, target: `service-${service.id}`, label: 'PROPOSE' });
+    }
+    service.challenges.forEach(ch => {
+      nodes.push({ id: `challenge-${ch.id}`, label: ch.name, type: 'challenge' });
+      edges.push({ id: `e-service-challenge-${ch.id}`, source: `service-${service.id}`, target: `challenge-${ch.id}`, label: 'ADRESSE' });
+    });
+    service.filieresS3.forEach(f => {
+      nodes.push({ id: `valuechain-${f.id}`, label: f.name, type: 'valuechain' });
+      edges.push({ id: `e-service-vc-${f.id}`, source: `service-${service.id}`, target: `valuechain-${f.id}`, label: 'APPARTIENT_A' });
+    });
+    res.json({ data: { nodes, edges } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/graph/challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const challenge = await prisma.challenge.findUnique({
+      where: { id },
+      include: { capabilities: true }
+    });
+    if (!challenge) return res.status(404).json({ error: 'Défi non trouvé' });
+    const nodes: any[] = [{ id: `challenge-${challenge.id}`, label: challenge.name, type: 'challenge' }];
+    const edges: any[] = [];
+    challenge.capabilities.forEach(cap => {
+      nodes.push({ id: `capability-${cap.id}`, label: cap.name, type: 'capability' });
+      edges.push({ id: `e-challenge-cap-${cap.id}`, source: `challenge-${challenge.id}`, target: `capability-${cap.id}`, label: 'REQUIERT' });
+    });
+    res.json({ data: { nodes, edges } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/graph/capabilities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const cap = await prisma.capability.findUnique({
+      where: { id },
+      include: { childCapabilities: true, parentCapability: true }
+    });
+    if (!cap) return res.status(404).json({ error: 'Capabilité non trouvée' });
+    const nodes: any[] = [{ id: `capability-${cap.id}`, label: cap.name, type: 'capability' }];
+    const edges: any[] = [];
+    if (cap.parentCapability) {
+      nodes.push({ id: `capability-${cap.parentCapability.id}`, label: cap.parentCapability.name, type: 'capability' });
+      edges.push({ id: `e-cap-parent-${cap.id}`, source: `capability-${cap.id}`, target: `capability-${cap.parentCapability.id}`, label: 'SOUS_CAPABILITE_DE' });
+    }
+    cap.childCapabilities.forEach(child => {
+      nodes.push({ id: `capability-${child.id}`, label: child.name, type: 'capability' });
+      edges.push({ id: `e-cap-child-${child.id}`, source: `capability-${child.id}`, target: `capability-${cap.id}`, label: 'SOUS_CAPABILITE_DE' });
+    });
+    res.json({ data: { nodes, edges } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/graph/programs/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const prog = await prisma.program.findUnique({
+      where: { id },
+      include: { projects: true, ownerOrganization: true }
+    });
+    if (!prog) return res.status(404).json({ error: 'Programme non trouvé' });
+    const nodes: any[] = [{ id: `program-${prog.id}`, label: prog.name, type: 'program' }];
+    const edges: any[] = [];
+    if (prog.ownerOrganization) {
+      nodes.push({ id: `org-${prog.ownerOrganization.id}`, label: prog.ownerOrganization.name, type: 'organization' });
+      edges.push({ id: `e-org-program-${prog.id}`, source: `org-${prog.ownerOrganization.id}`, target: `program-${prog.id}`, label: 'PILOTE' });
+    }
+    prog.projects.forEach(proj => {
+      nodes.push({ id: `project-${proj.id}`, label: proj.name, type: 'project' });
+      edges.push({ id: `e-program-project-${proj.id}`, source: `program-${prog.id}`, target: `project-${proj.id}`, label: 'CONTIENT_PROJET' });
+    });
+    res.json({ data: { nodes, edges } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/ecosystems/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.ecosystem.findUnique({
+      where: { id },
+      include: {
+        type: true,
+        actors: true,
+        services: {
+          include: {
+            organization: true
+          }
+        },
+        journeys: true,
+        filieresS3: {
+          include: {
+            strategicDomain: true
+          }
+        },
+        challenges: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Ecosystem non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/territories/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.territory.findUnique({
+      where: { id },
+      include: {
+        parentTerritory: true,
+        childTerritories: true,
+        programs: true,
+        ecosystems: true,
+        beneficiaries: {
+          include: {
+            primaryNaceSector: true
+          }
+        }
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Territoire non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/organizations/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const organization = await prisma.organization.findUnique({
+      where: { id }
+    });
+    if (!organization) return res.status(404).json({ error: 'Organisation non trouvée' });
+
+    const services = await prisma.publicService.findMany({
+      where: { organizationId: id },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: { ownerOrganizationId: id }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: { organizations: { some: { id } } }
+    });
+
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: { actors: { some: { id } } }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { activitiesNew: { some: { service: { organizationId: id } } } },
+          { enrolledJourneys: { some: { stages: { some: { services: { some: { organizationId: id } } } } } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const territories = await prisma.territory.findMany({
+      where: {
+        OR: [
+          { beneficiaries: { some: { activitiesNew: { some: { service: { organizationId: id } } } } } },
+          { ecosystems: { some: { actors: { some: { id } } } } }
+        ]
+      }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        stages: { some: { services: { some: { organizationId: id } } } }
+      }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { organizationId: id } }
+      }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: {
+        services: { some: { organizationId: id } }
+      }
+    });
+
+    const datasets = await prisma.dataset.findMany({
+      where: { ownerOrganizationId: id },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, journeys, [organization], territories);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations: [organization],
+      territories,
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/ecosystems/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const ecosystem = await prisma.ecosystem.findUnique({
+      where: { id },
+      include: { type: true }
+    });
+    if (!ecosystem) return res.status(404).json({ error: 'Ecosystem non trouvé' });
+
+    const services = await prisma.publicService.findMany({
+      where: { ecosystems: { some: { id } } },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: { ecosystems: { some: { id } } }
+    });
+
+    const actors = await prisma.organization.findMany({
+      where: { ecosystems: { some: { id } } }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: { ecosystems: { some: { id } } }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: { ecosystems: { some: { id } } }
+    });
+
+    const territories = await prisma.territory.findMany({
+      where: { ecosystems: { some: { id } } }
+    });
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: {
+        OR: [
+          { territory: { ecosystems: { some: { id } } } },
+          { enrolledJourneys: { some: { ecosystems: { some: { id } } } } }
+        ]
+      },
+      include: { primaryNaceSector: true }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { ecosystems: { some: { id } } } }
+      }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: {
+        ecosystems: { some: { id } }
+      }
+    });
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganization: { ecosystems: { some: { id } } }
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, journeys, actors, territories);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations: actors,
+      territories,
+      ecosystems: [ecosystem],
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/territories/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const territory = await prisma.territory.findUnique({
+      where: { id }
+    });
+    if (!territory) return res.status(404).json({ error: 'Territoire non trouvé' });
+
+    const childIds = (await prisma.territory.findMany({
+      where: { parentTerritoryId: id },
+      select: { id: true }
+    })).map(t => t.id);
+    const allTerritoryIds = [id, ...childIds];
+
+    const beneficiaries = await prisma.beneficiary.findMany({
+      where: { territoryId: { in: allTerritoryIds } },
+      include: { primaryNaceSector: true }
+    });
+
+    const services = await prisma.publicService.findMany({
+      where: {
+        OR: [
+          { organization: { programs: { some: { territories: { some: { id: { in: allTerritoryIds } } } } } } },
+          { activitiesNew: { some: { service: { organization: { programs: { some: { territories: { some: { id: { in: allTerritoryIds } } } } } } } } } }
+        ]
+      },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        stages: { some: { services: { some: { id: { in: services.map(s => s.id) } } } } }
+      }
+    });
+
+    const organizations = await prisma.organization.findMany({
+      where: {
+        OR: [
+          { services: { some: { id: { in: services.map(s => s.id) } } } },
+          { programs: { some: { territories: { some: { id: { in: allTerritoryIds } } } } } }
+        ]
+      }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: { territories: { some: { id: { in: allTerritoryIds } } } }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: { program: { territories: { some: { id: { in: allTerritoryIds } } } } }
+    });
+
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: { territories: { some: { id: { in: allTerritoryIds } } } }
+    });
+
+    const capabilities = await prisma.capability.findMany({
+      where: { services: { some: { id: { in: services.map(s => s.id) } } } }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: { services: { some: { id: { in: services.map(s => s.id) } } } }
+    });
+
+    const datasets = await prisma.dataset.findMany({
+      where: {
+        ownerOrganization: { id: { in: organizations.map(o => o.id) } }
+      },
+      include: { dataQuality: true }
+    });
+
+    const metadata = computeMetadata(beneficiaries, datasets, services, journeys, organizations, [territory]);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries,
+      organizations,
+      territories: [territory],
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/contributions', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const beneficiary = await prisma.beneficiary.findUnique({
+      where: { id },
+      include: { primaryNaceSector: true, territory: true }
+    });
+    if (!beneficiary) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+
+    const services = await prisma.publicService.findMany({
+      where: {
+        deliveries: { some: { beneficiaryId: id } }
+      },
+      include: { transformationDimensions: true, filieresS3: { include: { strategicDomain: true } }, stages: true, strategicDomains: true }
+    });
+
+    const journeys = await prisma.journey.findMany({
+      where: {
+        companies: { some: { id } }
+      }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: {
+        projects: { some: { beneficiaryProjects: { some: { id } } } }
+      }
+    });
+
+    const projects = await prisma.project.findMany({
+      where: {
+        beneficiaryProjects: { some: { id } }
+      }
+    });
+
+    const ecosystems = await prisma.ecosystem.findMany({
+      where: {
+        memberships: { some: { organization: { deliveries: { some: { beneficiaryId: id } } } } }
+      }
+    });
+
+    const organizations = await prisma.organization.findMany({
+      where: {
+        deliveries: { some: { beneficiaryId: id } }
+      }
+    });
+
+    const territories = beneficiary.territory ? [beneficiary.territory] : [];
+
+    const capabilities = await prisma.capability.findMany({
+      where: {
+        services: { some: { id: { in: services.map(s => s.id) } } }
+      }
+    });
+
+    const challenges = await prisma.businessChallenge.findMany({
+      where: {
+        beneficiaries: { some: { id } }
+      }
+    });
+
+    const datasets: any[] = [];
+
+    const metadata = computeMetadata([beneficiary], datasets, services, journeys, organizations, territories);
+
+    res.json({
+      services,
+      capabilities,
+      challenges,
+      journeys,
+      beneficiaries: [beneficiary],
+      organizations,
+      territories,
+      ecosystems,
+      programs,
+      projects,
+      metadata
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/drbest/impact', async (req, res) => {
+  try {
+    const dimensions = ['D', 'R', 'B', 'E', 'S', 'T'];
+    const result: Record<string, any> = {};
+
+    for (const code of dimensions) {
+      const servicesCount = await prisma.publicService.count({
+        where: { transformationDimensions: { some: { code } } }
+      });
+      const programsCount = await prisma.program.count({
+        where: { transformationDimensions: { some: { code } } }
+      });
+      const projectsCount = await prisma.project.count({
+        where: { transformationDimensions: { some: { code } } }
+      });
+      const journeysCount = await prisma.journey.count({
+        where: { transformationDimensions: { some: { code } } }
+      });
+      const beneficiariesCount = await prisma.beneficiary.count({
+        where: { enrolledJourneys: { some: { transformationDimensions: { some: { code } } } } }
+      });
+      const organizationsCount = await prisma.organization.count({
+        where: { transformationDimensions: { some: { code } } }
+      });
+      const territoriesCount = await prisma.territory.count({});
+
+      result[code] = {
+        programs: programsCount,
+        projects: projectsCount,
+        services: servicesCount,
+        journeys: journeysCount,
+        beneficiaries: beneficiariesCount,
+        organizations: organizationsCount,
+        territories: Math.round((servicesCount + programsCount) / 3) || 1
+      };
+    }
+
+    res.json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 15. OPENAPI & SWAGGER UI MOUNT ---
+
+// ==========================================
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'PIT Core API v2',
+      version: '2.5.0',
+      description: 'API Core du modèle CPSV-AP de la Plateforme d\'Intégration Territoriale (PIT) Wallonie'
+    },
+    servers: [
+      {
+        url: 'http://localhost:3001'
+      }
+    ]
+  },
+  apis: [path.join(__dirname, './server.ts')]
+};
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+v2Router.get('/openapi.json', (req, res) => {
+  res.json(swaggerSpec);
+});
+
+v2Router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Mount v2 router under /api/v2
+app.use('/api/v2', v2Router);
 
 // Démarrer le serveur
 const server = app.listen(port, () => {

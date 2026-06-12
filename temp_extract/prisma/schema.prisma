@@ -1,0 +1,236 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Agent / Organisation (Competent Authority)
+model Organization {
+  id          Int             @id @default(autoincrement())
+  uri         String?         @unique
+  name        String
+  description String?         @db.Text
+  code        String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  services    PublicService[]
+
+  @@map("organizations")
+}
+
+// 2. Service Public (Core Concept)
+model PublicService {
+  id              Int              @id @default(autoincrement())
+  uri             String?          @unique
+  name            String           // dct:title
+  description     String?          @db.Text // dct:description
+  code            String?          // Code métier unique (ex: S-DIGITAL-DIAG)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  organizationId  Int
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  channels        Channel[]        @relation("ServiceChannels")
+  targetAudiences TargetAudience[] @relation("ServiceAudiences")
+  businessEvents  BusinessEvent[]  @relation("ServiceBusinessEvents")
+  lifeEvents      LifeEvent[]      @relation("ServiceLifeEvents")
+  requirements    Requirement[]
+  outputs         Output[]
+  costs           Cost[]
+  contactPoints   ContactPoint[]
+  rules           Rule[]
+  criterions      Criterion[]
+  catalogues      Catalogue[]      @relation("CatalogueServices")
+
+  @@map("public_services")
+}
+
+// 3. Canal d'accès (Channel)
+model Channel {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String
+  description    String?         @db.Text
+  code           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publicServices PublicService[] @relation("ServiceChannels")
+
+  @@map("channels")
+}
+
+// 4. Exigence / Condition d'accès (Requirement)
+model Requirement {
+  id              Int            @id @default(autoincrement())
+  uri             String?        @unique
+  name            String
+  description     String?        @db.Text
+  code            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService  @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+  evidences       Evidence[]
+
+  @@map("requirements")
+}
+
+// 5. Preuve / Document justificatif (Evidence)
+model Evidence {
+  id            Int         @id @default(autoincrement())
+  uri           String?     @unique
+  name          String
+  description   String?     @db.Text
+  code          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  requirementId Int
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@map("evidences")
+}
+
+// 6. Résultat / Délivrable (Output)
+model Output {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String
+  description     String?       @db.Text
+  code            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("outputs")
+}
+
+// 7. Événement professionnel (BusinessEvent)
+model BusinessEvent {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String
+  description    String?         @db.Text
+  code           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publicServices PublicService[] @relation("ServiceBusinessEvents")
+
+  @@map("business_events")
+}
+
+// 8. Événement de vie (LifeEvent)
+model LifeEvent {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String
+  description    String?         @db.Text
+  code           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publicServices PublicService[] @relation("ServiceLifeEvents")
+
+  @@map("life_events")
+}
+
+// 9. Public Cible (TargetAudience)
+model TargetAudience {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String
+  description    String?         @db.Text
+  code           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publicServices PublicService[] @relation("ServiceAudiences")
+
+  @@map("target_audiences")
+}
+
+// 10. Coût (Cost)
+model Cost {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String        // Libellé (ex: Standard, Gratuit)
+  value           Float         @default(0.0)
+  currency        String        @default("EUR")
+  description     String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("costs")
+}
+
+// 11. Point de contact (ContactPoint)
+model ContactPoint {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String
+  email           String?
+  telephone       String?
+  description     String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("contact_points")
+}
+
+// 12. Critère d'éligibilité (Criterion)
+model Criterion {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String
+  description     String?       @db.Text
+  code            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("criterions")
+}
+
+// 13. Règle / Acte Juridique (Rule)
+model Rule {
+  id              Int           @id @default(autoincrement())
+  uri             String?       @unique
+  name            String
+  description     String?       @db.Text
+  code            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  publicServiceId Int
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
+
+  @@map("rules")
+}
+
+// 14. Catalogue de Références / Dataset
+model Catalogue {
+  id             Int             @id @default(autoincrement())
+  uri            String?         @unique
+  name           String
+  description    String?         @db.Text
+  code           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publicServices PublicService[] @relation("CatalogueServices")
+
+  @@map("catalogues")
+}

@@ -1,4 +1,4 @@
-import { PrismaClient, TerritoryType, KnowledgeAssetType, ProgramStatus, InitiativeStatus, ParticipationRole, ServiceDeliveryStatus, CollectiveDeliveryStatus, SecondLineMissionStatus } from '@prisma/client';
+import { PrismaClient, TerritoryType, KnowledgeAssetType, ProgramStatus, InitiativeStatus, ParticipationRole, ServiceDeliveryStatus, CollectiveDeliveryStatus, SecondLineMissionStatus, ActivityType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -8,9 +8,11 @@ async function main() {
   // Nettoyage de la base de données en respectant l'ordre des contraintes d'intégrité référentielle
   console.log('🧹 Nettoyage des anciennes données...');
   await prisma.evidence.deleteMany({});
+  await prisma.activity.deleteMany({}); // New Activity table
   await prisma.serviceDelivery.deleteMany({});
   await prisma.collectiveDelivery.deleteMany({});
   await prisma.secondLineMission.deleteMany({});
+  await prisma.action.deleteMany({}); // New Action table
   await prisma.actionInstance.deleteMany({});
   await prisma.journeyEnrollment.deleteMany({});
   await prisma.ecosystemMembership.deleteMany({});
@@ -21,6 +23,7 @@ async function main() {
   await prisma.initiativeParticipation.deleteMany({});
   await prisma.programParticipation.deleteMany({});
   await prisma.initiative.deleteMany({});
+  await prisma.project.deleteMany({}); // New Project table
   await prisma.measure.deleteMany({});
   await prisma.program.deleteMany({});
   await prisma.strategicPriority.deleteMany({});
@@ -40,8 +43,15 @@ async function main() {
   await prisma.businessNeed.deleteMany({});
   await prisma.ecosystemRole.deleteMany({});
   await prisma.valueChainStage.deleteMany({});
+  await prisma.valueChain.deleteMany({}); // New ValueChain table
   await prisma.strategicValueChain.deleteMany({});
+  await prisma.challenge.deleteMany({}); // New Challenge table
   await prisma.businessChallenge.deleteMany({});
+  await prisma.challengeCategory.deleteMany({}); // New ChallengeCategory table
+  await prisma.capability.deleteMany({}); // New Capability table
+  await prisma.capabilityDimension.deleteMany({});
+  await prisma.s3Domain.deleteMany({}); // New S3Domain table
+  await prisma.strategicDomainDimension.deleteMany({});
   await prisma.enterpriseFunction.deleteMany({});
   await prisma.naceSector.deleteMany({});
   await prisma.interventionLevel.deleteMany({});
@@ -435,19 +445,25 @@ async function main() {
   // 11. Référentiels Métier
   console.log('🧠 Création des Référentiels (Défis, Chaînes de Valeur, Fonctions, NACE, Maillons)...');
   
-  // Défis d'affaires (BusinessChallenges)
-  const bcDigital = await prisma.businessChallenge.create({ data: { name: 'Digitalisation', code: 'BC-DIGITAL', uri: 'https://pit.wallonie.be/id/challenge/digitalisation' } });
-  const bcIa = await prisma.businessChallenge.create({ data: { name: 'Intelligence artificielle', code: 'BC-IA', uri: 'https://pit.wallonie.be/id/challenge/ia' } });
-  const bcCyber = await prisma.businessChallenge.create({ data: { name: 'Cybersécurité', code: 'BC-CYBER', uri: 'https://pit.wallonie.be/id/challenge/cyber' } });
-  const bcExport = await prisma.businessChallenge.create({ data: { name: 'Export', code: 'BC-EXPORT', uri: 'https://pit.wallonie.be/id/challenge/export' } });
-  const bcDecarb = await prisma.businessChallenge.create({ data: { name: 'Décarbonation', code: 'BC-DECARBON', uri: 'https://pit.wallonie.be/id/challenge/decarbonation' } });
-  const bcInno = await prisma.businessChallenge.create({ data: { name: 'Innovation', code: 'BC-INNOVATION', uri: 'https://pit.wallonie.be/id/challenge/innovation' } });
-  const bcRh = await prisma.businessChallenge.create({ data: { name: 'RH', code: 'BC-RH', uri: 'https://pit.wallonie.be/id/challenge/rh' } });
-  const bcFund = await prisma.businessChallenge.create({ data: { name: 'Financement', code: 'BC-FUNDING', uri: 'https://pit.wallonie.be/id/challenge/financement' } });
-  const bcCirc = await prisma.businessChallenge.create({ data: { name: 'Circularité', code: 'BC-CIRCULARITY', uri: 'https://pit.wallonie.be/id/challenge/circularite' } });
-  const bcConf = await prisma.businessChallenge.create({ data: { name: 'Conformité', code: 'BC-COMPLIANCE', uri: 'https://pit.wallonie.be/id/challenge/conformite' } });
+  // --- NOUVEAUTÉ V7.0 : S3 Domain et Value Chain ---
+  console.log('🌐 Création des nouveaux S3 Domains et Value Chains...');
+  const s3Num = await prisma.s3Domain.create({ data: { code: 'S3-NUM', name: 'Numérique', description: 'Transition numérique régionale et technologies de pointe.' } });
+  const s3Indus = await prisma.s3Domain.create({ data: { code: 'S3-INDUSTRIE', name: 'Industrie du Futur', description: 'Modernisation industrielle et manufacturing avancé.' } });
+  const s3Sante = await prisma.s3Domain.create({ data: { code: 'S3-SANTE', name: 'Santé & Sciences du Vivant', description: 'Biotech, pharma et technologies médicales.' } });
+  const s3Circ = await prisma.s3Domain.create({ data: { code: 'S3-CIRCULAR-ECON', name: 'Économie Circulaire', description: 'Transition écologique, décarbonation et circularité.' } });
+  const s3Ener = await prisma.s3Domain.create({ data: { code: 'S3-ENERGY', name: 'Énergie & Hydrogène', description: 'Transition énergétique régionale.' } });
 
-  // Chaînes de valeur S3 (StrategicValueChain)
+  const vcNum = await prisma.valueChain.create({ data: { code: 'VC-NUMERIQUE', name: 'Numérique', uri: 'https://pit.wallonie.be/id/vc/numerique', s3DomainId: s3Num.id } });
+  const vcIndus = await prisma.valueChain.create({ data: { code: 'VC-INDUSTRIE-FUTUR', name: 'Industrie du Futur', uri: 'https://pit.wallonie.be/id/vc/industrie-du-futur', s3DomainId: s3Indus.id } });
+  const vcSante = await prisma.valueChain.create({ data: { code: 'VC-SANTE', name: 'Santé', uri: 'https://pit.wallonie.be/id/vc/sante', s3DomainId: s3Sante.id } });
+  const vcBiotech = await prisma.valueChain.create({ data: { code: 'VC-BIOTECH', name: 'Biotech', uri: 'https://pit.wallonie.be/id/vc/biotech', s3DomainId: s3Sante.id } });
+  const vcAgri = await prisma.valueChain.create({ data: { code: 'VC-AGROALIMENTAIRE', name: 'Agroalimentaire', uri: 'https://pit.wallonie.be/id/vc/agroalimentaire', s3DomainId: s3Indus.id } });
+  const vcHydro = await prisma.valueChain.create({ data: { code: 'VC-HYDROGENE', name: 'Hydrogène', uri: 'https://pit.wallonie.be/id/vc/hydrogene', s3DomainId: s3Ener.id } });
+  const vcEner = await prisma.valueChain.create({ data: { code: 'VC-ENERGIE', name: 'Energie', uri: 'https://pit.wallonie.be/id/vc/energie', s3DomainId: s3Ener.id } });
+  const vcConst = await prisma.valueChain.create({ data: { code: 'VC-CONSTRUCTION', name: 'Construction durable', uri: 'https://pit.wallonie.be/id/vc/construction', s3DomainId: s3Circ.id } });
+  const vcCirc = await prisma.valueChain.create({ data: { code: 'VC-CIRCULAR-ECON', name: 'Economie circulaire', uri: 'https://pit.wallonie.be/id/vc/economie-circulaire', s3DomainId: s3Circ.id } });
+
+  // Chaînes de valeur S3 V10 (StrategicValueChain) - Rétrocompatibilité
   const svcIndus = await prisma.strategicValueChain.create({ data: { name: 'Industrie du Futur', code: 'SVC-INDUSTRIE-FUTUR', uri: 'https://pit.wallonie.be/id/strategic-vc/industrie-du-futur' } });
   const svcSante = await prisma.strategicValueChain.create({ data: { name: 'Santé', code: 'SVC-SANTE', uri: 'https://pit.wallonie.be/id/strategic-vc/sante' } });
   const svcBiotech = await prisma.strategicValueChain.create({ data: { name: 'Biotech', code: 'SVC-BIOTECH', uri: 'https://pit.wallonie.be/id/strategic-vc/biotech' } });
@@ -459,6 +475,81 @@ async function main() {
   const svcLog = await prisma.strategicValueChain.create({ data: { name: 'Logistique', code: 'SVC-LOGISTIQUE', uri: 'https://pit.wallonie.be/id/strategic-vc/logistique' } });
   const svcTour = await prisma.strategicValueChain.create({ data: { name: 'Tourisme', code: 'SVC-TOURISME', uri: 'https://pit.wallonie.be/id/strategic-vc/tourisme' } });
   const svcCirc = await prisma.strategicValueChain.create({ data: { name: 'Economie circulaire', code: 'SVC-CIRCULAR-ECON', uri: 'https://pit.wallonie.be/id/strategic-vc/economie-circulaire' } });
+
+  // --- NOUVEAUTÉ V7.0 : Challenge Categories & Challenges ---
+  console.log('🎯 Création des nouveaux Challenge Categories et Challenges...');
+  const ccDigital = await prisma.challengeCategory.create({ data: { code: 'CC-DIGITAL', name: 'Transition Numérique', description: 'Transition numérique et adoption des technologies clés.' } });
+  const ccGreen = await prisma.challengeCategory.create({ data: { code: 'CC-GREEN', name: 'Transition Écologique', description: 'Transition bas carbone, efficacité énergétique et économie circulaire.' } });
+  const ccInternational = await prisma.challengeCategory.create({ data: { code: 'CC-INT', name: 'Développement International', description: 'Accompagnement export, logistique transfrontalière et marchés.' } });
+  const ccFinGov = await prisma.challengeCategory.create({ data: { code: 'CC-FINGOV', name: 'Gouvernance et Financement', description: 'Aides financières, structuration de projets et gouvernance.' } });
+
+  const chDigital = await prisma.challenge.create({ data: { code: 'CH-DIGITAL', name: 'Digitalisation', uri: 'https://pit.wallonie.be/id/challenge/digitalisation', challengeCategoryId: ccDigital.id } });
+  const chIa = await prisma.challenge.create({ data: { code: 'CH-IA', name: 'Intelligence artificielle', uri: 'https://pit.wallonie.be/id/challenge/ia', challengeCategoryId: ccDigital.id } });
+  const chCyber = await prisma.challenge.create({ data: { code: 'CH-CYBER', name: 'Cybersécurité', uri: 'https://pit.wallonie.be/id/challenge/cyber', challengeCategoryId: ccDigital.id } });
+  const chExport = await prisma.challenge.create({ data: { code: 'CH-EXPORT', name: 'Export', uri: 'https://pit.wallonie.be/id/challenge/export', challengeCategoryId: ccInternational.id } });
+  const chDecarb = await prisma.challenge.create({ data: { code: 'CH-DECARBON', name: 'Décarbonation', uri: 'https://pit.wallonie.be/id/challenge/decarbonation', challengeCategoryId: ccGreen.id } });
+  const chInno = await prisma.challenge.create({ data: { code: 'CH-INNOVATION', name: 'Innovation', uri: 'https://pit.wallonie.be/id/challenge/innovation', challengeCategoryId: ccFinGov.id } });
+  const chRh = await prisma.challenge.create({ data: { code: 'CH-RH', name: 'RH', uri: 'https://pit.wallonie.be/id/challenge/rh', challengeCategoryId: ccFinGov.id } });
+  const chFund = await prisma.challenge.create({ data: { code: 'CH-FUNDING', name: 'Financement', uri: 'https://pit.wallonie.be/id/challenge/financement', challengeCategoryId: ccFinGov.id } });
+  const chCirc = await prisma.challenge.create({ data: { code: 'CH-CIRCULARITY', name: 'Circularité', uri: 'https://pit.wallonie.be/id/challenge/circularite', challengeCategoryId: ccGreen.id } });
+  const chConf = await prisma.challenge.create({ data: { code: 'CH-COMPLIANCE', name: 'Conformité', uri: 'https://pit.wallonie.be/id/challenge/conformite', challengeCategoryId: ccFinGov.id } });
+
+  // Défis d'affaires V10 (BusinessChallenges) - Rétrocompatibilité
+  const bcDigital = await prisma.businessChallenge.create({ data: { name: 'Digitalisation', code: 'BC-DIGITAL', uri: 'https://pit.wallonie.be/id/challenge/digitalisation' } });
+  const bcIa = await prisma.businessChallenge.create({ data: { name: 'Intelligence artificielle', code: 'BC-IA', uri: 'https://pit.wallonie.be/id/challenge/ia' } });
+  const bcCyber = await prisma.businessChallenge.create({ data: { name: 'Cybersécurité', code: 'BC-CYBER', uri: 'https://pit.wallonie.be/id/challenge/cyber' } });
+  const bcExport = await prisma.businessChallenge.create({ data: { name: 'Export', code: 'BC-EXPORT', uri: 'https://pit.wallonie.be/id/challenge/export' } });
+  const bcDecarb = await prisma.businessChallenge.create({ data: { name: 'Décarbonation', code: 'BC-DECARBON', uri: 'https://pit.wallonie.be/id/challenge/decarbonation' } });
+  const bcInno = await prisma.businessChallenge.create({ data: { name: 'Innovation', code: 'BC-INNOVATION', uri: 'https://pit.wallonie.be/id/challenge/innovation' } });
+  const bcRh = await prisma.businessChallenge.create({ data: { name: 'RH', code: 'BC-RH', uri: 'https://pit.wallonie.be/id/challenge/rh' } });
+  const bcFund = await prisma.businessChallenge.create({ data: { name: 'Financement', code: 'BC-FUNDING', uri: 'https://pit.wallonie.be/id/challenge/financement' } });
+  const bcCirc = await prisma.businessChallenge.create({ data: { name: 'Circularité', code: 'BC-CIRCULARITY', uri: 'https://pit.wallonie.be/id/challenge/circularite' } });
+  const bcConf = await prisma.businessChallenge.create({ data: { name: 'Conformité', code: 'BC-COMPLIANCE', uri: 'https://pit.wallonie.be/id/challenge/conformite' } });
+
+  // --- NOUVEAUTÉ V7.0 : Capabilities & Hiérarchie Circulaire ---
+  console.log('🧠 Création des nouvelles Capabilities (Graphe)...');
+  const capDigital = await prisma.capability.create({
+    data: { uri: 'https://pit.wallonie.be/id/capability/digital', code: 'CAP-DIG', name: 'Compétences Numériques', capabilityType: 'TECHNOLOGICAL', status: 'ACTIVE' }
+  });
+  const capGreen = await prisma.capability.create({
+    data: { uri: 'https://pit.wallonie.be/id/capability/ecology', code: 'CAP-ECO', name: 'Transition Écologique', capabilityType: 'BUSINESS', status: 'ACTIVE' }
+  });
+
+  const capIa = await prisma.capability.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/capability/ai',
+      code: 'CAP-DIG-AI',
+      name: 'Intelligence Artificielle',
+      capabilityType: 'TECHNOLOGICAL',
+      synonyms: ['Machine Learning', 'RAG', 'LLM'],
+      parentCapabilityId: capDigital.id,
+      challenges: { connect: [{ id: chIa.id }, { id: chDigital.id }] }
+    }
+  });
+
+  const capCyber = await prisma.capability.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/capability/cyber',
+      code: 'CAP-DIG-CYBER',
+      name: 'Cybersécurité',
+      capabilityType: 'TECHNOLOGICAL',
+      synonyms: ['Pentest', 'NIS2', 'MFA'],
+      parentCapabilityId: capDigital.id,
+      challenges: { connect: [{ id: chCyber.id }, { id: chDigital.id }] }
+    }
+  });
+
+  const capCirc = await prisma.capability.create({
+    data: {
+      uri: 'https://pit.wallonie.be/id/capability/circularity',
+      code: 'CAP-ECO-CIRC',
+      name: 'Éco-conception & Circularité',
+      capabilityType: 'BUSINESS',
+      synonyms: ['Recyclage', 'Réemploi'],
+      parentCapabilityId: capGreen.id,
+      challenges: { connect: [{ id: chCirc.id }, { id: chDecarb.id }] }
+    }
+  });
 
   // Fonctions d'entreprise (EnterpriseFunction)
   const efMkt = await prisma.enterpriseFunction.create({ data: { name: 'Marketing', code: 'EF-MARKETING', uri: 'https://pit.wallonie.be/id/function/marketing' } });
@@ -480,25 +571,25 @@ async function main() {
   const nsRecyc = await prisma.naceSector.create({ data: { code: '38.32', name: 'Récupération de déchets triés', description: 'Valorisation des matières recyclables.' } });
 
   // Maillons Transverses (ValueChainStage)
-  const stRechF = await prisma.valueChainStage.create({ data: { name: 'Recherche fondamentale', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/recherche-fondamentale' } });
-  const stRechA = await prisma.valueChainStage.create({ data: { name: 'Recherche appliquée', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/recherche-appliquee' } });
-  const stDevEx = await prisma.valueChainStage.create({ data: { name: 'Développement expérimental', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/developpement-experimental' } });
-  const stConcep = await prisma.valueChainStage.create({ data: { name: 'Conception', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/conception' } });
-  const stProto = await prisma.valueChainStage.create({ data: { name: 'Prototypage', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/prototypage' } });
-  const stValid = await prisma.valueChainStage.create({ data: { name: 'Validation', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/validation' } });
-  const stCert = await prisma.valueChainStage.create({ data: { name: 'Certification', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/certification' } });
-  const stProd = await prisma.valueChainStage.create({ data: { name: 'Production', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/production' } });
-  const stAssem = await prisma.valueChainStage.create({ data: { name: 'Assemblage', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/assemblage' } });
-  const stInteg = await prisma.valueChainStage.create({ data: { name: 'Intégration', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/integration' } });
-  const stDist = await prisma.valueChainStage.create({ data: { name: 'Distribution', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/distribution' } });
-  const stComm = await prisma.valueChainStage.create({ data: { name: 'Commercialisation', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/commercialisation' } });
-  const stExport = await prisma.valueChainStage.create({ data: { name: 'Exportation', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/exportation' } });
-  const stSupp = await prisma.valueChainStage.create({ data: { name: 'Support', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/support' } });
-  const stMaint = await prisma.valueChainStage.create({ data: { name: 'Maintenance', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/maintenance' } });
-  const stServ = await prisma.valueChainStage.create({ data: { name: 'Services', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/services' } });
-  const stReemp = await prisma.valueChainStage.create({ data: { name: 'Réemploi', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/reemploi' } });
-  const stRep = await prisma.valueChainStage.create({ data: { name: 'Réparation', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/reparation' } });
-  const stRecyc = await prisma.valueChainStage.create({ data: { name: 'Recyclage', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/recyclage' } });
+  const stRechF = await prisma.valueChainStage.create({ data: { name: 'Recherche fondamentale', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/recherche-fondamentale', valueChainId: vcNum.id } });
+  const stRechA = await prisma.valueChainStage.create({ data: { name: 'Recherche appliquée', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/recherche-appliquee', valueChainId: vcNum.id } });
+  const stDevEx = await prisma.valueChainStage.create({ data: { name: 'Développement expérimental', category: 'Innovation', uri: 'https://pit.wallonie.be/id/stage/developpement-experimental', valueChainId: vcNum.id } });
+  const stConcep = await prisma.valueChainStage.create({ data: { name: 'Conception', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/conception', valueChainId: vcIndus.id } });
+  const stProto = await prisma.valueChainStage.create({ data: { name: 'Prototypage', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/prototypage', valueChainId: vcIndus.id } });
+  const stValid = await prisma.valueChainStage.create({ data: { name: 'Validation', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/validation', valueChainId: vcIndus.id } });
+  const stCert = await prisma.valueChainStage.create({ data: { name: 'Certification', category: 'Industrialisation', uri: 'https://pit.wallonie.be/id/stage/certification', valueChainId: vcIndus.id } });
+  const stProd = await prisma.valueChainStage.create({ data: { name: 'Production', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/production', valueChainId: vcAgri.id } });
+  const stAssem = await prisma.valueChainStage.create({ data: { name: 'Assemblage', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/assemblage', valueChainId: vcAgri.id } });
+  const stInteg = await prisma.valueChainStage.create({ data: { name: 'Intégration', category: 'Production', uri: 'https://pit.wallonie.be/id/stage/integration', valueChainId: vcAgri.id } });
+  const stDist = await prisma.valueChainStage.create({ data: { name: 'Distribution', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/distribution', valueChainId: vcSante.id } });
+  const stComm = await prisma.valueChainStage.create({ data: { name: 'Commercialisation', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/commercialisation', valueChainId: vcSante.id } });
+  const stExport = await prisma.valueChainStage.create({ data: { name: 'Exportation', category: 'Go-To-Market', uri: 'https://pit.wallonie.be/id/stage/exportation', valueChainId: vcSante.id } });
+  const stSupp = await prisma.valueChainStage.create({ data: { name: 'Support', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/support', valueChainId: vcBiotech.id } });
+  const stMaint = await prisma.valueChainStage.create({ data: { name: 'Maintenance', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/maintenance', valueChainId: vcBiotech.id } });
+  const stServ = await prisma.valueChainStage.create({ data: { name: 'Services', category: 'Exploitation', uri: 'https://pit.wallonie.be/id/stage/services', valueChainId: vcBiotech.id } });
+  const stReemp = await prisma.valueChainStage.create({ data: { name: 'Réemploi', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/reemploi', valueChainId: vcCirc.id } });
+  const stRep = await prisma.valueChainStage.create({ data: { name: 'Réparation', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/reparation', valueChainId: vcCirc.id } });
+  const stRecyc = await prisma.valueChainStage.create({ data: { name: 'Recyclage', category: 'Circularité', uri: 'https://pit.wallonie.be/id/stage/recyclage', valueChainId: vcCirc.id } });
 
   // Rôles Écosystémiques (EcosystemRole)
   const roleTrans = await prisma.ecosystemRole.create({ data: { name: 'Transformateur', uri: 'https://pit.wallonie.be/id/role/transformateur' } });
@@ -975,6 +1066,7 @@ async function main() {
       initiatives: { connect: [{ id: initDiagIa.id }] },
       fundingInstruments: { connect: [{ id: fiDigitalEurope.id }] },
       impacts: { carbon: 30, jobs: 40, sovereignty: 50, resilience: 60, competitiveness: 80, digiscoreBoost: 15 },
+      capabilitiesNew: { connect: [{ id: capIa.id }] }
     },
   });
 
@@ -1029,6 +1121,7 @@ async function main() {
       initiatives: { connect: [{ id: initAuditCyber.id }] },
       fundingInstruments: { connect: [{ id: fiCheques.id }] },
       impacts: { carbon: 10, jobs: 20, sovereignty: 70, resilience: 80, competitiveness: 60, digiscoreBoost: 10 },
+      capabilitiesNew: { connect: [{ id: capCyber.id }] }
     },
   });
 
@@ -1101,6 +1194,7 @@ async function main() {
       impactedFunctions: { connect: [{ id: efIt.id }, { id: efProd.id }] },
       ecosystems: { connect: [{ id: ecoDw.id }] },
       impacts: { carbon: 15, jobs: 30, sovereignty: 50, resilience: 50, competitiveness: 60, digiscoreBoost: 15 },
+      capabilitiesNew: { connect: [{ id: capDigital.id }] }
     },
   });
 
@@ -1133,6 +1227,7 @@ async function main() {
       initiatives: { connect: [{ id: initCoachDigi.id }] },
       fundingInstruments: { connect: [{ id: fiCheques.id }] },
       impacts: { carbon: 40, jobs: 50, sovereignty: 60, resilience: 70, competitiveness: 80, digiscoreBoost: 20 },
+      capabilitiesNew: { connect: [{ id: capDigital.id }] }
     },
   });
 
@@ -1165,7 +1260,8 @@ async function main() {
       impactedFunctions: { connect: [{ id: efProd.id }] },
       stages: { connect: [{ id: stProto.id }] },
       ecosystems: { connect: [{ id: ecoEdih.id }] },
-      initiatives: { connect: [{ id: initTrainIa.id }] }
+      initiatives: { connect: [{ id: initTrainIa.id }] },
+      capabilitiesNew: { connect: [{ id: capIa.id }] }
     }
   });
 
@@ -1194,7 +1290,8 @@ async function main() {
       catalogues: { connect: [{ id: cataloguePIT.id }] },
       challenges: { connect: [{ id: bcDigital.id }] },
       filieresS3: { connect: [{ id: svcNum.id }] },
-      ecosystems: { connect: [{ id: ecoEdih.id }] }
+      ecosystems: { connect: [{ id: ecoEdih.id }] },
+      capabilitiesNew: { connect: [{ id: capDigital.id }, { id: capIa.id }, { id: capCyber.id }] }
     }
   });
 
@@ -1748,6 +1845,297 @@ async function main() {
       territoryId: tBrabant.id,
       valueChainId: svcBiotech.id,
       evidence: "Audit de conformité NIS2 externe"
+    }
+  });
+
+  // ==========================================
+  // NOUVEAUTÉ SPRINT 4.1 : PROGRAMMES, PROJETS, ACTIONS ET ACTIVITÉS RÉELS
+  // (EDIH WallonIA, Digital Wallonia, Circular Wallonia, TART IA, Data4Wallonia)
+  // ==========================================
+  console.log('🏁 Création des Programmes, Projets, Actions et Activités vNext...');
+
+  // Nouvelles Stratégies
+  const stPrw = await prisma.strategy.create({
+    data: {
+      code: 'STRAT-PRW',
+      name: 'Plan de Relance de la Wallonie (PRW)',
+      description: 'Plan stratégique régional post-crise pour le redéploiement économique.',
+      ownerOrganizationId: orgWe.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const stWds = await prisma.strategy.create({
+    data: {
+      code: 'STRAT-WDS',
+      name: 'Wallonie Data Space',
+      description: 'Valorisation des données territoriales et open data publique.',
+      ownerOrganizationId: orgAdn.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const stIaWall = await prisma.strategy.create({
+    data: {
+      code: 'STRAT-IA-WALLONIE',
+      name: 'Stratégie IA Wallonie (DigitalWallonia4.ai)',
+      description: 'Accélération de l\'adoption de l\'IA par les entreprises wallonnes.',
+      ownerOrganizationId: orgAdn.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  // Nouveaux Programmes
+  const prEdihWallonia = await prisma.program.create({
+    data: {
+      code: 'PROG-EDIH-WALLONIA',
+      name: 'EDIH WallonIA',
+      description: 'European Digital Innovation Hub wallon co-financé par l\'UE.',
+      ownerOrganizationId: orgAdn.id,
+      startDate: new Date('2023-01-01'),
+      status: ProgramStatus.ACTIVE,
+      strategies: { connect: [{ id: stDw.id }, { id: stS3.id }] }
+    }
+  });
+
+  const prPit138 = await prisma.program.create({
+    data: {
+      code: 'PROG-PIT-138',
+      name: 'PIT (Fiche 138)',
+      description: 'Déploiement Plateforme d\'Intelligence Territoriale.',
+      ownerOrganizationId: orgWe.id,
+      startDate: new Date('2024-01-01'),
+      status: ProgramStatus.ACTIVE,
+      strategies: { connect: [{ id: stPrw.id }] }
+    }
+  });
+
+  const prData4Wallonia = await prisma.program.create({
+    data: {
+      code: 'PROG-DATA4WALLONIA',
+      name: 'Data4Wallonia',
+      description: 'Programme d\'aide à l\'ouverture des données publiques.',
+      ownerOrganizationId: orgAdn.id,
+      startDate: new Date('2024-01-01'),
+      status: ProgramStatus.ACTIVE,
+      strategies: { connect: [{ id: stWds.id }] }
+    }
+  });
+
+  const prBasCarbone = await prisma.program.create({
+    data: {
+      code: 'PROG-BAS-CARBONE',
+      name: 'Portefeuille d\'aides à la transition bas carbone (Circular Wallonia)',
+      description: 'Transition éco-conception et réduction carbone des industriels.',
+      ownerOrganizationId: orgWe.id,
+      startDate: new Date('2024-01-01'),
+      status: ProgramStatus.ACTIVE,
+      strategies: { connect: [{ id: stCw.id }] }
+    }
+  });
+
+  const prTartIa = await prisma.program.create({
+    data: {
+      code: 'PROG-TART-IA',
+      name: 'TART IA',
+      description: 'Qualification rapide du ROI de l\'IA pour les PME.',
+      ownerOrganizationId: orgAdn.id,
+      startDate: new Date('2025-01-01'),
+      status: ProgramStatus.ACTIVE,
+      strategies: { connect: [{ id: stIaWall.id }] }
+    }
+  });
+
+  // Nouveaux Bénéficiaires réels
+  const bForem = await prisma.beneficiary.create({
+    data: {
+      name: 'Le Forem',
+      bce: '0800.555.666',
+      size: 'Grande Entreprise',
+      employees: 4000,
+      revenue: 0.0,
+      location: 'Charleroi',
+      province: 'Hainaut',
+      demand: 'Ouvrir nos bases de données emploi au grand public.',
+      primaryNaceSectorId: nsRecyc.id // code NACE temporaire pour compatibilité
+    }
+  });
+
+  const bBioPlast = await prisma.beneficiary.create({
+    data: {
+      name: 'BioPlast SA',
+      bce: '0900.777.888',
+      size: 'PME',
+      employees: 22,
+      revenue: 1200000.0,
+      location: 'Liège',
+      province: 'Liège',
+      demand: 'Transition éco-conception pour remplacer le plastique classique.'
+    }
+  });
+
+  const bLogiTrans = await prisma.beneficiary.create({
+    data: {
+      name: 'LogiTrans SA',
+      bce: '0999.888.777',
+      size: 'PME',
+      employees: 15,
+      revenue: 2100000.0,
+      location: 'Namur',
+      province: 'Namur',
+      demand: 'Évaluer la faisabilité et le ROI de l\'intégration de l\'IA dans notre chaîne logistique.'
+    }
+  });
+
+  // Nouveaux Projets
+  const prjEdih = await prisma.project.create({
+    data: {
+      code: 'PRJ-CYBER-DUPONT',
+      name: 'Diagnostic & POC Cyber - Menuiserie Dupont',
+      description: 'Accompagnement de la menuiserie Dupont pour la sécurisation de ses systèmes.',
+      uri: 'https://pit.wallonie.be/id/project/cyber-dupont',
+      programId: prEdihWallonia.id,
+      beneficiaryId: bDupont.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const prjPit = await prisma.project.create({
+    data: {
+      code: 'PRJ-PIT-SEMANTIC',
+      name: 'Conception et implémentation du Moteur Sémantique et de la BDD',
+      description: 'Mise en place de l\'architecture cible PIT et du Knowledge Graph.',
+      uri: 'https://pit.wallonie.be/id/project/pit-semantic',
+      programId: prPit138.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const prjData = await prisma.project.create({
+    data: {
+      code: 'PRJ-DATA4FOREM',
+      name: 'Projet d\'audit de qualité open data de l\'opérateur Forem',
+      description: 'Accompagnement pour l\'évaluation de la qualité des données ouvertes du Forem.',
+      uri: 'https://pit.wallonie.be/id/project/data4forem',
+      programId: prData4Wallonia.id,
+      beneficiaryId: bForem.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const prjCirc = await prisma.project.create({
+    data: {
+      code: 'PRJ-CIRC-BIOPLAST',
+      name: 'Transition éco-conception plastique de la PME BioPlast',
+      description: 'Accompagnement pour l\'éco-conception de nouveaux moules recyclables.',
+      uri: 'https://pit.wallonie.be/id/project/circ-bioplast',
+      programId: prBasCarbone.id,
+      beneficiaryId: bBioPlast.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  const prjTart = await prisma.project.create({
+    data: {
+      code: 'PRJ-TART-LOGITRANS',
+      name: 'Audit d\'opportunités IA express de la PME LogiTrans',
+      description: 'Qualification rapide du ROI de l\'IA pour les flux logistiques.',
+      uri: 'https://pit.wallonie.be/id/project/tart-logitrans',
+      programId: prTartIa.id,
+      beneficiaryId: bLogiTrans.id,
+      status: 'ACTIVE'
+    }
+  });
+
+  // Nouvelles Actions (Jalons)
+  const actEdih1 = await prisma.action.create({ data: { title: 'Jalon 1: Cadrage initial', status: 'COMPLETED', projectId: prjEdih.id } });
+  const actEdih2 = await prisma.action.create({ data: { title: 'Jalon 2: Passation de questionnaire', status: 'COMPLETED', projectId: prjEdih.id } });
+  const actEdih3 = await prisma.action.create({ data: { title: 'Jalon 3: Audit technique', status: 'IN_PROGRESS', projectId: prjEdih.id } });
+
+  const actPit1 = await prisma.action.create({ data: { title: 'Jalon 1: Rédaction de la validation', status: 'COMPLETED', projectId: prjPit.id } });
+  const actPit2 = await prisma.action.create({ data: { title: 'Jalon 2: Codage Prisma', status: 'COMPLETED', projectId: prjPit.id } });
+  const actPit3 = await prisma.action.create({ data: { title: 'Jalon 3: Seeding', status: 'IN_PROGRESS', projectId: prjPit.id } });
+
+  const actData1 = await prisma.action.create({ data: { title: 'Jalon 1: Identification des silos de données', status: 'COMPLETED', projectId: prjData.id } });
+  const actData2 = await prisma.action.create({ data: { title: 'Jalon 2: Évaluation de la conformité DCAT-AP', status: 'PLANNED', projectId: prjData.id } });
+
+  const actCirc1 = await prisma.action.create({ data: { title: 'Jalon 1: Étude de biodégradabilité', status: 'COMPLETED', projectId: prjCirc.id } });
+  const actCirc2 = await prisma.action.create({ data: { title: 'Jalon 2: Prototypage de moules recyclables', status: 'IN_PROGRESS', projectId: prjCirc.id } });
+
+  const actTart1 = await prisma.action.create({ data: { title: 'Jalon 1: Session d\'idéation IA', status: 'COMPLETED', projectId: prjTart.id } });
+  const actTart2 = await prisma.action.create({ data: { title: 'Jalon 2: Estimation du coût du modèle de langage', status: 'IN_PROGRESS', projectId: prjTart.id } });
+
+  // Nouvelles Activités
+  // 1. EDIH WallonIA (individual diagnostic)
+  await prisma.activity.create({
+    data: {
+      activityType: ActivityType.INDIVIDUAL,
+      serviceId: sDiagIa.id,
+      status: 'COMPLETED',
+      operatorId: orgAdn.id,
+      notes: 'Passation du DMAT (activité d\'accompagnement de type diagnostic individuel)',
+      beneficiaryId: bDupont.id,
+      actionId: actEdih2.id,
+      outputReal: 'Rapport DMAT complet sur l\'éligibilité IA de la menuiserie.',
+      outcomeReal: 'Cas d\'usage IA validé pour le tri.'
+    }
+  });
+
+  // 2. PIT (collective animation)
+  await prisma.activity.create({
+    data: {
+      activityType: ActivityType.COLLECTIVE,
+      serviceId: sWorkshopIa.id,
+      status: 'COMPLETED',
+      operatorId: orgWe.id,
+      notes: 'Workshop technique inter-opérateurs AdN/WE (activité collective d\'animation)',
+      actionId: actPit1.id,
+      title: 'Atelier sémantique PIT',
+      participantsCount: 10,
+      companiesCount: 3,
+      companies: { connect: [{ id: bDupont.id }] }
+    }
+  });
+
+  // 3. Data4Wallonia (second line mission)
+  await prisma.activity.create({
+    data: {
+      activityType: ActivityType.SECOND_LINE,
+      serviceId: sCoordHub.id,
+      status: 'COMPLETED',
+      operatorId: orgAdn.id,
+      notes: 'Publication du catalogue de métadonnées du Forem (activité de publication sémantique)',
+      actionId: actData1.id,
+      deliverables: 'Catalogue de métadonnées Forem au format DCAT-AP.',
+      collaborationsCount: 2
+    }
+  });
+
+  // 4. Circular Wallonia (individual diagnostic)
+  await prisma.activity.create({
+    data: {
+      activityType: ActivityType.INDIVIDUAL,
+      serviceId: sAccompDigital.id,
+      status: 'COMPLETED',
+      operatorId: orgWe.id,
+      notes: 'Audit de circularité et diagnostic de cycle de vie',
+      beneficiaryId: bBioPlast.id,
+      actionId: actCirc1.id,
+      outputReal: 'Rapport d\'audit de cycle de vie plastique.'
+    }
+  });
+
+  // 5. TART IA (individual diagnostic)
+  await prisma.activity.create({
+    data: {
+      activityType: ActivityType.INDIVIDUAL,
+      serviceId: sDiagIa.id,
+      status: 'COMPLETED',
+      operatorId: orgAdn.id,
+      notes: 'Remise officielle du rapport de diagnostic d\'éligibilité IA',
+      beneficiaryId: bLogiTrans.id,
+      actionId: actTart1.id,
+      outputReal: 'Rapport de ROI IA rapide.'
     }
   });
 

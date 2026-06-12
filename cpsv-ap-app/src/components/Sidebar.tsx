@@ -26,6 +26,9 @@ import { usePerspective } from "@/design-system/PITPerspectiveProvider";
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Home },
   { name: "Stratégies", href: "/strategies", icon: Target },
+  { name: "Programmes (PIT)", href: "/programs", icon: Target },
+  { name: "Capabilités (PIT)", href: "/capabilities", icon: BookOpen },
+  { name: "Observatoire S3", href: "/s3", icon: Network },
   { name: "Pilotage territorial", href: "/pilotage", icon: LineChart },
   { name: "Bénéficiaires", href: "/beneficiaries", icon: Users },
   { name: "Activités", href: "/activities", icon: Activity },
@@ -50,19 +53,19 @@ export default function Sidebar() {
     if (["/", "/graph", "/guide", "/settings"].includes(item.href)) return true;
     
     if (activePerspective === "strategic") {
-      return ["/strategies", "/pilotage"].includes(item.href);
+      return ["/strategies", "/pilotage", "/programs", "/s3"].includes(item.href);
     }
     if (activePerspective === "operational") {
-      return ["/beneficiaries", "/activities", "/services", "/journeys", "/recommender"].includes(item.href);
+      return ["/beneficiaries", "/activities", "/services", "/journeys", "/recommender", "/capabilities"].includes(item.href);
     }
     if (activePerspective === "territorial") {
-      return ["/beneficiaries", "/services", "/value-chains", "/ecosystems"].includes(item.href);
+      return ["/beneficiaries", "/services", "/value-chains", "/ecosystems", "/s3"].includes(item.href);
     }
     if (activePerspective === "data") {
-      return ["/datasets", "/knowledge-assets"].includes(item.href);
+      return ["/datasets", "/knowledge-assets", "/capabilities"].includes(item.href);
     }
     if (activePerspective === "transformation") {
-      return ["/beneficiaries", "/services", "/journeys", "/recommender"].includes(item.href);
+      return ["/beneficiaries", "/services", "/journeys", "/recommender", "/capabilities"].includes(item.href);
     }
     return true;
   });

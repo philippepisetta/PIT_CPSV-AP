@@ -4529,7 +4529,7 @@ v2Router.get('/programs/:id/contributions', async (req, res) => {
         OR: [
           { programs: { some: { id } } },
           { programParticipations: { some: { programId: id } } },
-          { services: { some: { activitiesNew: { some: { action: { project: { programId: id } } } } } }
+          { services: { some: { activitiesNew: { some: { action: { project: { programId: id } } } } } } }
         ]
       }
     });
@@ -5289,13 +5289,13 @@ v2Router.get('/beneficiaries/:id/contributions', async (req, res) => {
 
     const programs = await prisma.program.findMany({
       where: {
-        projects: { some: { beneficiaryProjects: { some: { id } } } }
+        projects: { some: { beneficiaryId: id } }
       }
     });
 
     const projects = await prisma.project.findMany({
       where: {
-        beneficiaryProjects: { some: { id } }
+        beneficiaryId: id
       }
     });
 

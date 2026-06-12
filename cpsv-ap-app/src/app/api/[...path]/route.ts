@@ -240,25 +240,17 @@ export async function GET(
       if (cachedMeta && (now - cachedMetaTime < CACHE_TTL_MS)) {
         return NextResponse.json(cachedMeta);
       }
-      const [
-        organizations, channels, targetAudiences, businessEvents, lifeEvents,
-        catalogues, strategicValueChains, stages, roles, needs,
-        services, challenges, functions, sectors, ecosystems,
-        interventionLevels, collectiveDeliveries, secondLineMissions,
-        interventionTypes, ecosystemTypes, territories, eventResources,
-        datasets, knowledgeAssets, actionInstances, journeyEnrollments,
-        strategies, strategicPriorities, programs, measures,
-        initiatives, beneficiaryEngagements, outcomeIndicators,
-        impacts, fundingInstruments, projects, objectives,
-        transformationDimensions, strategicDomainDimensions, capabilityDimensions,
-        impactDimensions, knowledgeDimensions, dataQualityDimensions
-      ] = await Promise.all([
+      // Segmented loading of the 42 tables (max 6 parallel queries at once to prevent connection pool exhaustion)
+      const [organizations, channels, targetAudiences, businessEvents, lifeEvents, catalogues] = await Promise.all([
         prisma.organization.findMany({ orderBy: { name: 'asc' } }),
         prisma.channel.findMany({ orderBy: { name: 'asc' } }),
         prisma.targetAudience.findMany({ orderBy: { name: 'asc' } }),
         prisma.businessEvent.findMany({ orderBy: { name: 'asc' } }),
         prisma.lifeEvent.findMany({ orderBy: { name: 'asc' } }),
-        prisma.catalogue.findMany({ orderBy: { name: 'asc' } }),
+        prisma.catalogue.findMany({ orderBy: { name: 'asc' } })
+      ]);
+
+      const [strategicValueChains, stages, roles, needs, services, challenges] = await Promise.all([
         prisma.strategicValueChain.findMany({ orderBy: { name: 'asc' } }),
         prisma.valueChainStage.findMany({ orderBy: { name: 'asc' } }),
         prisma.ecosystemRole.findMany({ orderBy: { name: 'asc' } }),
@@ -267,7 +259,10 @@ export async function GET(
           include: { interventionLevel: true, challenges: true, filieresS3: true, stages: true, initiatives: true },
           orderBy: { name: 'asc' }
         }),
-        prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } }),
+        prisma.businessChallenge.findMany({ orderBy: { name: 'asc' } })
+      ]);
+
+      const [functions, sectors, ecosystems, interventionLevels, collectiveDeliveries, secondLineMissions] = await Promise.all([
         prisma.enterpriseFunction.findMany({ orderBy: { name: 'asc' } }),
         prisma.naceSector.findMany({ orderBy: { code: 'asc' } }),
         prisma.ecosystem.findMany({
@@ -282,9 +277,12 @@ export async function GET(
         prisma.secondLineMission.findMany({
           include: { service: true, leadOperator: true, operatorsMobilized: true, ecosystems: true, valueChains: true },
           orderBy: { startDate: 'desc' }
-        }),
+        })
+      ]);
+
+      const [interventionTypes, ecosystemTypes, territories, eventResources, datasets, knowledgeAssets] = await Promise.all([
         prisma.interventionType.findMany({ orderBy: { name: 'asc' } }),
-        prisma.ecosystemType.findMany({ orderBy: { name: 'asc' } }),
+        prisma.ecosystemType.findMany({ orderBy: { code: 'asc' } }),
         prisma.territory.findMany({
           include: { parentTerritory: true },
           orderBy: { name: 'asc' }
@@ -300,7 +298,10 @@ export async function GET(
         prisma.knowledgeAsset.findMany({
           include: { publicServices: true, ecosystems: true, eventResources: true, programs: true, initiatives: true },
           orderBy: { title: 'asc' }
-        }),
+        })
+      ]);
+
+      const [actionInstances, journeyEnrollments, strategies, strategicPriorities, programs, measures] = await Promise.all([
         prisma.actionInstance.findMany({
           include: { beneficiary: true, journey: true, ecosystem: true, deliveries: true },
           orderBy: { startDate: 'desc' }
@@ -324,7 +325,10 @@ export async function GET(
         prisma.measure.findMany({
           include: { programs: true, initiatives: true },
           orderBy: { name: 'asc' }
-        }),
+        })
+      ]);
+
+      const [initiatives, beneficiaryEngagements, outcomeIndicators, impacts, fundingInstruments, projects] = await Promise.all([
         prisma.initiative.findMany({
           include: { measure: true, leadOrganization: true, publicServices: true },
           orderBy: { name: 'asc' }
@@ -339,7 +343,10 @@ export async function GET(
           orderBy: { date: 'desc' }
         }),
         prisma.fundingInstrument.findMany({ orderBy: { name: 'asc' } }),
-        prisma.project.findMany({ include: { program: true, initiative: true }, orderBy: { name: 'asc' } }),
+        prisma.project.findMany({ include: { program: true, initiative: true }, orderBy: { name: 'asc' } })
+      ]);
+
+      const [objectives, transformationDimensions, strategicDomainDimensions, capabilityDimensions, impactDimensions, knowledgeDimensions, dataQualityDimensions] = await Promise.all([
         prisma.objective.findMany({ include: { strategy: true, parent: true }, orderBy: { name: 'asc' } }),
         prisma.transformationDimension.findMany({ orderBy: { code: 'asc' } }),
         prisma.strategicDomainDimension.findMany({ include: { parent: true }, orderBy: { name: 'asc' } }),

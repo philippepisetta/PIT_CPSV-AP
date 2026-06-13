@@ -4,7 +4,9 @@
   "description": "Lab de test du modèle sémantique CPSV-AP (PIT Wallonie)",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
+    "dev": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
     "postinstall": "prisma generate",
     "pit:audit": "ts-node tests/pit-auditor/audit.ts",

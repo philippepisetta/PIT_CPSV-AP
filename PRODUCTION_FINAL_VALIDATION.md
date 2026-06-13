@@ -1,6 +1,6 @@
 # RAPPORT DE VALIDATION FINALE DE PRODUCTION
 
-Généré le : 13/06/2026 13:32:41
+Généré le : 13/06/2026 13:46:47
 
 ---
 
@@ -10,13 +10,13 @@ Les requêtes ont été effectuées en direct sur l'instance Render de productio
 
 | Endpoint | HTTP Status | Count | Temps de réponse | Statut |
 | :--- | :---: | :---: | :---: | :---: |
-| `/api/v2/programs` | 404 | 0 | 295 ms | ❌ KO |
-| `/api/v2/capabilities` | 404 | 0 | 129 ms | ❌ KO |
-| `/api/v2/s3-domains` | 404 | 0 | 224 ms | ❌ KO |
-| `/api/v2/beneficiaries` | 404 | 0 | 122 ms | ❌ KO |
-| `/api/v2/ecosystems` | 404 | 0 | 133 ms | ❌ KO |
-| `/api/v2/journeys` | 404 | 0 | 124 ms | ❌ KO |
-| `/api/v2/services` | 404 | 0 | 142 ms | ❌ KO |
+| `/api/v2/programs` | 200 | 8 | 1244 ms | ✅ OK |
+| `/api/v2/capabilities` | 200 | 5 | 660 ms | ✅ OK |
+| `/api/v2/s3-domains` | 200 | 5 | 861 ms | ✅ OK |
+| `/api/v2/beneficiaries` | 200 | 7 | 1073 ms | ✅ OK |
+| `/api/v2/ecosystems` | 200 | 4 | 862 ms | ✅ OK |
+| `/api/v2/journeys` | 200 | 2 | 1101 ms | ✅ OK |
+| `/api/v2/services` | 200 | 7 | 1294 ms | ✅ OK |
 
 ---
 
@@ -26,13 +26,13 @@ Comparaison entre le nombre d'enregistrements attendus dans la base de données 
 
 | Entité | Count DB | Count API | Alignement |
 | :--- | :---: | :---: | :---: |
-| **Program** | 8 | 0 | ❌ Écart (-8) |
-| **Capability** | 5 | 0 | ❌ Écart (-5) |
-| **S3Domain** | 5 | 0 | ❌ Écart (-5) |
-| **Beneficiary** | 7 | 0 | ❌ Écart (-7) |
-| **Ecosystem** | 4 | 0 | ❌ Écart (-4) |
-| **Journey** | 2 | 0 | ❌ Écart (-2) |
-| **Service** | 7 | 0 | ❌ Écart (-7) |
+| **Program** | 8 | 8 | ✅ Parfait |
+| **Capability** | 5 | 5 | ✅ Parfait |
+| **S3Domain** | 5 | 5 | ✅ Parfait |
+| **Beneficiary** | 7 | 7 | ✅ Parfait |
+| **Ecosystem** | 4 | 4 | ✅ Parfait |
+| **Journey** | 2 | 2 | ✅ Parfait |
+| **Service** | 7 | 7 | ✅ Parfait |
 
 ---
 
@@ -42,13 +42,13 @@ Test de disponibilité HTTP des pages de l'application front-end sur `https://pi
 
 | Page | Path | HTTP Status | Données visibles | Statut |
 | :--- | :--- | :---: | :---: | :---: |
-| **Programs** | `/programs` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **Capabilities** | `/capabilities` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **S3 Strategy** | `/s3` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **Beneficiaries** | `/beneficiaries` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **Ecosystems** | `/ecosystems` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **Journeys** | `/journeys` | 200 | Non (Vide ou Offline) | ❌ KO |
-| **Services** | `/services` | 200 | Non (Vide ou Offline) | ❌ KO |
+| **Programs** | `/programs` | 200 | Oui (Données réelles) | ✅ OK |
+| **Capabilities** | `/capabilities` | 200 | Oui (Données réelles) | ✅ OK |
+| **S3 Strategy** | `/s3` | 200 | Oui (Données réelles) | ✅ OK |
+| **Beneficiaries** | `/beneficiaries` | 200 | Oui (Données réelles) | ✅ OK |
+| **Ecosystems** | `/ecosystems` | 200 | Oui (Données réelles) | ✅ OK |
+| **Journeys** | `/journeys` | 200 | Oui (Données réelles) | ✅ OK |
+| **Services** | `/services` | 200 | Oui (Données réelles) | ✅ OK |
 
 *Note : Les filtres et la pagination sont fonctionnels en local et s'activent dès que les données sont retournées par l'API.*
 
@@ -56,6 +56,6 @@ Test de disponibilité HTTP des pages de l'application front-end sur `https://pi
 
 ## 4. CONCLUSION GLOBALE
 
-### Statut du Déploiement : **KO**
+### Statut du Déploiement : **GO Production**
 
-⚠️ **KO / DÉPLOIEMENT REQUIS** : Les endpoints de l'API v2 retournent toujours des erreurs (statut 404). Le serveur de production sur Render n'a pas encore été mis à jour avec le dernier commit contenant le build pré-compilé et les scripts de démarrage mis à jour. Veuillez pousser vos modifications locales vers GitHub pour déclencher le déploiement sur Render.
+🚀 **GO PRODUCTION** : Tous les endpoints de l'API v2 répondent avec succès. Les comptes de données correspondent parfaitement à la base de données de production et les pages sur Vercel chargent les informations temps réel sans erreur.

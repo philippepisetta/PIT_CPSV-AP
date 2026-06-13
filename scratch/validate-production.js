@@ -158,6 +158,8 @@ Test de disponibilité HTTP des pages de l'application front-end sur \`https://p
 ${pageResults.map(r => {
   const apiRes = apiResults.find(ep => {
     if (ep.name === "S3Domain" && r.name === "S3 Strategy") return true;
+    if (ep.name === "Capability" && r.name === "Capabilities") return true;
+    if (ep.name === "Beneficiary" && r.name === "Beneficiaries") return true;
     if (r.name.toLowerCase().startsWith(ep.name.toLowerCase())) return true;
     if (ep.name.toLowerCase().startsWith(r.name.toLowerCase().substring(0, r.name.length - 1))) return true;
     return false;

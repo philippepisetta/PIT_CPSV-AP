@@ -53,7 +53,7 @@ export default function S3Container() {
   const [selectedStageId, setSelectedStageId] = useState<number | null>(null);
 
   // Fetch S3 hierarchy data
-  const { data: domainsData, isLoading: isDomainsLoading } = useV2S3Domains();
+  const { data: domainsData, isLoading: isDomainsLoading, isError: isDomainsError } = useV2S3Domains();
   const { data: chainsData, isLoading: isChainsLoading } = useV2ValueChains();
   const { data: stagesData, isLoading: isStagesLoading } = useV2ValueChainStages();
 
@@ -86,6 +86,20 @@ export default function S3Container() {
       pageIcon={Network}
       breadcrumb={[{ label: "Tableau de bord", href: "/" }, { label: "Stratégie S3" }]}
     >
+      {isDomainsError && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 dark:text-amber-300 rounded-xl flex items-center gap-3">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+            ⚠️
+          </span>
+          <div>
+            <p className="font-bold">API v2 Hors Ligne (Erreur HTTP 404)</p>
+            <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
+              Le service d'API v2 (Render) n'est pas disponible ou exécute une version obsolète. Les données temps réel ne peuvent pas être récupérées.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 3-Column Drilldown Navigation */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-8">
         {/* Column 1: S3 Domains */}

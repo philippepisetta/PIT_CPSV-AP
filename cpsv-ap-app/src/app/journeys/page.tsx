@@ -119,10 +119,10 @@ interface JourneyEnrollment {
 }
 
 export default function JourneysPage() {
-  const { data: journeysData, isLoading: loadingJourneys } = useJourneysQuery();
-  const { data: metaData, isLoading: loadingMeta } = useMetaQuery();
-  const { isLoading: loadingBenefs } = useBeneficiariesQuery();
-  const { data: enrollmentsData, isLoading: loadingEnrollments } = useJourneyEnrollmentsQuery();
+  const { data: journeysData, isLoading: loadingJourneys, isError: errorJourneys } = useJourneysQuery();
+  const { data: metaData, isLoading: loadingMeta, isError: errorMeta } = useMetaQuery();
+  const { isLoading: loadingBenefs, isError: errorBenefs } = useBeneficiariesQuery();
+  const { data: enrollmentsData, isLoading: loadingEnrollments, isError: errorEnrollments } = useJourneyEnrollmentsQuery();
 
   const journeys = useMemo(() => (journeysData || []) as Journey[], [journeysData]);
   const servicesList = (metaData?.services || []) as PublicService[];
@@ -168,7 +168,8 @@ export default function JourneysPage() {
 
   const [serviceSearch, setServiceSearch] = useState("");
 
-  const isLoading = loadingJourneys || loadingMeta || loadingBenefs || loadingEnrollments;
+  const isError = errorJourneys || errorMeta || errorBenefs || errorEnrollments;
+  const isLoading = (loadingJourneys || loadingMeta || loadingBenefs || loadingEnrollments) && !isError;
 
   // Filter journeys based on perspective visibility
   const visibleJourneys = useMemo(() => {
@@ -330,6 +331,26 @@ export default function JourneysPage() {
     });
     return counts;
   }, [enrollments]);
+
+  if (isError) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[60vh] space-y-4 text-center p-6 bg-red-500/5 border border-red-500/10 rounded-2xl">
+        <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2">
+          <Info className="w-6 h-6" />
+        </div>
+        <h3 className="text-sm font-bold text-red-650 uppercase">Erreur de chargement</h3>
+        <p className="text-xs text-muted max-w-md">
+          Impossible de charger les données du parcours. Le pool de connexion à la base de données est saturé ou le serveur est temporairement inaccessible.
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-lg transition"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

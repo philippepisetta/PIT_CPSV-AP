@@ -36,7 +36,7 @@ export default function EcosystemsPage() {
   const [selectedEcoId, setSelectedEcoId] = useState<number | null>(null);
 
   // Fetch all ecosystems
-  const { data: ecosystemsData, isLoading: isListLoading } = useV2Ecosystems();
+  const { data: ecosystemsData, isLoading: isListLoading, isError: isEcoError } = useV2Ecosystems();
 
   const rawEcosystems = ecosystemsData?.data || [];
 
@@ -123,6 +123,20 @@ export default function EcosystemsPage() {
       pageIcon={Share2}
       breadcrumb={[{ label: "Tableau de bord", href: "/" }, { label: "Écosystèmes" }]}
     >
+      {isEcoError && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 dark:text-amber-300 rounded-xl flex items-center gap-3">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+            ⚠️
+          </span>
+          <div>
+            <p className="font-bold">API v2 Hors Ligne (Erreur HTTP 404)</p>
+            <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
+              Le service d'API v2 (Render) n'est pas disponible ou exécute une version obsolète. Les données temps réel ne peuvent pas être récupérées.
+            </p>
+          </div>
+        </div>
+      )}
+
       <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

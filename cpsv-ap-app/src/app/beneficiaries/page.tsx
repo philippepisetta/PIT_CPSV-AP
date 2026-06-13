@@ -45,7 +45,7 @@ export default function BeneficiariesPage() {
   const [selectedBeneId, setSelectedBeneId] = useState<number | null>(null);
 
   // Fetch all beneficiaries
-  const { data: beneficiariesData, isLoading: isListLoading } = useV2Beneficiaries();
+  const { data: beneficiariesData, isLoading: isListLoading, isError: isBeneError } = useV2Beneficiaries();
 
   const rawBeneficiaries = beneficiariesData?.data || [];
 
@@ -131,6 +131,20 @@ export default function BeneficiariesPage() {
       pageIcon={Users}
       breadcrumb={[{ label: "Tableau de bord", href: "/" }, { label: "Bénéficiaires" }]}
     >
+      {isBeneError && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 dark:text-amber-300 rounded-xl flex items-center gap-3">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+            ⚠️
+          </span>
+          <div>
+            <p className="font-bold">API v2 Hors Ligne (Erreur HTTP 404)</p>
+            <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
+              Le service d'API v2 (Render) n'est pas disponible ou exécute une version obsolète. Les données temps réel ne peuvent pas être récupérées.
+            </p>
+          </div>
+        </div>
+      )}
+
       <PITFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

@@ -57,7 +57,7 @@ export default function ProgramsContainer() {
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
 
   // Fetch programs list
-  const { data: programsData, isLoading: isProgramsLoading } = useV2Programs({
+  const { data: programsData, isLoading: isProgramsLoading, isError: isProgramsError } = useV2Programs({
     page,
     pageSize,
     q: searchQuery,
@@ -130,6 +130,20 @@ export default function ProgramsContainer() {
           }
         ]}
       />
+
+      {isProgramsError && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 dark:text-amber-300 rounded-xl flex items-center gap-3">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+            ⚠️
+          </span>
+          <div>
+            <p className="font-bold">API v2 Hors Ligne (Erreur HTTP 404)</p>
+            <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
+              Le service d'API v2 (Render) n'est pas disponible ou exécute une version obsolète. Les données temps réel ne peuvent pas être récupérées.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Main Work Grid (Split Layout) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full">

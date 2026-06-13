@@ -62,7 +62,7 @@
           PIT Quality Auditor <span class="bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">Agent Dashboard</span>
         </h1>
         <p class="text-slate-400 text-xs mt-1">
-          Cible d'audit : <a href="https://pit-cpsv-ap.vercel.app" target="_blank" class="text-teal-400 font-bold hover:underline font-mono">https://pit-cpsv-ap.vercel.app</a> — Exécuté le : 13/06/2026 12:16:52
+          Cible d'audit : <a href="http://localhost:3000" target="_blank" class="text-teal-400 font-bold hover:underline font-mono">http://localhost:3000</a> — Exécuté le : 13/06/2026 16:12:50
         </p>
       </div>
       
@@ -71,16 +71,16 @@
         <div class="relative w-16 h-16">
           <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
             <path class="text-slate-800" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            <path class="text-teal-500 transition-all duration-1000 ease-out" stroke-dasharray="44, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="text-teal-500 transition-all duration-1000 ease-out" stroke-dasharray="64, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
-            <span class="font-outfit text-lg font-black text-teal-400">44%</span>
+            <span class="font-outfit text-lg font-black text-teal-400">64%</span>
           </div>
         </div>
         <div>
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Score Global</span>
-          <span class="font-outfit text-sm font-bold uppercase tracking-wide text-rose-500">
-            PIT Non Conforme
+          <span class="font-outfit text-sm font-bold uppercase tracking-wide text-amber-400">
+            PIT Avertissement
           </span>
         </div>
       </div>
@@ -93,14 +93,14 @@
       <div class="glass p-5 rounded-2xl space-y-4">
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Interface (UI)</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">PASS</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400">WARN</span>
         </div>
         <div class="flex items-baseline justify-between">
-          <span class="font-outfit text-3xl font-black text-slate-100">88%</span>
-          <span class="text-xs text-slate-400 font-mono">12/16 routes OK</span>
+          <span class="font-outfit text-3xl font-black text-slate-100">84%</span>
+          <span class="text-xs text-slate-400 font-mono">11/16 routes OK</span>
         </div>
         <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-          <div class="bg-teal-500 h-full rounded-full" style="width: 88%"></div>
+          <div class="bg-teal-500 h-full rounded-full" style="width: 84%"></div>
         </div>
       </div>
 
@@ -108,14 +108,14 @@
       <div class="glass p-5 rounded-2xl space-y-4">
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Endpoints API v2</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400">FAIL</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">PASS</span>
         </div>
         <div class="flex items-baseline justify-between">
-          <span class="font-outfit text-3xl font-black text-slate-100">0%</span>
-          <span class="text-xs text-slate-400 font-mono">0/7 endpoints OK</span>
+          <span class="font-outfit text-3xl font-black text-slate-100">100%</span>
+          <span class="text-xs text-slate-400 font-mono">7/7 endpoints OK</span>
         </div>
         <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-          <div class="bg-indigo-500 h-full rounded-full" style="width: 0%"></div>
+          <div class="bg-indigo-500 h-full rounded-full" style="width: 100%"></div>
         </div>
       </div>
 
@@ -123,14 +123,14 @@
       <div class="glass p-5 rounded-2xl space-y-4">
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cockpits & Données</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">PASS</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400">WARN</span>
         </div>
         <div class="flex items-baseline justify-between">
-          <span class="font-outfit text-3xl font-black text-slate-100">86%</span>
-          <span class="text-xs text-slate-400 font-mono">6/7 cockpits OK</span>
+          <span class="font-outfit text-3xl font-black text-slate-100">71%</span>
+          <span class="text-xs text-slate-400 font-mono">5/7 cockpits OK</span>
         </div>
         <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-          <div class="bg-amber-500 h-full rounded-full" style="width: 86%"></div>
+          <div class="bg-amber-500 h-full rounded-full" style="width: 71%"></div>
         </div>
       </div>
 
@@ -164,14 +164,23 @@
             Erreur
           </span>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed font-semibold">Onglet 'Hiérarchie S3' introuvable dans les détails du programme.</p>
+        <p class="text-xs text-slate-300 leading-relaxed font-semibold">Activité finale manquante ou non visible dans l'arborescence.</p>
         <div class="space-y-2.5 pl-3 border-l-2 border-slate-700 text-xs text-slate-400 font-semibold">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
             <span>Visite de la page /programs</span>
           </div><div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-            <span>Sélection du premier programme: "Programme inconnu"</span>
+            <span>Sélection du premier programme: "PROG-CHEQUESChèques Entreprises"</span>
+          </div><div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+            <span>Ouverture de l'onglet 'Hiérarchie S3'</span>
+          </div><div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+            <span>Développement du premier Projet</span>
+          </div><div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+            <span>Développement de la première Action</span>
           </div>
         </div>
       </div>
@@ -186,14 +195,17 @@
             Erreur
           </span>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed font-semibold">Onglet 'Parcours PIT' introuvable dans le profil du bénéficiaire.</p>
+        <p class="text-xs text-slate-300 leading-relaxed font-semibold">Éléments manquants dans la chaîne : Challenge, Capability, Journey</p>
         <div class="space-y-2.5 pl-3 border-l-2 border-slate-700 text-xs text-slate-400 font-semibold">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
             <span>Visite de la page /beneficiaries</span>
           </div><div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-            <span>Sélection du premier bénéficiaire: "Bénéficiaire inconnu"</span>
+            <span>Sélection du premier bénéficiaire: "BCEAgroFood Wallonia"</span>
+          </div><div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+            <span>Ouverture de l'onglet 'Parcours PIT'</span>
           </div>
         </div>
       </div>
@@ -225,7 +237,7 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">142ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">71ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
@@ -234,7 +246,7 @@
                   
                 </td>
                 <td class="px-4 py-3.5 text-center">
-                  <span class="text-slate-600">-</span>
+                  <a href="screenshots/dashboard.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
                 </td>
               </tr>
             
@@ -245,13 +257,13 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">38ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">63ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
-                <td class="px-4 py-3.5 font-mono">5</td>
+                <td class="px-4 py-3.5 font-mono">10</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">4 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
                   <a href="screenshots/programs.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
@@ -265,7 +277,7 @@
                     WARNING
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">77ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">62ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Page 404">
@@ -285,7 +297,7 @@
                     WARNING
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">35ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">53ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Page 404">
@@ -305,7 +317,7 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">37ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">60ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
@@ -325,7 +337,7 @@
                     WARNING
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">37ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">56ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Page 404">
@@ -341,17 +353,17 @@
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/capabilities</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
-                    PASS
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400">
+                    WARNING
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">114ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">53ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
-                <td class="px-4 py-3.5 font-mono">5</td>
-                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
-                  Visite réussie
+                <td class="px-4 py-3.5 font-mono">0</td>
+                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="0 résultat affiché">
+                  0 résultat affiché
                   
-                  <span class="block text-[10px] text-amber-400">2 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
                   <a href="screenshots/capabilities.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
@@ -361,16 +373,16 @@
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/services</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
-                    PASS
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400">
+                    WARNING
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">42ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">72ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
-                <td class="px-4 py-3.5 font-mono">10</td>
-                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
-                  Visite réussie
-                  
+                <td class="px-4 py-3.5 font-mono">33</td>
+                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Erreurs console détectées">
+                  Erreurs console détectées
+                  <span class="block text-[10px] text-rose-400">20 err console</span>
                   
                 </td>
                 <td class="px-4 py-3.5 text-center">
@@ -381,15 +393,15 @@
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/journeys</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400">
-                    WARNING
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">41ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">48ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
-                <td class="px-4 py-3.5 font-mono">0</td>
-                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="0 résultat affiché">
-                  0 résultat affiché
+                <td class="px-4 py-3.5 font-mono">46</td>
+                <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
+                  Visite réussie
                   
                   
                 </td>
@@ -405,13 +417,13 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">49ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">55ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
-                <td class="px-4 py-3.5 font-mono">6</td>
+                <td class="px-4 py-3.5 font-mono">10</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">2 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
                   <a href="screenshots/beneficiaries.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
@@ -425,13 +437,13 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">235ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">63ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">2 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
                   <span class="text-slate-600">-</span>
@@ -445,13 +457,13 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">126ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">76ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">2 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
                   <span class="text-slate-600">-</span>
@@ -465,16 +477,16 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">41ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">59ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">5</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">1 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
-                  <span class="text-slate-600">-</span>
+                  <a href="screenshots/ecosystems.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
                 </td>
               </tr>
             
@@ -485,16 +497,16 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">39ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">53ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">4</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">6 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
-                  <span class="text-slate-600">-</span>
+                  <a href="screenshots/s3.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
                 </td>
               </tr>
             
@@ -505,16 +517,16 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">46ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">53ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
                   Visite réussie
                   
-                  <span class="block text-[10px] text-amber-400">9 err reseau</span>
+                  
                 </td>
                 <td class="px-4 py-3.5 text-center">
-                  <span class="text-slate-600">-</span>
+                  <a href="screenshots/drbest.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
                 </td>
               </tr>
             
@@ -525,7 +537,7 @@
                     PASS
                   </span>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">40ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">68ms</td>
                 <td class="px-4 py-3.5 font-bold text-teal-400">Oui</td>
                 <td class="px-4 py-3.5 font-mono">0</td>
                 <td class="px-4 py-3.5 text-slate-400 font-medium max-w-xs truncate" title="Visite réussie">
@@ -534,7 +546,7 @@
                   
                 </td>
                 <td class="px-4 py-3.5 text-center">
-                  <span class="text-slate-600">-</span>
+                  <a href="screenshots/graph.png" target="_blank" class="text-teal-400 font-bold hover:underline">Voir PNG</a>
                 </td>
               </tr>
             
@@ -562,99 +574,99 @@
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/programs</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">242ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">188ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">5.0 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">10</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/capabilities</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">209ms</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">36ms</td>
                 <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
                 <td class="px-4 py-3.5 font-mono font-bold">0</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/services</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">135ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">97ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">5.7 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">10</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/journeys</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">161ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">91ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">1.8 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">5</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/beneficiaries</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">125ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">113ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">8.1 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">10</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/ecosystems</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">140ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">68ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">1.7 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">5</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             
               <tr class="hover:bg-slate-800/30 transition-colors">
                 <td class="px-4 py-3.5 font-bold font-mono text-slate-300">/api/v2/s3-domains</td>
-                <td class="px-4 py-3.5 font-mono font-bold text-rose-500">404</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">141ms</td>
-                <td class="px-4 py-3.5 font-mono text-slate-400">0.0 KB</td>
-                <td class="px-4 py-3.5 font-mono font-bold">0</td>
+                <td class="px-4 py-3.5 font-mono font-bold text-teal-400">200</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">90ms</td>
+                <td class="px-4 py-3.5 font-mono text-slate-400">2.1 KB</td>
+                <td class="px-4 py-3.5 font-mono font-bold">6</td>
                 <td class="px-4 py-3.5">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500">
-                    ÉCHEC
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400">
+                    OK
                   </span>
-                  <span class="block text-[10px] text-rose-400 font-mono mt-0.5">HTTP Status 404</span>
+                  
                 </td>
               </tr>
             

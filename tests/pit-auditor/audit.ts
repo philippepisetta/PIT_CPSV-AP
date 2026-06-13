@@ -259,7 +259,7 @@ async function runAudit() {
         }
 
         // Captures d'écran pour les cockpits requis ou en cas d'erreur
-        const requiredScreenshots = ["/programs", "/capabilities", "/services", "/journeys", "/beneficiaries"];
+        const requiredScreenshots = ["/", "/programs", "/capabilities", "/services", "/journeys", "/beneficiaries", "/graph", "/s3", "/drbest", "/ecosystems"];
         const needsScreenshot = requiredScreenshots.includes(route) || status === "FAIL";
 
         if (needsScreenshot) {

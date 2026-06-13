@@ -15,8 +15,8 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir les fichiers statiques du frontend
-app.use(express.static(path.join(__dirname, '../public')));
+// Servir les fichiers statiques du frontend (utilisation de process.cwd() pour la compatibilité avec la compilation)
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -5408,7 +5408,7 @@ const swaggerOptions = {
       }
     ]
   },
-  apis: [path.join(__dirname, './server.ts')]
+  apis: [path.join(process.cwd(), 'src/server.ts')]
 };
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 

@@ -8,6 +8,7 @@
     "start": "node dist/src/server.js",
     "dev": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
+    "seed:demo": "ts-node prisma/seed-demo-pit-v1.ts",
     "postinstall": "prisma generate",
     "pit:audit": "ts-node tests/pit-auditor/audit.ts",
     "pit:audit:prod": "cross-env PIT_TARGET_URL=https://pit-cpsv-ap.vercel.app ts-node tests/pit-auditor/audit.ts"

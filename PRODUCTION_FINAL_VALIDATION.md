@@ -1,6 +1,6 @@
 # RAPPORT DE VALIDATION FINALE DE PRODUCTION
 
-Généré le : 13/06/2026 13:17:30
+Généré le : 13/06/2026 13:32:41
 
 ---
 
@@ -10,13 +10,13 @@ Les requêtes ont été effectuées en direct sur l'instance Render de productio
 
 | Endpoint | HTTP Status | Count | Temps de réponse | Statut |
 | :--- | :---: | :---: | :---: | :---: |
-| `/api/v2/programs` | 404 | 0 | 222 ms | ❌ KO |
-| `/api/v2/capabilities` | 404 | 0 | 133 ms | ❌ KO |
-| `/api/v2/s3-domains` | 404 | 0 | 217 ms | ❌ KO |
-| `/api/v2/beneficiaries` | 404 | 0 | 128 ms | ❌ KO |
-| `/api/v2/ecosystems` | 404 | 0 | 125 ms | ❌ KO |
-| `/api/v2/journeys` | 404 | 0 | 126 ms | ❌ KO |
-| `/api/v2/services` | 404 | 0 | 129 ms | ❌ KO |
+| `/api/v2/programs` | 404 | 0 | 295 ms | ❌ KO |
+| `/api/v2/capabilities` | 404 | 0 | 129 ms | ❌ KO |
+| `/api/v2/s3-domains` | 404 | 0 | 224 ms | ❌ KO |
+| `/api/v2/beneficiaries` | 404 | 0 | 122 ms | ❌ KO |
+| `/api/v2/ecosystems` | 404 | 0 | 133 ms | ❌ KO |
+| `/api/v2/journeys` | 404 | 0 | 124 ms | ❌ KO |
+| `/api/v2/services` | 404 | 0 | 142 ms | ❌ KO |
 
 ---
 

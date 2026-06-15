@@ -8,6 +8,7 @@ import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, Arro
 import { AnimatePresence, motion } from "framer-motion";
 import CraftEcosystem from "@/components/craft/CraftEcosystem";
 import { useV2Contributions } from "@/hooks/useV2Queries";
+import { useV2UpdateServiceMutation, useV2DeleteServiceMutation } from "@/hooks/usePITQueries";
 import PITImpactPanel from "@/design-system/PITImpactPanel";
 
 // List of the 10 real Walloon services for absolute reliability and zero API fail risks
@@ -774,6 +775,70 @@ export default function ServicesContainer() {
   const serviceIdForQuery = selectedService ? parseInt(selectedService.id) : null;
   const { data: contributionsData } = useV2Contributions("services", (serviceIdForQuery && !isNaN(serviceIdForQuery)) ? serviceIdForQuery : null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Edit Service States & Mutations
+  const [showServiceEditModal, setShowServiceEditModal] = useState(false);
+  const [editServiceId, setEditServiceId] = useState<number | null>(null);
+  const [editServiceName, setEditServiceName] = useState("");
+  const [editServiceDesc, setEditServiceDesc] = useState("");
+  const [editServiceCode, setEditServiceCode] = useState("");
+  const [editServiceUri, setEditServiceUri] = useState("");
+  const [editServiceOrgId, setEditServiceOrgId] = useState<number>(1);
+  const [editServiceInterventionLevelId, setEditServiceInterventionLevelId] = useState<number | null>(null);
+
+  const updateServiceMutation = useV2UpdateServiceMutation();
+  const deleteServiceMutation = useV2DeleteServiceMutation();
+
+  const handleStartEditService = (svc: any) => {
+    setEditServiceId(parseInt(svc.id));
+    setEditServiceName(svc.name);
+    setEditServiceDesc(svc.description || "");
+    setEditServiceCode(svc.code || "");
+    setEditServiceUri(svc.uri || "");
+    setEditServiceOrgId(svc.organizationId || 1);
+    setEditServiceInterventionLevelId(svc.interventionLevelId || null);
+    setShowServiceEditModal(true);
+    setSelectedService(null);
+  };
+
+  const handleSaveEditService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editServiceId || !editServiceName) return;
+    updateServiceMutation.mutate({
+      id: editServiceId,
+      data: {
+        name: editServiceName,
+        description: editServiceDesc,
+        code: editServiceCode || null,
+        uri: editServiceUri || null,
+        organizationId: editServiceOrgId,
+        interventionLevelId: editServiceInterventionLevelId
+      }
+    }, {
+      onSuccess: () => {
+        alert("✅ Service mis à jour avec succès !");
+        setShowServiceEditModal(false);
+        setRefreshTrigger(prev => prev + 1);
+      },
+      onError: (err: any) => {
+        alert("❌ Erreur lors de la mise à jour : " + err.message);
+      }
+    });
+  };
+
+  const handleDeleteService = (id: number) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce service public ? Cette action est irréversible et affectera le Graphe Territorial.")) return;
+    deleteServiceMutation.mutate(id, {
+      onSuccess: () => {
+        alert("✅ Service public supprimé avec succès !");
+        setSelectedService(null);
+        setRefreshTrigger(prev => prev + 1);
+      },
+      onError: (err: any) => {
+        alert("❌ Erreur lors de la suppression : " + err.message);
+      }
+    });
+  };
 
   // Referentials States
   const [valueChains, setValueChains] = useState<any[]>([]);
@@ -3923,6 +3988,126 @@ export default function ServicesContainer() {
         <CraftEcosystem />
       )}
 
+      {/* Edit Service Modal */}
+      <AnimatePresence>
+        {showServiceEditModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowServiceEditModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-45 cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 220 }}
+              className="fixed right-0 top-0 h-full w-full sm:w-[450px] md:w-[520px] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-50 overflow-y-auto p-6 flex flex-col justify-between"
+            >
+              <div className="space-y-5">
+                <div className="flex justify-between items-start border-b border-gray-150 dark:border-gray-800 pb-4">
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-gray-100">
+                      Modifier le Service Public (CPSV-AP)
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">Mettez à jour les métadonnées réglementaires et d'impact.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowServiceEditModal(false)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition cursor-pointer border-0 bg-transparent"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditService} className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nom du service *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="ex: Diagnostic de maturité numérique"
+                      value={editServiceName}
+                      onChange={(e) => setEditServiceName(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Description</label>
+                    <textarea
+                      rows={4}
+                      placeholder="Description détaillée du service..."
+                      value={editServiceDesc}
+                      onChange={(e) => setEditServiceDesc(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Code Service</label>
+                      <input
+                        type="text"
+                        placeholder="ex: SVC-DIAG"
+                        value={editServiceCode}
+                        onChange={(e) => setEditServiceCode(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Organisation Compétente</label>
+                      <select
+                        value={editServiceOrgId}
+                        onChange={(e) => setEditServiceOrgId(parseInt(e.target.value))}
+                        className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value={1}>Agence du Numérique</option>
+                        <option value={2}>Wallonie Entreprendre</option>
+                        <option value={3}>AWEX</option>
+                        <option value={4}>UCM</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">URI réglementaire</label>
+                    <input
+                      type="text"
+                      placeholder="https://pit.wallonie.be/id/public-service/..."
+                      value={editServiceUri}
+                      onChange={(e) => setEditServiceUri(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-250 dark:border-gray-700 rounded-lg text-xs outline-none text-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-150 dark:border-gray-800">
+                    <button
+                      type="button"
+                      onClick={() => setShowServiceEditModal(false)}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-880 dark:hover:bg-gray-750 text-gray-700 dark:text-zinc-350 text-xs font-semibold rounded-lg border-0 cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shadow-sm border-0 cursor-pointer"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Company Form Modal */}
       <AnimatePresence>
         {showCompanyForm && (
@@ -4400,7 +4585,27 @@ export default function ServicesContainer() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-end">
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-between items-center">
+                <div>
+                  {!selectedService.id.startsWith("svc-") && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditService(selectedService)}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition cursor-pointer border-0"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteService(parseInt(selectedService.id))}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition cursor-pointer border-0"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setSelectedService(null)}
                   className="px-4 py-2 bg-gray-100 dark:bg-gray-850 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-zinc-300 text-xs font-semibold rounded-lg transition cursor-pointer"

@@ -1,8 +1,24 @@
 // src/hooks/usePITQueries.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+const getHeaders = (customHeaders?: Record<string, string>) => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...customHeaders
+  };
+  if (typeof window !== "undefined") {
+    const activeWorkspace = localStorage.getItem("pit-active-workspace");
+    if (activeWorkspace) {
+      headers["x-user-role"] = activeWorkspace.toUpperCase();
+    }
+  }
+  return headers;
+};
+
 const fetcher = async (url: string) => {
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: getHeaders()
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch data from ${url}`);
   }
@@ -266,7 +282,7 @@ export function useV2UpdateEvidenceStatusMutation() {
     mutationFn: async ({ id, status }: { id: number; status: "APPROVED" | "REJECTED" | "PENDING" }) => {
       const res = await fetch(`/api/v2/strategic/evidences/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error("Failed to update evidence status");
@@ -280,4 +296,608 @@ export function useV2UpdateEvidenceStatusMutation() {
     },
   });
 }
+
+// --- ADDITIONAL CRUDS AND MUTATIONS (v2.6.0) ---
+
+export function useV2ChallengesQuery() {
+  return useQuery({
+    queryKey: ["v2-challenges"],
+    queryFn: () => fetcher("/api/v2/challenges"),
+  });
+}
+
+export function useV2ChallengeCategoriesQuery() {
+  return useQuery({
+    queryKey: ["v2-challenge-categories"],
+    queryFn: () => fetcher("/api/v2/challenge-categories"),
+  });
+}
+
+// Member Mutations
+export function useV2CreateMemberMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/members", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create member");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-members"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateMemberMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/members/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update member");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-members"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteMemberMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/members/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete member");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-members"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// Challenge Mutations
+export function useV2CreateChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/challenges", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/challenges/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/challenges/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// Services CRUD Mutations
+export function useV2CreateServiceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/services", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create service");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateServiceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/services/${id}`, {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update service");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteServiceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/services/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete service");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// Communities Mutations
+export function useV2CommunitiesListQuery() {
+  return useQuery({
+    queryKey: ["v2-communities-list"],
+    queryFn: () => fetcher("/api/v2/communities"),
+  });
+}
+
+export function useV2CreateCommunityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/communities", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create community");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateCommunityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/communities/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update community");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteCommunityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/communities/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete community");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// Activity & Attendance Mutations
+export function useV2ActivitiesListQuery() {
+  return useQuery({
+    queryKey: ["v2-activities-list"],
+    queryFn: () => fetcher("/api/v2/activities"),
+  });
+}
+
+export function useV2CreateActivityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/activities", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create activity");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-activities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2UpdateActivityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/activities/${id}`, {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update activity");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-activities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2SaveAttendanceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ activityId, attendance }: { activityId: number; attendance: any[] }) => {
+      const res = await fetch(`/api/v2/activities/${activityId}/attendance`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ attendance }),
+      });
+      if (!res.ok) throw new Error("Failed to save attendance");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-activities-list"] });
+    },
+  });
+}
+
+// Taxonomy Registry Hooks
+export function useV2TaxonomyRegistryQuery() {
+  return useQuery({
+    queryKey: ["taxonomy-registry"],
+    queryFn: () => fetcher("/api/v2/taxonomy-registry"),
+  });
+}
+
+export function useV2TaxonomyTermsQuery(taxonomyName: string) {
+  return useQuery({
+    queryKey: ["taxonomy-terms", taxonomyName],
+    queryFn: () => fetcher(`/api/v2/taxonomy-registry/terms/${taxonomyName}`),
+    enabled: !!taxonomyName,
+  });
+}
+
+export function useV2TaxonomyAlignMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { entityType: string; entityId: number; taxonomyName: string; termId: number }) => {
+      const res = await fetch("/api/v2/taxonomy-registry/align", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to align taxonomy term");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-members"] });
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+// Lineage Tracing Query
+export function useV2LineageQuery(entityType: string, id: number) {
+  return useQuery({
+    queryKey: ["lineage", entityType, id],
+    queryFn: () => fetcher(`/api/v2/lineage/${entityType}/${id}`),
+    enabled: !!entityType && !!id,
+  });
+}
+
+// Project/Outcome/Evidence CRUD
+export function useV2CreateOutcomeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/outcomes", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create outcome");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2CreateEvidenceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/evidences", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create evidence");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-evidences"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2DeleteProjectMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/projects/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete project");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2UpdateConsortiumMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/consortia/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update consortium");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-consortia"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2DeleteConsortiumMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/consortia/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete consortium");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-consortia"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2CreateProjectMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/projects", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create project");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2UpdateProjectMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/projects/${id}`, {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update project");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2UpdateOutcomeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/outcomes/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update outcome");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2DeleteOutcomeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/outcomes/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete outcome");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2UpdateEvidenceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/evidences/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update evidence");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-evidences"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2DeleteEvidenceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/evidences/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete evidence");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-evidences"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+    },
+  });
+}
+
+export function useV2ProjectsQuery() {
+  return useQuery({
+    queryKey: ["v2-projects"],
+    queryFn: () => fetcher("/api/v2/projects"),
+  });
+}
+
+export function useV2OutcomesQuery() {
+  return useQuery({
+    queryKey: ["v2-outcomes"],
+    queryFn: () => fetcher("/api/v2/outcomes"),
+  });
+}
+
 

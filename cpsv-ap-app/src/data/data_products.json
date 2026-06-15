@@ -1,0 +1,121 @@
+[
+  {
+    "id": "dp-bce",
+    "name": "BCE Répertoire des Entreprises",
+    "category": "Administrative",
+    "description": "Fiche signalétique, adresses, structures légales et codes NACE de toutes les entreprises enregistrées en Wallonie.",
+    "sourceSystemId": "bce",
+    "sourceSystemName": "BCE",
+    "owner": "SPW Économie",
+    "syncFrequency": "Temps Réel",
+    "qualityScore": 99,
+    "apiEndpoint": "https://api.bce.wallonie.be/v1/products/companies",
+    "license": "Open Data Wallonie",
+    "subscriberCount": 14,
+    "useCases": ["BioWin - e-Santé", "GreenWin - Éco-Design", "Logistics - Mobilité & NIS2"],
+    "schema": [
+      { "field": "bceNumber", "type": "String", "mapping": "PIT.Beneficiary.bce", "taxonomy": "N/A" },
+      { "field": "legalName", "type": "String", "mapping": "PIT.Beneficiary.name", "taxonomy": "N/A" },
+      { "field": "naceCode", "type": "String", "mapping": "PIT.NaceSector.code", "taxonomy": "NACE Taxonomy" }
+    ]
+  },
+  {
+    "id": "dp-dmat",
+    "name": "DMAT Indice de Maturité Numérique & IA",
+    "category": "Diagnostic",
+    "description": "Scores détaillés de maturité (numérique, IA, cyber, export, durable) collectés lors des audits d'écosystème.",
+    "sourceSystemId": "dmat",
+    "sourceSystemName": "DMAT",
+    "owner": "Agence du Numérique (AdN)",
+    "syncFrequency": "Quotidienne",
+    "qualityScore": 95,
+    "apiEndpoint": "https://dmat.wallonie.be/api/v1/products/maturities",
+    "license": "Fédérée Restreinte",
+    "subscriberCount": 8,
+    "useCases": ["EDIH WallonIA", "Filières S3 - Numérique"],
+    "schema": [
+      { "field": "companyId", "type": "Int", "mapping": "PIT.Beneficiary.id", "taxonomy": "N/A" },
+      { "field": "maturityIaScore", "type": "Int", "mapping": "PIT.Beneficiary.maturityIa", "taxonomy": "DR-BEST:IA" },
+      { "field": "maturityCyberScore", "type": "Int", "mapping": "PIT.Beneficiary.maturityCyber", "taxonomy": "DR-BEST:Cyber" }
+    ]
+  },
+  {
+    "id": "dp-edih-tech",
+    "name": "Annuaire des Compétences & IA (EDIH)",
+    "category": "Ecosystem",
+    "description": "Registre des compétences technologiques et compétences IA identifiées chez les offreurs et offreuses de technologie.",
+    "sourceSystemId": "walhub",
+    "sourceSystemName": "WalHub Connector",
+    "owner": "WalHub EDIH",
+    "syncFrequency": "Quotidienne",
+    "qualityScore": 91,
+    "apiEndpoint": "https://api.walhub.be/v1/data-products/capabilities",
+    "license": "Commerciale Limitée",
+    "subscriberCount": 5,
+    "useCases": ["EDIH WallonIA", "Moteur de Matchmaking"],
+    "schema": [
+      { "field": "providerId", "type": "Int", "mapping": "PIT.Member.id", "taxonomy": "N/A" },
+      { "field": "capabilityName", "type": "String", "mapping": "PIT.Capability.name", "taxonomy": "AI Taxonomy" }
+    ]
+  },
+  {
+    "id": "dp-we-feder",
+    "name": "Portefeuille de Financements FEDER (WE)",
+    "category": "Strategic",
+    "description": "Historique des subventions, prêts et aides régionales accordés par Wallonie Entreprendre aux PMEs.",
+    "sourceSystemId": "crm-we",
+    "sourceSystemName": "CRM Wallonie Entreprendre",
+    "owner": "Wallonie Entreprendre",
+    "syncFrequency": "Temps Réel",
+    "qualityScore": 98,
+    "apiEndpoint": "https://we.wallonie.be/api/v1/products/feder",
+    "license": "Restreinte Securisée",
+    "subscriberCount": 11,
+    "useCases": ["Filières S3 - Hydrogène", "Strategic Cockpit"],
+    "schema": [
+      { "field": "beneficiaryBce", "type": "String", "mapping": "PIT.Beneficiary.bce", "taxonomy": "N/A" },
+      { "field": "fundingAmount", "type": "Float", "mapping": "PIT.Project.budget", "taxonomy": "Funding Framework" },
+      { "field": "instrumentType", "type": "String", "mapping": "PIT.FundingInstrument.type", "taxonomy": "Funding Taxonomy" }
+    ]
+  },
+  {
+    "id": "dp-cpsv",
+    "name": "Catalogue Sémantique des Services (CPSV-AP)",
+    "category": "Catalog",
+    "description": "Spécification formelle des services publics régionaux de premier, deuxième et troisième niveau modélisés en CPSV-AP.",
+    "sourceSystemId": "pit-native",
+    "sourceSystemName": "PIT Native",
+    "owner": "Région Wallonne",
+    "syncFrequency": "Temps Réel",
+    "qualityScore": 100,
+    "apiEndpoint": "https://pit.wallonie.be/api/v2/services/cpsv",
+    "license": "Creative Commons BY-SA",
+    "subscriberCount": 20,
+    "useCases": ["Catalogue CPSV-AP", "Moteur de Recommandation"],
+    "schema": [
+      { "field": "serviceCode", "type": "String", "mapping": "PIT.PublicService.code", "taxonomy": "CPSV Services" },
+      { "field": "serviceName", "type": "String", "mapping": "PIT.PublicService.name", "taxonomy": "N/A" },
+      { "field": "costValue", "type": "Float", "mapping": "PIT.PublicService.cost", "taxonomy": "Cost Taxonomy" }
+    ]
+  },
+  {
+    "id": "dp-biowin-crm",
+    "name": "Cartographie des Membres BioWin",
+    "category": "CRM",
+    "description": "Données relationnelles des membres du pôle de compétitivité BioWin, y compris les structures de recherche et PMEs.",
+    "sourceSystemId": "sf-biowin",
+    "sourceSystemName": "Salesforce BioWin",
+    "owner": "Pôle BioWin",
+    "syncFrequency": "Quotidienne",
+    "qualityScore": 90,
+    "apiEndpoint": "https://biowin.my.salesforce.com/products/members",
+    "license": "Restreinte aux Partenaires",
+    "subscriberCount": 6,
+    "useCases": ["BioWin - e-Santé", "Consortium Explorer"],
+    "schema": [
+      { "field": "accountId", "type": "String", "mapping": "PIT.Member.code", "taxonomy": "N/A" },
+      { "field": "accountName", "type": "String", "mapping": "PIT.Member.name", "taxonomy": "N/A" },
+      { "field": "communityCode", "type": "String", "mapping": "PIT.Community.code", "taxonomy": "S3 Domains" }
+    ]
+  }
+]

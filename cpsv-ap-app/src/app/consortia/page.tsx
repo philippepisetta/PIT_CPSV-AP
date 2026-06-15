@@ -8,11 +8,14 @@ import {
   useV2ConsortiaQuery, 
   useV2CreateConsortiumMutation, 
   useV2MembersQuery, 
-  useV2OpportunitiesQuery 
+  useV2OpportunitiesQuery,
+  useV2UpdateConsortiumMutation,
+  useV2DeleteConsortiumMutation
 } from "@/hooks/usePITQueries";
 
 export default function ConsortiaPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingConsortium, setEditingConsortium] = useState<any | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [opportunityId, setOpportunityId] = useState("");
@@ -27,6 +30,8 @@ export default function ConsortiaPage() {
   const { data: membersRes } = useV2MembersQuery();
   const { data: oppsRes } = useV2OpportunitiesQuery();
   const createConsortiumMutation = useV2CreateConsortiumMutation();
+  const updateConsortiumMutation = useV2UpdateConsortiumMutation();
+  const deleteConsortiumMutation = useV2DeleteConsortiumMutation();
 
   const consortia = consortiaRes?.data || [];
   const members = membersRes?.data || [];
@@ -52,21 +57,55 @@ export default function ConsortiaPage() {
     e.preventDefault();
     if (!name || selectedMembers.length === 0) return;
 
-    createConsortiumMutation.mutate({
-      name,
-      description,
-      opportunityId: opportunityId ? parseInt(opportunityId) : null,
-      members: selectedMembers
-    }, {
-      onSuccess: () => {
-        // Reset states
-        setName("");
-        setDescription("");
-        setOpportunityId("");
-        setSelectedMembers([]);
-        setShowForm(false);
-      }
-    });
+    if (editingConsortium) {
+      updateConsortiumMutation.mutate({
+        id: editingConsortium.id,
+        data: {
+          name,
+          description,
+          opportunityId: opportunityId ? parseInt(opportunityId) : null,
+          members: selectedMembers
+        }
+      }, {
+        onSuccess: () => {
+          setName("");
+          setDescription("");
+          setOpportunityId("");
+          setSelectedMembers([]);
+          setEditingConsortium(null);
+          setShowForm(false);
+        }
+      });
+    } else {
+      createConsortiumMutation.mutate({
+        name,
+        description,
+        opportunityId: opportunityId ? parseInt(opportunityId) : null,
+        members: selectedMembers
+      }, {
+        onSuccess: () => {
+          setName("");
+          setDescription("");
+          setOpportunityId("");
+          setSelectedMembers([]);
+          setShowForm(false);
+        }
+      });
+    }
+  };
+
+  const handleStartEdit = (c: any) => {
+    setEditingConsortium(c);
+    setName(c.name);
+    setDescription(c.description || "");
+    setOpportunityId(c.opportunityId ? String(c.opportunityId) : "");
+    setSelectedMembers(c.members?.map((m: any) => ({ memberId: m.memberId, role: m.role || "Partner" })) || []);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: number) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce consortium d'innovation ? Cette action est irréversible.")) return;
+    deleteConsortiumMutation.mutate(id);
   };
 
   return (
@@ -95,7 +134,7 @@ export default function ConsortiaPage() {
         {showForm && (
           <form onSubmit={handleSubmit} className="p-6 rounded-2xl border border-teal-500/35 bg-teal-500/5 space-y-6">
             <h3 className="font-extrabold text-xs uppercase text-teal-700 dark:text-teal-400">
-              Nouveau Consortium d'Innovation
+              {editingConsortium ? "Modifier le Consortium" : "Nouveau Consortium d'Innovation"}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -201,7 +240,14 @@ export default function ConsortiaPage() {
             <div className="flex gap-3 justify-end border-t border-muted/10 pt-4">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingConsortium(null);
+                  setName("");
+                  setDescription("");
+                  setOpportunityId("");
+                  setSelectedMembers([]);
+                }}
                 className="px-4 py-2 bg-glass border border-muted/30 text-text rounded-xl text-xs font-extrabold cursor-pointer hover:bg-glass/60 transition-all"
               >
                 Annuler
@@ -227,9 +273,25 @@ export default function ConsortiaPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <h3 className="font-extrabold text-sm text-text">{c.name}</h3>
-                    <span className="bg-glass/40 border border-muted/20 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold text-text uppercase">
-                      {c.status || "APPROVED"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-glass/40 border border-muted/20 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold text-text uppercase">
+                        {c.status || "APPROVED"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(c)}
+                        className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/25 border-0 text-[9px] font-black cursor-pointer transition-colors"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c.id)}
+                        className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 hover:bg-rose-500/25 border-0 text-[9px] font-black cursor-pointer transition-colors"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
                   </div>
                   {c.opportunity && (
                     <span className="text-[10px] text-teal-605 font-bold uppercase block">

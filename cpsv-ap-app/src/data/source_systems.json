@@ -1,0 +1,101 @@
+[
+  {
+    "id": "bce",
+    "name": "BCE (Banque-Carrefour des Entreprises)",
+    "type": "Registre Administratif",
+    "owner": "SPW Économie",
+    "syncFrequency": "Temps Réel",
+    "apiEndpoint": "https://api.bce.wallonie.be/v1",
+    "confidenceLevel": 100,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T08:00:00.000Z"
+  },
+  {
+    "id": "dmat",
+    "name": "DMAT (Diagnostic Maturité IA / Numérique)",
+    "type": "Plateforme d'Évaluation",
+    "owner": "Agence du Numérique (AdN)",
+    "syncFrequency": "Quotidienne",
+    "apiEndpoint": "https://dmat.wallonie.be/api",
+    "confidenceLevel": 95,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T02:00:00.000Z"
+  },
+  {
+    "id": "sf-biowin",
+    "name": "Salesforce BioWin",
+    "type": "CRM Écosystème",
+    "owner": "Pôle BioWin",
+    "syncFrequency": "Quotidienne",
+    "apiEndpoint": "https://biowin.my.salesforce.com/services/apexrest/pit",
+    "confidenceLevel": 90,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T03:30:00.000Z"
+  },
+  {
+    "id": "crm-greenwin",
+    "name": "CRM GreenWin",
+    "type": "CRM Écosystème",
+    "owner": "Pôle GreenWin",
+    "syncFrequency": "Quotidienne",
+    "apiEndpoint": "https://crm.greenwin.be/api/v2",
+    "confidenceLevel": 90,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T04:15:00.000Z"
+  },
+  {
+    "id": "crm-awex",
+    "name": "CRM AWEX",
+    "type": "CRM Exportateur",
+    "owner": "AWEX",
+    "syncFrequency": "Hebdomadaire",
+    "apiEndpoint": "https://partner.awex.be/api/export-companies",
+    "confidenceLevel": 92,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-14T01:00:00.000Z"
+  },
+  {
+    "id": "crm-we",
+    "name": "CRM Wallonie Entreprendre",
+    "type": "CRM Financement",
+    "owner": "Wallonie Entreprendre (WE)",
+    "syncFrequency": "Temps Réel",
+    "apiEndpoint": "https://we.wallonie.be/api/v1/investments",
+    "confidenceLevel": 98,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T08:30:00.000Z"
+  },
+  {
+    "id": "pit-native",
+    "name": "PIT Native (System of Engagement)",
+    "type": "Base Sémantique Native",
+    "owner": "Région Wallonne",
+    "syncFrequency": "N/A (Temps Réel)",
+    "apiEndpoint": "https://pit.wallonie.be/api/v2",
+    "confidenceLevel": 100,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T12:00:00.000Z"
+  },
+  {
+    "id": "walhub",
+    "name": "WalHub Connector",
+    "type": "Partenaire Hub",
+    "owner": "WalHub EDIH",
+    "syncFrequency": "Quotidienne",
+    "apiEndpoint": "https://api.walhub.be/v1",
+    "confidenceLevel": 88,
+    "status": "ACTIVE",
+    "lastSync": "2026-06-15T05:00:00.000Z"
+  },
+  {
+    "id": "connect",
+    "name": "Wallonie Connect",
+    "type": "Portail Écosystème",
+    "owner": "SPW Économie",
+    "syncFrequency": "Quotidienne",
+    "apiEndpoint": "https://connect.wallonie.be/api",
+    "confidenceLevel": 85,
+    "status": "INACTIVE",
+    "lastSync": "2026-06-10T05:00:00.000Z"
+  }
+]

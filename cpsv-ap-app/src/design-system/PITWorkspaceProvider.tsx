@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type WorkspaceType = "animateur" | "conseiller" | "entreprise" | "dg";
+export type WorkspaceType = "animateur" | "conseiller" | "entreprise" | "dg" | "steward";
 
 export interface Workspace {
   id: WorkspaceType;
@@ -15,13 +15,13 @@ export interface Workspace {
 export const WORKSPACES: Workspace[] = [
   {
     id: "animateur",
-    label: "Workspace Animateur",
-    description: "Animer l'écosystème, valider les preuves et piloter les projets collaboratifs.",
+    label: "Workspace Animation",
+    description: "Animer l'écosystème, piloter les communautés, activités et funnels d'animation.",
     themeColor: "teal",
   },
   {
     id: "conseiller",
-    label: "Workspace Conseiller",
+    label: "Workspace Conseiller 360",
     description: "Gérer le portefeuille d'entreprises, les diagnostics et les recommandations.",
     themeColor: "indigo",
   },
@@ -36,6 +36,12 @@ export const WORKSPACES: Workspace[] = [
     label: "Cockpit Exécutif (DG)",
     description: "Pilotage stratégique de la vision à l'impact et analyse de gaps territoriaux.",
     themeColor: "amber",
+  },
+  {
+    id: "steward",
+    label: "Workspace Interopérabilité",
+    description: "Gérer les Source Systems, les Data Products, et la qualité du Knowledge Graph.",
+    themeColor: "purple",
   },
 ];
 

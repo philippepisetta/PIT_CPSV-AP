@@ -26,7 +26,8 @@ import {
   FileCode,
   Zap,
   Building,
-  Play
+  Play,
+  Layers
 } from "lucide-react";
 import { useWorkspace } from "@/design-system/PITWorkspaceProvider";
 
@@ -44,11 +45,35 @@ interface NavBlock {
 
 const navBlocks: NavBlock[] = [
   {
+    title: "Workspace Animation",
+    allowedWorkspaces: ["animateur"],
+    items: [
+      { name: "Workspace Animation", href: "/animation", icon: Sparkles },
+      { name: "Activity Explorer", href: "/activities", icon: Compass },
+      { name: "Community Dashboard", href: "/communities", icon: Share2 },
+    ]
+  },
+  {
+    title: "Portefeuille Conseiller",
+    allowedWorkspaces: ["conseiller"],
+    items: [
+      { name: "Workspace Entreprises 360", href: "/beneficiaries", icon: Users },
+      { name: "Opportunités d'Innovation", href: "/opportunities", icon: FileCode },
+    ]
+  },
+  {
+    title: "Workspace Interop",
+    allowedWorkspaces: ["steward"],
+    items: [
+      { name: "Workspace Interop", href: "/interoperability", icon: Settings },
+      { name: "Data Marketplace", href: "/marketplace", icon: Database },
+    ]
+  },
+  {
     title: "Ecosystem CRM",
     allowedWorkspaces: ["animateur"],
     items: [
       { name: "Membres", href: "/members", icon: Users },
-      { name: "Communautés", href: "/communities", icon: Share2 },
       { name: "Défis d'Écosystème", href: "/challenges", icon: Target },
       { name: "Consortiums", href: "/consortia", icon: Network },
       { name: "Projets", href: "/projects", icon: Activity },
@@ -57,11 +82,11 @@ const navBlocks: NavBlock[] = [
   },
   {
     title: "Catalogue Territorial",
-    allowedWorkspaces: ["animateur", "conseiller"],
+    allowedWorkspaces: ["animateur", "conseiller", "steward"],
     items: [
       { name: "Services (CPSV)", href: "/services", icon: FileText },
       { name: "Parcours d'Accompagnement", href: "/journeys", icon: Compass },
-      { name: "Financements", href: "/opportunities", icon: FileCode },
+      { name: "Opportunités d'Innovation", href: "/opportunities", icon: FileCode },
       { name: "Acteurs Territoriaux", href: "/organizations", icon: Building },
       { name: "Filières S3", href: "/filieres", icon: Layers },
       { name: "Explorateur de Chaînes", href: "/value-chain-explorer", icon: Network },
@@ -86,8 +111,6 @@ const navBlocks: NavBlock[] = [
     ]
   }
 ];
-
-import { Layers } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -117,7 +140,8 @@ export default function Sidebar() {
             activeWorkspace === "animateur" && "bg-teal-500",
             activeWorkspace === "conseiller" && "bg-indigo-500",
             activeWorkspace === "entreprise" && "bg-emerald-500",
-            activeWorkspace === "dg" && "bg-amber-500"
+            activeWorkspace === "dg" && "bg-amber-500",
+            activeWorkspace === "steward" && "bg-purple-500"
           )} />
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-wider text-text">

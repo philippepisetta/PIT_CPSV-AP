@@ -1,3 +1,4 @@
+import fs from 'fs';
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
@@ -2792,6 +2793,74 @@ app.get('/api/pilotage', async (req, res) => {
 
 const v2Router = express.Router();
 
+// Middleware de permissions v2
+v2Router.use((req, res, next) => {
+  if (['GET', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  const role = (req.headers['x-user-role'] as string || '').toUpperCase();
+  console.log(`🔒 [Middleware Permissions] Route: ${req.method} ${req.path}, Rôle détecté: ${role}`);
+
+  if (role === 'ADMIN') {
+    return next();
+  }
+
+  const path = req.path.toLowerCase();
+
+  if (
+    path.startsWith('/members') ||
+    path.startsWith('/challenges') ||
+    path.startsWith('/communities') ||
+    path.startsWith('/consortia') ||
+    path.startsWith('/projects') ||
+    path.startsWith('/events') ||
+    path.startsWith('/opportunities') ||
+    path.startsWith('/programs') ||
+    path.startsWith('/strategic-priorities') ||
+    path.startsWith('/initiatives') ||
+    path.startsWith('/actions') ||
+    path.startsWith('/filieres') ||
+    path.startsWith('/value-chains') ||
+    path.startsWith('/value-chain-segments') ||
+    path.startsWith('/services') ||
+    path.startsWith('/challenge-categories') ||
+    path.startsWith('/capabilities') ||
+    path.startsWith('/nace-sectors')
+  ) {
+    if (role === 'ANIMATEUR') {
+      return next();
+    }
+    if (role === 'STEWARD') {
+      return next();
+    }
+    if (path.startsWith('/challenges') && role === 'ENTREPRISE') {
+      return next();
+    }
+  }
+
+  if (
+    path.startsWith('/beneficiaries') ||
+    path.startsWith('/journeys') ||
+    path.startsWith('/journey-instances') ||
+    path.startsWith('/journey-progress') ||
+    path.startsWith('/evidences') ||
+    path.startsWith('/activities') ||
+    path.startsWith('/outcomes') ||
+    path.startsWith('/participations') ||
+    path.startsWith('/attendances')
+  ) {
+    if (role === 'CONSEILLER') {
+      return next();
+    }
+    if (path.includes('/evidences') && path.includes('/status') && role === 'DG') {
+      return next();
+    }
+  }
+
+  return res.status(403).json({ error: "Accès refusé: Rôle ou permissions insuffisantes." });
+});
+
 // --- PAGINATION HELPERS ---
 const getPagination = (req: express.Request) => {
   const page = parseInt(req.query.page as string) || 1;
@@ -5468,18 +5537,27 @@ v2Router.get('/members/:id', async (req, res) => {
 // 2. Communities
 v2Router.get('/communities', async (req, res) => {
   try {
-    const items = await prisma.community.findMany({
+    const list = await prisma.community.findMany({
       include: {
-        _count: {
-          select: {
-            members: true,
-            projects: true,
-            events: true,
-            opportunities: true
-          }
-        }
+        members: { include: { member: true } },
+        projects: { include: { project: true } },
+        events: { include: { eventResource: true } },
+        opportunities: { include: { opportunity: true } }
       },
       orderBy: { name: 'asc' }
+    });
+    // Parse themes from description if they exist
+    const items = list.map((c: any) => {
+      let themes: any[] = [];
+      if (c.description && c.description.includes('"__meta__":')) {
+        try {
+          const parsed = JSON.parse(c.description);
+          if (parsed.customProperties && parsed.customProperties.themes) {
+            themes = parsed.customProperties.themes;
+          }
+        } catch (e) {}
+      }
+      return { ...c, themes };
     });
     res.json({ data: items });
   } catch (err: any) {
@@ -5958,6 +6036,1271 @@ v2Router.patch('/strategic/evidences/:id/status', async (req, res) => {
   }
 });
 
+
+// ==========================================
+// --- 16. ADDITIONAL CRUD & FRAMEWORK ENDPOINTS (v2.6.0) ---
+// ==========================================
+
+// --- COMMUNITY FRAMEWORK ---
+
+
+v2Router.post('/communities', async (req, res) => {
+  try {
+    const { name, description, code, themes } = req.body;
+    let finalDescription = description;
+    if (themes && Array.isArray(themes)) {
+      finalDescription = JSON.stringify({
+        "__meta__": true,
+        "description": description || "",
+        "customProperties": { themes }
+      });
+    }
+    const item = await prisma.community.create({
+      data: {
+        name,
+        code: code || null,
+        description: finalDescription || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/communities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, description, code, themes } = req.body;
+    let finalDescription = description;
+    if (themes && Array.isArray(themes)) {
+      finalDescription = JSON.stringify({
+        "__meta__": true,
+        "description": description || "",
+        "customProperties": { themes }
+      });
+    }
+    const item = await prisma.community.update({
+      where: { id },
+      data: {
+        name,
+        code,
+        description: finalDescription
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/communities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.community.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/community-memberships', async (req, res) => {
+  try {
+    const items = await prisma.communityMembership.findMany({
+      include: { member: true, community: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/community-memberships', async (req, res) => {
+  try {
+    const { memberId, communityId, role, status } = req.body;
+    const CM = await prisma.communityMembership.create({
+      data: {
+        memberId: parseInt(memberId),
+        communityId: parseInt(communityId),
+        role: role || 'Membre',
+        status: status || 'ACTIVE'
+      },
+      include: { member: true, community: true }
+    });
+    res.status(201).json({ data: CM });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/community-memberships/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { role, status } = req.body;
+    const CM = await prisma.communityMembership.update({
+      where: { id },
+      data: { role, status }
+    });
+    res.json({ data: CM });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/community-memberships/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.communityMembership.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Community Theme Serialization Endpoint
+v2Router.get('/communities/:id/themes', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const c = await prisma.community.findUnique({ where: { id } });
+    if (!c) return res.status(404).json({ error: 'Communauté non trouvée' });
+    let themes: any[] = [];
+    if (c.description && c.description.includes('"__meta__":')) {
+      const parsed = JSON.parse(c.description);
+      if (parsed.customProperties && parsed.customProperties.themes) {
+        themes = parsed.customProperties.themes;
+      }
+    }
+    res.json({ data: themes });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/communities/:id/themes', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const c = await prisma.community.findUnique({ where: { id } });
+    if (!c) return res.status(404).json({ error: 'Communauté non trouvée' });
+    const { name, description } = req.body;
+    let themes: any[] = [];
+    let cleanDesc = c.description || "";
+    if (c.description && c.description.includes('"__meta__":')) {
+      const parsed = JSON.parse(c.description);
+      cleanDesc = parsed.description || "";
+      if (parsed.customProperties && parsed.customProperties.themes) {
+        themes = parsed.customProperties.themes;
+      }
+    }
+    const newTheme = { id: Date.now(), name, description };
+    themes.push(newTheme);
+    const finalDescription = JSON.stringify({
+      "__meta__": true,
+      "description": cleanDesc,
+      "customProperties": { themes }
+    });
+    await prisma.community.update({
+      where: { id },
+      data: { description: finalDescription }
+    });
+    res.status(201).json({ data: newTheme });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- ACTIVITY FRAMEWORK & ATTENDANCE ---
+v2Router.get('/activities/:id/attendance', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const act = await prisma.activity.findUnique({ where: { id } });
+    if (!act) return res.status(404).json({ error: 'Activité non trouvée' });
+    let attendance: any[] = [];
+    if (act.notes && act.notes.includes('"__meta__":')) {
+      const parsed = JSON.parse(act.notes);
+      if (parsed.customProperties && parsed.customProperties.attendance) {
+        attendance = parsed.customProperties.attendance;
+      }
+    }
+    res.json({ data: attendance });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/activities/:id/attendance', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const act = await prisma.activity.findUnique({ where: { id } });
+    if (!act) return res.status(404).json({ error: 'Activité non trouvée' });
+    const { attendance } = req.body; // array of { memberId, status }
+    let cleanNotes = act.notes || "";
+    if (act.notes && act.notes.includes('"__meta__":')) {
+      const parsed = JSON.parse(act.notes);
+      cleanNotes = parsed.notes || "";
+    }
+    const finalNotes = JSON.stringify({
+      "__meta__": true,
+      "notes": cleanNotes,
+      "customProperties": { attendance }
+    });
+    const updated = await prisma.activity.update({
+      where: { id },
+      data: { notes: finalNotes }
+    });
+    res.json({ data: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// MemberParticipations (Participations)
+v2Router.get('/participations', async (req, res) => {
+  try {
+    const list = await prisma.memberParticipation.findMany({
+      include: { member: true, eventResource: true }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/participations', async (req, res) => {
+  try {
+    const { memberId, eventResourceId, status } = req.body;
+    const item = await prisma.memberParticipation.create({
+      data: {
+        memberId: parseInt(memberId),
+        eventResourceId: parseInt(eventResourceId),
+        status: status || 'REGISTERED'
+      },
+      include: { member: true, eventResource: true }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/participations/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    const item = await prisma.memberParticipation.update({
+      where: { id },
+      data: { status }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/participations/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.memberParticipation.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- TAXONOMY REGISTRY ---
+v2Router.get('/taxonomy-registry', async (req, res) => {
+  res.json({
+    data: {
+      registries: [
+        { name: 'nace', description: 'Nomenclatures des Activités Économiques (NACE)' },
+        { name: 'capabilities', description: 'Taxonomie des technologies, IA et cybersécurité' },
+        { name: 'drbest', description: 'Dimensions de Transformation Numérique DR-BEST' },
+        { name: 's3', description: 'Priorités de la Smart Specialisation Strategy (S3) Wallonie' }
+      ]
+    }
+  });
+});
+
+v2Router.get('/taxonomy-registry/terms/:taxonomyName', async (req, res) => {
+  try {
+    const taxName = req.params.taxonomyName.toLowerCase();
+    let data: any[] = [];
+    if (taxName === 'nace') {
+      data = await prisma.naceSector.findMany({ orderBy: { code: 'asc' } });
+    } else if (taxName === 'capabilities') {
+      data = await prisma.capability.findMany({ orderBy: { code: 'asc' } });
+    } else if (taxName === 'drbest') {
+      data = await prisma.transformationDimension.findMany({ orderBy: { code: 'asc' } });
+    } else if (taxName === 's3') {
+      data = await prisma.s3Domain.findMany({ include: { valueChains: true }, orderBy: { code: 'asc' } });
+    } else {
+      return res.status(404).json({ error: 'Taxonomie non reconnue' });
+    }
+    res.json({ data });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/taxonomy-registry/align', async (req, res) => {
+  try {
+    const { entityType, entityId, taxonomyName, termId } = req.body;
+    const entId = parseInt(entityId);
+    const tId = parseInt(termId);
+    const taxName = taxonomyName.toLowerCase();
+
+    if (entityType.toLowerCase() === 'member') {
+      if (taxName === 'nace') {
+        const member = await prisma.member.findUnique({ where: { id: entId } });
+        if (member && member.beneficiaryId) {
+          await prisma.beneficiary.update({
+            where: { id: member.beneficiaryId },
+            data: { primaryNaceSectorId: tId }
+          });
+        }
+        const updated = await prisma.member.update({
+          where: { id: entId },
+          data: { nace: (await prisma.naceSector.findUnique({ where: { id: tId } }))?.code }
+        });
+        return res.json({ data: updated });
+      }
+    } else if (entityType.toLowerCase() === 'service') {
+      if (taxName === 'capabilities') {
+        const updated = await prisma.publicService.update({
+          where: { id: entId },
+          data: { capabilitiesNew: { connect: { id: tId } } },
+          include: { capabilitiesNew: true }
+        });
+        return res.json({ data: updated });
+      } else if (taxName === 'drbest') {
+        const updated = await prisma.publicService.update({
+          where: { id: entId },
+          data: { transformationDimensions: { connect: { id: tId } } },
+          include: { transformationDimensions: true }
+        });
+        return res.json({ data: updated });
+      }
+    }
+    
+    res.status(400).json({ error: "Alignement non pris en charge ou combinaison d'entités invalide." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/taxonomy-registry/align', async (req, res) => {
+  try {
+    const { entityType, entityId, taxonomyName, termId } = req.body;
+    const entId = parseInt(entityId);
+    const tId = parseInt(termId);
+    const taxName = taxonomyName.toLowerCase();
+
+    if (entityType.toLowerCase() === 'member') {
+      if (taxName === 'nace') {
+        const member = await prisma.member.findUnique({ where: { id: entId } });
+        if (member && member.beneficiaryId) {
+          await prisma.beneficiary.update({
+            where: { id: member.beneficiaryId },
+            data: { primaryNaceSectorId: null }
+          });
+        }
+        const updated = await prisma.member.update({
+          where: { id: entId },
+          data: { nace: null }
+        });
+        return res.json({ data: updated });
+      }
+    } else if (entityType.toLowerCase() === 'service') {
+      if (taxName === 'capabilities') {
+        const updated = await prisma.publicService.update({
+          where: { id: entId },
+          data: { capabilitiesNew: { disconnect: { id: tId } } },
+          include: { capabilitiesNew: true }
+        });
+        return res.json({ data: updated });
+      } else if (taxName === 'drbest') {
+        const updated = await prisma.publicService.update({
+          where: { id: entId },
+          data: { transformationDimensions: { disconnect: { id: tId } } },
+          include: { transformationDimensions: true }
+        });
+        return res.json({ data: updated });
+      }
+    }
+    
+    res.status(400).json({ error: "Désalignement non pris en charge." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- LINEAGE VERIFICATION & TRACING ---
+v2Router.get('/lineage/:entityType/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const type = req.params.entityType.toLowerCase();
+
+    const lineage: any = {
+      programs: [],
+      priorities: [],
+      initiatives: [],
+      actions: [],
+      activities: [],
+      challenges: [],
+      journeys: [],
+      services: [],
+      fundings: [],
+      projects: [],
+      outcomes: [],
+      evidences: []
+    };
+
+    if (type === 'project') {
+      const proj = await prisma.project.findUnique({
+        where: { id },
+        include: {
+          program: { include: { priorities: true, fundingInstruments: true } },
+          initiative: { include: { publicServices: { include: { outcomes: { include: { contributions: true } } } } } },
+          actionsNew: { include: { activities: { include: { evidences: true, service: true, journey: true } } } }
+        }
+      });
+
+      if (proj) {
+        lineage.projects.push(proj);
+        if (proj.program) {
+          lineage.programs.push(proj.program);
+          proj.program.priorities.forEach((p: any) => lineage.priorities.push(p));
+          proj.program.fundingInstruments.forEach((f: any) => lineage.fundings.push(f));
+        }
+        if (proj.initiative) {
+          lineage.initiatives.push(proj.initiative);
+          proj.initiative.publicServices.forEach((s: any) => {
+            lineage.services.push(s);
+            s.outcomes.forEach((o: any) => lineage.outcomes.push(o));
+          });
+        }
+        proj.actionsNew.forEach((a: any) => {
+          lineage.actions.push(a);
+          a.activities.forEach((act: any) => {
+            lineage.activities.push(act);
+            act.evidences.forEach((e: any) => lineage.evidences.push(e));
+            if (act.service) lineage.services.push(act.service);
+            if (act.journey) lineage.journeys.push(act.journey);
+          });
+        });
+      }
+    } else if (type === 'activity') {
+      const act = await prisma.activity.findUnique({
+        where: { id },
+        include: {
+          action: { include: { project: { include: { program: { include: { priorities: true } }, initiative: true } } } },
+          service: { include: { outcomes: true, fundingInstruments: true } },
+          journey: true,
+          evidences: true
+        }
+      });
+      if (act) {
+        lineage.activities.push(act);
+        if (act.journey) lineage.journeys.push(act.journey);
+        if (act.service) {
+          lineage.services.push(act.service);
+          act.service.outcomes.forEach((o: any) => lineage.outcomes.push(o));
+          act.service.fundingInstruments.forEach((f: any) => lineage.fundings.push(f));
+        }
+        act.evidences.forEach((e: any) => lineage.evidences.push(e));
+        if (act.action) {
+          lineage.actions.push(act.action);
+          if (act.action.project) {
+            const p = act.action.project;
+            lineage.projects.push(p);
+            if (p.program) {
+              lineage.programs.push(p.program);
+              p.program.priorities.forEach((pr: any) => lineage.priorities.push(pr));
+            }
+            if (p.initiative) lineage.initiatives.push(p.initiative);
+          }
+        }
+      }
+    } else {
+      // General traceback / fallback
+      return res.status(400).json({ error: "Lignage direct non résolu pour ce type d'entité." });
+    }
+
+    res.json({ data: lineage });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- COMPLEMENTARY REST CORE CRUD APIS ---
+
+// Members
+v2Router.post('/members', async (req, res) => {
+  try {
+    const item = await prisma.member.create({
+      data: {
+        name: req.body.name,
+        type: req.body.type,
+        description: req.body.description || null,
+        email: req.body.email || null,
+        phone: req.body.phone || null,
+        website: req.body.website || null,
+        location: req.body.location || null,
+        competencies: req.body.competencies || [],
+        size: req.body.size || null,
+        nace: req.body.nace || null,
+        digitalMaturity: req.body.digitalMaturity ? parseInt(req.body.digitalMaturity) : 1,
+        iaMaturity: req.body.iaMaturity ? parseInt(req.body.iaMaturity) : 1,
+        cyberMaturity: req.body.cyberMaturity ? parseInt(req.body.cyberMaturity) : 1,
+        organizationId: req.body.organizationId ? parseInt(req.body.organizationId) : null,
+        beneficiaryId: req.body.beneficiaryId ? parseInt(req.body.beneficiaryId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/members/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.member.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        type: req.body.type,
+        description: req.body.description,
+        email: req.body.email,
+        phone: req.body.phone,
+        website: req.body.website,
+        location: req.body.location,
+        competencies: req.body.competencies,
+        size: req.body.size,
+        nace: req.body.nace,
+        digitalMaturity: req.body.digitalMaturity ? parseInt(req.body.digitalMaturity) : undefined,
+        iaMaturity: req.body.iaMaturity ? parseInt(req.body.iaMaturity) : undefined,
+        cyberMaturity: req.body.cyberMaturity ? parseInt(req.body.cyberMaturity) : undefined,
+        organizationId: req.body.organizationId ? parseInt(req.body.organizationId) : undefined,
+        beneficiaryId: req.body.beneficiaryId ? parseInt(req.body.beneficiaryId) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/members/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.member.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Challenges
+v2Router.put('/challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.challenge.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description,
+        uri: req.body.uri,
+        challengeCategoryId: req.body.challengeCategoryId ? parseInt(req.body.challengeCategoryId) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.challenge.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Services delete
+v2Router.delete('/services/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.publicService.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Journeys delete
+v2Router.delete('/journeys/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.journey.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Journey Instances CRUD
+v2Router.get('/journey-instances', async (req, res) => {
+  try {
+    const list = await prisma.journeyInstance.findMany({
+      include: { template: true, progress: { include: { stage: true } } }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/journey-instances', async (req, res) => {
+  try {
+    const { memberId, templateId, status } = req.body;
+    const item = await prisma.journeyInstance.create({
+      data: {
+        memberId: parseInt(memberId),
+        templateId: parseInt(templateId),
+        status: status || 'ACTIVE'
+      },
+      include: { template: true }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/journey-instances/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    const item = await prisma.journeyInstance.update({
+      where: { id },
+      data: { status }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/journey-instances/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.journeyInstance.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Opportunities POST/PUT/DELETE
+v2Router.post('/opportunities', async (req, res) => {
+  try {
+    const item = await prisma.opportunity.create({
+      data: {
+        title: req.body.title,
+        description: req.body.description || null,
+        type: req.body.type,
+        provider: req.body.provider || null,
+        status: req.body.status || 'OPEN',
+        deadline: req.body.deadline ? new Date(req.body.deadline) : null,
+        url: req.body.url || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/opportunities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.opportunity.update({
+      where: { id },
+      data: {
+        title: req.body.title,
+        description: req.body.description,
+        type: req.body.type,
+        provider: req.body.provider,
+        status: req.body.status,
+        deadline: req.body.deadline ? new Date(req.body.deadline) : null,
+        url: req.body.url
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/opportunities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.opportunity.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Consortiums PUT/DELETE
+v2Router.put('/consortia/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, description, status, opportunityId, projectId, members } = req.body;
+    
+    // Clear and reset members
+    if (members && Array.isArray(members)) {
+      await prisma.consortiumMember.deleteMany({ where: { consortiumId: id } });
+    }
+
+    const item = await prisma.consortium.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        status,
+        opportunityId: opportunityId ? parseInt(opportunityId) : undefined,
+        projectId: projectId ? parseInt(projectId) : undefined,
+        members: members ? {
+          create: members.map((m: any) => ({
+            memberId: parseInt(m.memberId),
+            role: m.role || 'Partner',
+            status: m.status || 'APPROVED'
+          }))
+        } : undefined
+      },
+      include: { members: { include: { member: true } } }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/consortia/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.consortium.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Projects DELETE
+v2Router.delete('/projects/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.project.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Outcomes GET, POST, PUT, DELETE
+v2Router.get('/outcomes', async (req, res) => {
+  try {
+    const list = await prisma.outcome.findMany({ include: { publicService: true } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/outcomes', async (req, res) => {
+  try {
+    // Enforce lineage: Outcome must link to PublicService
+    if (!req.body.publicServiceId) {
+      return res.status(400).json({ error: "Validation du lignage échouée: l'Impact (Outcome) doit être lié à un Service." });
+    }
+    const item = await prisma.outcome.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        code: req.body.code || null,
+        uri: req.body.uri || null,
+        publicServiceId: parseInt(req.body.publicServiceId)
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/outcomes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.outcome.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        code: req.body.code,
+        uri: req.body.uri,
+        publicServiceId: req.body.publicServiceId ? parseInt(req.body.publicServiceId) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/outcomes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.outcome.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Evidences POST, PUT, DELETE
+v2Router.post('/evidences', async (req, res) => {
+  try {
+    // Enforce lineage: Evidence must link to requirement or activity/delivery
+    if (!req.body.requirementId && !req.body.activityId && !req.body.serviceDeliveryId) {
+      return res.status(400).json({ error: "Validation du lignage échouée: la Preuve (Evidence) doit être rattachée à une Activité, une Exigence ou un Service." });
+    }
+    const item = await prisma.evidence.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        code: req.body.code || null,
+        file: req.body.file || null,
+        url: req.body.url || null,
+        type: req.body.type || null,
+        requirementId: req.body.requirementId ? parseInt(req.body.requirementId) : null,
+        activityId: req.body.activityId ? parseInt(req.body.activityId) : null,
+        serviceDeliveryId: req.body.serviceDeliveryId ? parseInt(req.body.serviceDeliveryId) : null,
+        status: req.body.status || 'PENDING'
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/evidences/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.evidence.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        code: req.body.code,
+        file: req.body.file,
+        url: req.body.url,
+        type: req.body.type,
+        requirementId: req.body.requirementId ? parseInt(req.body.requirementId) : undefined,
+        activityId: req.body.activityId ? parseInt(req.body.activityId) : undefined,
+        serviceDeliveryId: req.body.serviceDeliveryId ? parseInt(req.body.serviceDeliveryId) : undefined,
+        status: req.body.status
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/evidences/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.evidence.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Events GET, POST, PUT, DELETE
+v2Router.get('/events', async (req, res) => {
+  try {
+    const list = await prisma.eventResource.findMany({ orderBy: { startDate: 'desc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/events', async (req, res) => {
+  try {
+    const item = await prisma.eventResource.create({
+      data: {
+        title: req.body.title,
+        description: req.body.description || null,
+        type: req.body.type,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : new Date(),
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        location: req.body.location || null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.eventResource.update({
+      where: { id },
+      data: {
+        title: req.body.title,
+        description: req.body.description,
+        type: req.body.type,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate !== undefined ? (req.body.endDate ? new Date(req.body.endDate) : null) : undefined,
+        location: req.body.location
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.eventResource.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Enforce delete endpoints for Axe 1 & 2
+v2Router.delete('/programs/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.program.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/initiatives/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.initiative.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/actions/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.action.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Filières CRUD
+v2Router.get('/filieres', async (req, res) => {
+  try {
+    const list = await prisma.filiere.findMany({ include: { valueChains: true } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/filieres', async (req, res) => {
+  try {
+    const item = await prisma.filiere.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        ecosystemId: req.body.ecosystemId ? parseInt(req.body.ecosystemId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/filieres/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.filiere.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        ecosystemId: req.body.ecosystemId ? parseInt(req.body.ecosystemId) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/filieres/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.filiere.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ValueChain delete
+v2Router.delete('/value-chains/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.valueChain.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ValueChainSegment CRUD
+v2Router.get('/value-chain-segments', async (req, res) => {
+  try {
+    const list = await prisma.valueChainSegment.findMany({ include: { valueChain: true } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/value-chain-segments', async (req, res) => {
+  try {
+    const item = await prisma.valueChainSegment.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description || null,
+        valueChainId: parseInt(req.body.valueChainId),
+        parentSegmentId: req.body.parentSegmentId ? parseInt(req.body.parentSegmentId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/value-chain-segments/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.valueChainSegment.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        valueChainId: req.body.valueChainId ? parseInt(req.body.valueChainId) : undefined,
+        parentSegmentId: req.body.parentSegmentId !== undefined ? (req.body.parentSegmentId ? parseInt(req.body.parentSegmentId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/value-chain-segments/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.valueChainSegment.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==========================================
+// --- 17. SYSTEM OF RECORD & DATA PRODUCTS APIs (Data Steward) ---
+// ==========================================
+
+const getSourceSystemsFilePath = () => path.join(process.cwd(), 'cpsv-ap-app/src/data/source_systems.json');
+const getDataProductsFilePath = () => path.join(process.cwd(), 'cpsv-ap-app/src/data/data_products.json');
+
+// Source Systems GET
+v2Router.get('/interoperability/source-systems', (req, res) => {
+  try {
+    const filePath = getSourceSystemsFilePath();
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      res.json({ data: JSON.parse(data) });
+    } else {
+      res.json({ data: [] });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Source Systems POST
+v2Router.post('/interoperability/source-systems', (req, res) => {
+  try {
+    const filePath = getSourceSystemsFilePath();
+    let currentData: any[] = [];
+    if (fs.existsSync(filePath)) {
+      currentData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+    const newSystem = req.body;
+    if (!newSystem.id) {
+      return res.status(400).json({ error: "L'identifiant du système source est obligatoire." });
+    }
+    const idx = currentData.findIndex(s => s.id === newSystem.id);
+    if (idx !== -1) {
+      currentData[idx] = { ...currentData[idx], ...newSystem };
+    } else {
+      currentData.push(newSystem);
+    }
+    fs.writeFileSync(filePath, JSON.stringify(currentData, null, 2), 'utf8');
+    res.status(201).json({ data: newSystem });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Data Products GET
+v2Router.get('/interoperability/data-products', (req, res) => {
+  try {
+    const filePath = getDataProductsFilePath();
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      res.json({ data: JSON.parse(data) });
+    } else {
+      res.json({ data: [] });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Data Products POST
+v2Router.post('/interoperability/data-products', (req, res) => {
+  try {
+    const filePath = getDataProductsFilePath();
+    let currentData: any[] = [];
+    if (fs.existsSync(filePath)) {
+      currentData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+    const newProduct = req.body;
+    if (!newProduct.id) {
+      return res.status(400).json({ error: "L'identifiant du produit de données est obligatoire." });
+    }
+    const idx = currentData.findIndex(p => p.id === newProduct.id);
+    if (idx !== -1) {
+      currentData[idx] = { ...currentData[idx], ...newProduct };
+    } else {
+      currentData.push(newProduct);
+    }
+    fs.writeFileSync(filePath, JSON.stringify(currentData, null, 2), 'utf8');
+    res.status(201).json({ data: newProduct });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 18. BENEFICIARY 360 SUB-RESOURCE ENDPOINTS ---
+// ==========================================
+
+// GET activities for a beneficiary (both individual and collective participations)
+v2Router.get('/beneficiaries/:id/activities', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const items = await prisma.activity.findMany({
+      where: {
+        OR: [
+          { beneficiaryId: id },
+          { companies: { some: { id } } }
+        ]
+      },
+      include: { service: true, operator: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET funding instruments (financements) for a beneficiary
+v2Router.get('/beneficiaries/:id/financements', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const items = await prisma.fundingInstrument.findMany({
+      where: {
+        beneficiaries: { some: { id } }
+      }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST to associate a funding instrument (financement) with a beneficiary
+v2Router.post('/beneficiaries/:id/financements', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { fundingInstrumentId } = req.body;
+    if (!fundingInstrumentId) {
+      return res.status(400).json({ error: "L'identifiant du financement est obligatoire." });
+    }
+    const item = await prisma.beneficiary.update({
+      where: { id },
+      data: {
+        fundingInstruments: {
+          connect: { id: parseInt(fundingInstrumentId) }
+        }
+      },
+      include: { fundingInstruments: true }
+    });
+    res.json({ data: item.fundingInstruments });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET outcomes (impacts) for a beneficiary
+v2Router.get('/beneficiaries/:id/outcomes', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const items = await prisma.impact.findMany({
+      where: { beneficiaryId: id },
+      include: { indicator: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 v2Router.get('/openapi.json', (req, res) => {
   res.json(swaggerSpec);

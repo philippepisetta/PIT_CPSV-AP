@@ -302,6 +302,17 @@ export default function PITGraphView({
         return { x: xVal, y: yVal };
       });
 
+      const getSourceColor = (t: string) => {
+        const typeLower = t.toLowerCase();
+        if (["beneficiary", "nacesector", "territory", "dataquality"].includes(typeLower)) {
+          return "#d97706"; // Amber (Colour C)
+        }
+        if (["organization", "member", "project", "community", "consortium", "opportunity", "fundinginstrument"].includes(typeLower)) {
+          return "#0d9488"; // Teal (Colour B)
+        }
+        return "#d946ef"; // Fuchsia (Colour A)
+      };
+
       const isSelected = selectedNodeId === n.id;
 
       return {
@@ -329,7 +340,7 @@ export default function PITGraphView({
         },
         position: pos,
         style: {
-          background: typeColorMap[n.type] || "#3b82f6",
+          background: getSourceColor(n.type),
           color: "white",
           borderRadius: "12px",
           border: isSelected ? "3px solid #f9fafb" : "1px solid rgba(255, 255, 255, 0.15)",
@@ -366,6 +377,23 @@ export default function PITGraphView({
 
   return (
     <div className={cn("h-[500px] border border-gray-150 dark:border-gray-850 rounded-2xl bg-white dark:bg-gray-800 relative overflow-hidden shadow-inner", className)}>
+      {/* Legende de provenance des donnees */}
+      <div className="absolute top-4 left-4 z-10 p-3 bg-glass border border-muted/20 rounded-xl shadow-lg text-[10px] space-y-1.5 backdrop-blur-md max-w-[200px]">
+        <h4 className="font-extrabold uppercase text-muted tracking-wider mb-1">Gouvernance des Données</h4>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />
+          <span className="font-bold text-text">Natives PIT (Engagement/SoE)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
+          <span className="font-bold text-text">Fédérées CRM (Filiation/SoR)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+          <span className="font-bold text-text">Administratives (BCE/DMAT)</span>
+        </div>
+      </div>
+
       <ReactFlow
         nodes={layoutNodes}
         edges={rfEdges}
@@ -384,7 +412,12 @@ export default function PITGraphView({
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="opacity-25" />
         <Controls className="!bg-white dark:!bg-gray-800 !border-gray-150 dark:!border-gray-800 !text-text !rounded-xl !shadow-md" />
         <MiniMap
-          nodeColor={(n) => typeColorMap[n.id.split("-")[0]] || "#3b82f6"}
+          nodeColor={(n) => {
+            const typeLower = n.id.split("-")[0].toLowerCase();
+            if (["beneficiary", "nacesector", "territory"].includes(typeLower)) return "#d97706";
+            if (["organization", "member", "project", "community", "consortium", "opportunity"].includes(typeLower)) return "#0d9488";
+            return "#d946ef";
+          }}
           maskColor="rgba(0, 0, 0, 0.2)"
           className="!bg-white dark:!bg-gray-800 !border-gray-150 dark:!border-gray-800 !rounded-xl !shadow-md hidden sm:block"
         />

@@ -152,3 +152,132 @@ export function useDeleteJourneyMutation() {
     },
   });
 }
+
+// --- V2 WORKSPACE & STRATEGIC HOOKS ---
+
+export function useV2MembersQuery(q?: string, type?: string) {
+  const params = new URLSearchParams();
+  if (q) params.append("q", q);
+  if (type) params.append("type", type);
+  return useQuery({
+    queryKey: ["v2-members", q, type],
+    queryFn: () => fetcher(`/api/v2/members?${params.toString()}`),
+  });
+}
+
+export function useV2CommunitiesQuery() {
+  return useQuery({
+    queryKey: ["v2-communities"],
+    queryFn: () => fetcher("/api/v2/communities"),
+  });
+}
+
+export function useV2OpportunitiesQuery(type?: string) {
+  return useQuery({
+    queryKey: ["v2-opportunities", type],
+    queryFn: () => fetcher(type ? `/api/v2/opportunities?type=${type}` : "/api/v2/opportunities"),
+  });
+}
+
+export function useV2ConsortiaQuery() {
+  return useQuery({
+    queryKey: ["v2-consortia"],
+    queryFn: () => fetcher("/api/v2/consortia"),
+  });
+}
+
+export function useV2CreateConsortiumMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (consortiumData: any) => {
+      const res = await fetch("/api/v2/consortia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(consortiumData),
+      });
+      if (!res.ok) throw new Error("Failed to create consortium");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-consortia"] });
+    },
+  });
+}
+
+export function useV2MissionsQuery() {
+  return useQuery({
+    queryKey: ["v2-missions"],
+    queryFn: () => fetcher("/api/v2/strategic/missions"),
+  });
+}
+
+export function useV2RoadmapsQuery() {
+  return useQuery({
+    queryKey: ["v2-roadmaps"],
+    queryFn: () => fetcher("/api/v2/strategic/roadmaps"),
+  });
+}
+
+export function useV2PortfoliosQuery() {
+  return useQuery({
+    queryKey: ["v2-portfolios"],
+    queryFn: () => fetcher("/api/v2/strategic/portfolios"),
+  });
+}
+
+export function useV2FrameworksQuery() {
+  return useQuery({
+    queryKey: ["v2-frameworks"],
+    queryFn: () => fetcher("/api/v2/strategic/frameworks"),
+  });
+}
+
+export function useV2EcosystemKpisQuery() {
+  return useQuery({
+    queryKey: ["v2-ecosystem-kpis"],
+    queryFn: () => fetcher("/api/v2/ecosystem/kpis"),
+  });
+}
+
+export function useV2EcosystemActivityQuery() {
+  return useQuery({
+    queryKey: ["v2-ecosystem-activity"],
+    queryFn: () => fetcher("/api/v2/ecosystem/activity"),
+  });
+}
+
+export function useV2GapAnalysisQuery() {
+  return useQuery({
+    queryKey: ["v2-gap-analysis"],
+    queryFn: () => fetcher("/api/v2/ecosystem/gap-analysis"),
+  });
+}
+
+export function useV2EvidencesQuery() {
+  return useQuery({
+    queryKey: ["v2-evidences"],
+    queryFn: () => fetcher("/api/v2/strategic/evidences"),
+  });
+}
+
+export function useV2UpdateEvidenceStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: "APPROVED" | "REJECTED" | "PENDING" }) => {
+      const res = await fetch(`/api/v2/strategic/evidences/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update evidence status");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-evidences"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-missions"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["pilotage"] });
+    },
+  });
+}
+

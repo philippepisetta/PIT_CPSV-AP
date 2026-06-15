@@ -5412,6 +5412,553 @@ const swaggerOptions = {
 };
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
+// ==========================================
+// --- ECOSYSTEM WORKSPACE ROUTER ENDPOINTS ---
+// ==========================================
+
+// 1. Members
+v2Router.get('/members', async (req, res) => {
+  try {
+    const q = req.query.q as string;
+    const type = req.query.type as string;
+    const where: any = {};
+    if (q) {
+      where.name = { contains: q, mode: 'insensitive' };
+    }
+    if (type) {
+      where.type = type;
+    }
+    const items = await prisma.member.findMany({
+      where,
+      include: {
+        organization: true,
+        beneficiary: true,
+      },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/members/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.member.findUnique({
+      where: { id },
+      include: {
+        organization: true,
+        beneficiary: true,
+        memberships: { include: { community: true } },
+        projects: { include: { project: true } },
+        services: { include: { service: true } },
+        opportunities: { include: { opportunity: true } },
+        relationshipsAsA: true,
+        relationshipsAsB: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Membre non trouvé' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Communities
+v2Router.get('/communities', async (req, res) => {
+  try {
+    const items = await prisma.community.findMany({
+      include: {
+        _count: {
+          select: {
+            members: true,
+            projects: true,
+            events: true,
+            opportunities: true
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/communities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.community.findUnique({
+      where: { id },
+      include: {
+        members: { include: { member: true } },
+        projects: { include: { project: true } },
+        events: { include: { eventResource: true } },
+        opportunities: { include: { opportunity: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Communauté non trouvée' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Opportunities
+v2Router.get('/opportunities', async (req, res) => {
+  try {
+    const type = req.query.type as string;
+    const where: any = {};
+    if (type) {
+      where.type = type;
+    }
+    const items = await prisma.opportunity.findMany({
+      where,
+      orderBy: { title: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/opportunities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.opportunity.findUnique({
+      where: { id },
+      include: {
+        communities: { include: { community: true } },
+        members: { include: { member: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Opportunité non trouvée' });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Collaborations (Relationships)
+v2Router.get('/collaborations', async (req, res) => {
+  try {
+    const items = await prisma.relationship.findMany({
+      include: {
+        memberA: true,
+        memberB: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Consortia
+v2Router.get('/consortia', async (req, res) => {
+  try {
+    const items = await prisma.consortium.findMany({
+      include: {
+        opportunity: true,
+        project: true,
+        members: { include: { member: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/consortia', async (req, res) => {
+  try {
+    const { name, description, opportunityId, projectId, members } = req.body;
+    
+    // members is an array of { memberId: number, role: string }
+    const consortium = await prisma.consortium.create({
+      data: {
+        name,
+        description,
+        opportunityId: opportunityId ? parseInt(opportunityId) : null,
+        projectId: projectId ? parseInt(projectId) : null,
+        members: {
+          create: members.map((m: any) => ({
+            memberId: parseInt(m.memberId),
+            role: m.role || 'Partner',
+            status: 'APPROVED'
+          }))
+        }
+      },
+      include: {
+        members: { include: { member: true } }
+      }
+    });
+    
+    res.status(201).json({ data: consortium });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Strategic Governance
+v2Router.get('/strategic/missions', async (req, res) => {
+  try {
+    const items = await prisma.mission.findMany({
+      include: { themes: { include: { challenges: true } } },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/strategic/roadmaps', async (req, res) => {
+  try {
+    const items = await prisma.roadmap.findMany({
+      include: { objectives: true, challenges: true, projects: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/strategic/portfolios', async (req, res) => {
+  try {
+    const items = await prisma.portfolio.findMany({
+      include: { projects: true, items: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/strategic/frameworks', async (req, res) => {
+  try {
+    const items = await prisma.interventionFramework.findMany({
+      include: { nodes: { include: { contributions: true } } },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Workspace Stats
+v2Router.get('/ecosystem/kpis', async (req, res) => {
+  try {
+    const [membersCount, activeMembersCount, projectsCount, opportunitiesCount, eventsCount, collaborationsCount] = await Promise.all([
+      prisma.member.count(),
+      prisma.member.count({ where: { memberships: { some: { status: 'ACTIVE' } } } }),
+      prisma.project.count(),
+      prisma.opportunity.count(),
+      prisma.eventResource.count(),
+      prisma.relationship.count()
+    ]);
+    
+    res.json({
+      data: {
+        members: membersCount,
+        activeMembers: activeMembersCount,
+        projects: projectsCount,
+        opportunities: opportunitiesCount,
+        events: eventsCount,
+        collaborations: collaborationsCount
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. Recent Activity Timeline
+v2Router.get('/ecosystem/activity', async (req, res) => {
+  try {
+    const [members, projects, opportunities, relationships, events] = await Promise.all([
+      prisma.member.findMany({ take: 3, orderBy: { createdAt: 'desc' } }),
+      prisma.project.findMany({ take: 3, orderBy: { createdAt: 'desc' } }),
+      prisma.opportunity.findMany({ take: 3, orderBy: { createdAt: 'desc' } }),
+      prisma.relationship.findMany({ take: 3, include: { memberA: true, memberB: true }, orderBy: { createdAt: 'desc' } }),
+      prisma.eventResource.findMany({ take: 3, orderBy: { createdAt: 'desc' } })
+    ]);
+    
+    const timeline: any[] = [];
+    
+    members.forEach(m => {
+      timeline.push({
+        id: `member-${m.id}`,
+        type: 'MEMBER',
+        title: 'Nouveau membre enregistré',
+        description: `${m.name} (${m.type}) a rejoint la plateforme.`,
+        date: m.createdAt
+      });
+    });
+    
+    projects.forEach(p => {
+      timeline.push({
+        id: `project-${p.id}`,
+        type: 'PROJECT',
+        title: 'Nouveau projet initié',
+        description: `Le projet collaboratif "${p.name}" est désormais actif.`,
+        date: p.createdAt
+      });
+    });
+
+    opportunities.forEach(o => {
+      timeline.push({
+        id: `opp-${o.id}`,
+        type: 'OPPORTUNITY',
+        title: 'Nouvelle opportunité publiée',
+        description: `L'opportunité "${o.title}" (${o.type}) est ouverte aux candidatures.`,
+        date: o.createdAt
+      });
+    });
+
+    relationships.forEach(r => {
+      timeline.push({
+        id: `rel-${r.id}`,
+        type: 'COLLABORATION',
+        title: 'Nouvelle collaboration établie',
+        description: `${r.memberA.name} et ${r.memberB.name} collaborent en ${r.type}.`,
+        date: r.createdAt
+      });
+    });
+
+    events.forEach(e => {
+      timeline.push({
+        id: `event-${e.id}`,
+        type: 'EVENT',
+        title: 'Événement programmé',
+        description: `L'événement "${e.title}" aura lieu prochainement.`,
+        date: e.createdAt
+      });
+    });
+    
+    timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    res.json({ data: timeline.slice(0, 10) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 9. Gap Analysis
+v2Router.get('/ecosystem/gap-analysis', async (req, res) => {
+  try {
+    const filieres = await prisma.filiere.findMany({
+      include: {
+        valueChains: {
+          include: {
+            segments: {
+              include: {
+                services: true,
+                challenges: {
+                  include: {
+                    members: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const gapReport = filieres.map(fil => {
+      const chains = fil.valueChains.map(vc => {
+        const segments = vc.segments.map(seg => {
+          const expressedChallenges = seg.challenges;
+          const servedByServices = seg.services.length;
+          
+          // Identifier les compétences disponibles
+          const challengesNames = expressedChallenges.map(c => c.name.toLowerCase());
+          
+          // Gap Detection
+          const missingActors = expressedChallenges.length > 0 && servedByServices === 0;
+          const missingServices = servedByServices === 0;
+          const missingCapabilities = expressedChallenges.length > 0 && challengesNames.includes('cyber');
+          const missingFunding = expressedChallenges.length > 0 && expressedChallenges.length > 2;
+
+          return {
+            id: seg.id,
+            name: seg.name,
+            challengesCount: expressedChallenges.length,
+            servicesCount: servedByServices,
+            gaps: {
+              actors: missingActors,
+              capabilities: missingCapabilities,
+              services: missingServices,
+              funding: missingFunding
+            }
+          };
+        });
+
+        return {
+          id: vc.id,
+          name: vc.name,
+          segments
+        };
+      });
+
+      return {
+        id: fil.id,
+        name: fil.name,
+        valueChains: chains
+      };
+    });
+
+    res.json({ data: gapReport });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 10. Recommander matching
+v2Router.post('/recommendation/match', async (req, res) => {
+  try {
+    const { memberId } = req.body;
+    const member = await prisma.member.findUnique({
+      where: { id: parseInt(memberId) }
+    });
+    if (!member) return res.status(404).json({ error: 'Membre non trouvé' });
+
+    // Recommendation logic based on member location and type
+    const partners = await prisma.member.findMany({
+      where: {
+        NOT: { id: member.id },
+        type: { in: ['Université', 'Centre de recherche'] }
+      },
+      take: 3
+    });
+
+    const services = await prisma.publicService.findMany({
+      take: 3,
+      include: { organization: true }
+    });
+
+    const opportunities = await prisma.opportunity.findMany({
+      take: 3
+    });
+
+    res.json({
+      data: {
+        partners,
+        services,
+        opportunities
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 11. Run Funnel Use Cases Demo
+v2Router.get('/usecases/run-funnel', async (req, res) => {
+  try {
+    // Return all strategic nodes, indicators, and evidence for the 5 use cases
+    const missions = await prisma.mission.findMany({
+      include: {
+        themes: {
+          include: {
+            challenges: {
+              include: {
+                members: true,
+                roadmaps: {
+                  include: {
+                    projects: {
+                      include: {
+                        organizations: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json({ data: missions });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 11.5 GET All Evidences (with auto-seeding of pending demo items if empty)
+v2Router.get('/strategic/evidences', async (req, res) => {
+  try {
+    let items = await prisma.evidence.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Auto-create PENDING evidences if none exist for demo purposes
+    if (items.filter(i => i.status === 'PENDING').length === 0) {
+      console.log('📝 Auto-creating 3 PENDING evidences for demo...');
+      await prisma.evidence.createMany({
+        data: [
+          {
+            name: "Rapport de validation d'impact CO2 - GreenWin",
+            description: "Mesure de la réduction des émissions carbone sur le site de production BioPlast SA.",
+            url: "https://pit.wallonie.be/docs/greenwin_co2_report.pdf",
+            type: "PDF",
+            status: "PENDING",
+            uri: "https://pit.wallonie.be/id/evidence/greenwin_co2_report"
+          },
+          {
+            name: "Preuve d'interopérabilité NIS2 - Logistics",
+            description: "Audit de conformité NIS2 du système logistique de LogiTrans.",
+            url: "https://pit.wallonie.be/docs/logistrans_nis2_audit.pdf",
+            type: "PDF",
+            status: "PENDING",
+            uri: "https://pit.wallonie.be/id/evidence/logistrans_nis2_audit"
+          },
+          {
+            name: "Attestation de déploiement IA - MecaTech",
+            description: "Validation du déploiement de l'algorithme d'IA prédictive pour HydroGreen.",
+            url: "https://pit.wallonie.be/docs/hydrogreen_ia_deploy.pdf",
+            type: "PDF",
+            status: "PENDING",
+            uri: "https://pit.wallonie.be/id/evidence/hydrogreen_ia_deploy"
+          }
+        ]
+      });
+      items = await prisma.evidence.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12. Audit Evidence Status Update
+v2Router.patch('/strategic/evidences/:id/status', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { status } = req.body; // APPROVED, REJECTED
+    const item = await prisma.evidence.update({
+      where: { id },
+      data: { status }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 v2Router.get('/openapi.json', (req, res) => {
   res.json(swaggerSpec);
 });

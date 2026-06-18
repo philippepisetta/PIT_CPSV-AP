@@ -623,3 +623,184 @@ export function useV2ConvertActivityToFunding() {
     },
   });
 }
+
+// CREATE Beneficiary mutation
+export function useV2CreateBeneficiaryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/beneficiaries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur de création du bénéficiaire.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiaries-list"] });
+    },
+  });
+}
+
+// UPDATE Beneficiary mutation
+export function useV2UpdateBeneficiaryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/beneficiaries/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur de mise à jour du bénéficiaire.");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiaries-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.id] });
+    },
+  });
+}
+
+// DELETE (soft delete) Beneficiary mutation
+export function useV2DeleteBeneficiaryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/beneficiaries/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression du bénéficiaire.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiaries-list"] });
+    },
+  });
+}
+
+// GET contacts for a beneficiary
+export function useV2BeneficiaryContacts(beneficiaryId: number | null) {
+  return useQuery({
+    queryKey: ["v2-beneficiary-contacts", beneficiaryId],
+    queryFn: () => fetcher(`/api/v2/beneficiaries/${beneficiaryId}/contacts`),
+    enabled: beneficiaryId !== null && !isNaN(beneficiaryId),
+  });
+}
+
+// CREATE Contact mutation
+export function useV2CreateContactMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur de création du contact.");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-contacts", variables.beneficiaryId] });
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.beneficiaryId] });
+    },
+  });
+}
+
+// UPDATE Contact mutation
+export function useV2UpdateContactMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/contacts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur de mise à jour du contact.");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-contacts", variables.data.beneficiaryId] });
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.data.beneficiaryId] });
+    },
+  });
+}
+
+// DELETE Contact mutation
+export function useV2DeleteContactMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, beneficiaryId }: { id: number; beneficiaryId: number }) => {
+      const res = await fetch(`/api/v2/contacts/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression du contact.");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-contacts", variables.beneficiaryId] });
+      queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.beneficiaryId] });
+    },
+  });
+}
+
+// CREATE membership mutation
+export function useV2CreateMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/community-memberships", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'adhésion.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+    },
+  });
+}
+
+// UPDATE membership mutation
+export function useV2UpdateMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/community-memberships/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur de mise à jour d'adhésion.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+    },
+  });
+}
+
+// DELETE membership mutation
+export function useV2DeleteMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/community-memberships/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression d'adhésion.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-communities-list"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-communities"] });
+    },
+  });
+}

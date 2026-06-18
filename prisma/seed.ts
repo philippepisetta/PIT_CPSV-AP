@@ -7,6 +7,7 @@ async function main() {
 
   // Nettoyage de la base de données en respectant l'ordre des contraintes d'intégrité référentielle
   console.log('🧹 Nettoyage des anciennes données...');
+  await prisma.ecosystemChallenge.deleteMany({});
   await prisma.evidence.deleteMany({});
   await prisma.activity.deleteMany({}); // New Activity table
   await prisma.serviceDelivery.deleteMany({});

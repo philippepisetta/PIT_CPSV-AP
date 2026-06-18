@@ -57,7 +57,7 @@ const navBlocks: NavBlock[] = [
     title: "Portefeuille Conseiller",
     allowedWorkspaces: ["conseiller"],
     items: [
-      { name: "Workspace Entreprises 360", href: "/beneficiaries", icon: Users },
+      { name: "Workspace Bénéficiaires 360", href: "/beneficiaries", icon: Users },
       { name: "Opportunités d'Innovation", href: "/opportunities", icon: FileCode },
     ]
   },
@@ -74,7 +74,7 @@ const navBlocks: NavBlock[] = [
     allowedWorkspaces: ["animateur"],
     items: [
       { name: "Membres", href: "/members", icon: Users },
-      { name: "Défis d'Écosystème", href: "/challenges", icon: Target },
+      { name: "Défis d'Écosystème", href: "/ecosystem-challenges", icon: Target },
       { name: "Consortiums", href: "/consortia", icon: Network },
       { name: "Projets", href: "/projects", icon: Activity },
       { name: "Audit Preuves", href: "/evidences", icon: ClipboardCheck },

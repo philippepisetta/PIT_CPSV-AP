@@ -112,6 +112,7 @@ model PublicService {
 
   memberServices     MemberService[]
   valueChainSegments ValueChainSegment[]
+  ecosystemChallenges EcosystemChallenge[]
 
   @@index([organizationId])
   @@map("public_services")
@@ -210,6 +211,7 @@ model Outcome {
   publicService   PublicService @relation(fields: [publicServiceId], references: [id], onDelete: Cascade)
 
   contributions StrategicContribution[]
+  ecosystemChallenges EcosystemChallenge[]
 
   @@map("outcomes")
 }
@@ -383,6 +385,16 @@ model Beneficiary {
   projects                Project[]               @relation("BeneficiaryProjects")
   activitiesNew           Activity[]              @relation("BeneficiaryActivitiesNew")
   activitiesCollectiveNew Activity[]              @relation("ActivityCompaniesNew")
+
+  beneficiaryType         String                  @default("ENTREPRISE")
+  // CRUD Opérationnels & Interop
+  status                  String                  @default("ACTIVE") // ACTIVE, ARCHIVED
+  sourceSystem            String?
+  sourceAuthority         String?
+  lastSyncDate            DateTime?
+  contacts                Contact[]
+  memberships             CommunityMembership[]
+  fundingCalls            FundingCall[]
 
   roadmapLogs Json?
   createdAt   DateTime @default(now())
@@ -1148,6 +1160,7 @@ model Program {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  ecosystemChallenges EcosystemChallenge[]
 
   @@map("programs")
 }
@@ -1330,8 +1343,11 @@ model FundingInstrument {
   services      PublicService[] @relation("ServiceFunding")
   beneficiaries Beneficiary[]   @relation("BeneficiaryFunding")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  callId        Int?
+  call          FundingCall?            @relation(fields: [callId], references: [id], onDelete: Cascade)
+  awards        FundingAward[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
 
   @@map("funding_instruments")
 }
@@ -1380,6 +1396,8 @@ model Project {
   updatedAt        DateTime           @updatedAt
   ProjectCommunity ProjectCommunity[]
   FundingAward     FundingAward?
+  ecosystemChallenges EcosystemChallenge[]
+  fundingCalls        FundingCall[]
 
   @@map("projects")
 }
@@ -1763,6 +1781,8 @@ model ValueChain {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  ecosystemChallenges EcosystemChallenge[]
+  fundingCalls        FundingCall[]
 
   @@map("value_chains")
 }
@@ -1795,7 +1815,6 @@ model Member {
   beneficiaryId Int?         @unique
   beneficiary   Beneficiary? @relation(fields: [beneficiaryId], references: [id], onDelete: SetNull)
 
-  memberships       CommunityMembership[]
   collaborationsAsA Collaboration[]       @relation("MemberA")
   collaborationsAsB Collaboration[]       @relation("MemberB")
   consortia         ConsortiumMember[]
@@ -1827,21 +1846,24 @@ model Community {
   opportunities OpportunityCommunity[]
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
+  ecosystemChallenges EcosystemChallenge[]
+  fundingCalls        FundingCall[]
 
   @@map("communities")
 }
 
 model CommunityMembership {
-  id          Int       @id @default(autoincrement())
-  memberId    Int
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  communityId Int
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  role        String? // ex: Coordinateur, Animateur, Membre
-  joinedAt    DateTime  @default(now())
-  status      String    @default("ACTIVE") // ACTIVE, INACTIVE
+  id                Int         @id @default(autoincrement())
+  beneficiaryId     Int
+  beneficiary       Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  communityId       Int
+  community         Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  role              String?     // ex: Coordinateur, Animateur, Membre
+  joinedAt          DateTime    @default(now())
+  status            String      @default("ACTIVE") // ACTIVE, INACTIVE
+  membershipContext String      @default("COMMUNITY") // COMMUNITY, CLUSTER, POLE, PROGRAM, CONSORTIUM
 
-  @@unique([memberId, communityId])
+  @@unique([beneficiaryId, communityId])
   @@map("community_memberships")
 }
 
@@ -1859,6 +1881,8 @@ model Opportunity {
   consortia   Consortium[]
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
+  ecosystemChallenges EcosystemChallenge[]
+  fundingCalls        FundingCall[]
 
   @@map("opportunities")
 }
@@ -1889,6 +1913,7 @@ model Consortium {
   projectId     Int?               @unique
   project       Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   members       ConsortiumMember[]
+  fundingCalls  FundingCall[]
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
@@ -2008,6 +2033,8 @@ model Filiere {
   valueChains ValueChain[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  ecosystemChallenges EcosystemChallenge[]
+  fundingCalls        FundingCall[]
 
   @@map("filieres")
 }
@@ -2095,9 +2122,17 @@ model FundingCall {
   program      FundingProgram       @relation(fields: [programId], references: [id], onDelete: Cascade)
   deadline     DateTime?
   status       String               @default("OPEN") // OPEN, CLOSED
-  applications FundingApplication[]
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  applications  FundingApplication[]
+  communities   Community[]
+  filieres      Filiere[]
+  valueChains   ValueChain[]
+  opportunities Opportunity[]
+  beneficiaries Beneficiary[]
+  consortia     Consortium[]
+  projects      Project[]
+  instruments   FundingInstrument[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   @@map("funding_calls")
 }
@@ -2115,15 +2150,18 @@ model FundingApplication {
 }
 
 model FundingAward {
-  id            Int                @id @default(autoincrement())
-  applicationId Int                @unique
-  application   FundingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id            Int                 @id @default(autoincrement())
+  applicationId Int?                @unique
+  application   FundingApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   amount        Float
-  date          DateTime           @default(now())
-  projectId     Int?               @unique
-  project       Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  date          DateTime            @default(now())
+  projectId     Int?                @unique
+  project       Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  instrumentId  Int?
+  instrument    FundingInstrument?  @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  status        String              @default("GRANTED")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@map("funding_awards")
 }
@@ -2265,4 +2303,46 @@ model PortfolioItem {
   updatedAt   DateTime  @updatedAt
 
   @@map("portfolio_items")
+}
+
+model Contact {
+  id               Int         @id @default(autoincrement())
+  name             String
+  email            String?
+  phone            String?
+  role             String?     // ex: CEO, CTO, Responsable R&D, etc.
+  contactType      String      @default("OPERATIONAL")
+  isPrimaryContact Boolean     @default(false)
+  beneficiaryId    Int
+  beneficiary      Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("contacts")
+}
+
+model EcosystemChallenge {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String? @db.Text
+  type        String  // ex: COMPETENCY, CYBERSECURITY, DEEPTECH, HYDROGEN, RECRUITMENT...
+  status      String  @default("ACTIVE") // ACTIVE, RESOLVED, ARCHIVED
+  priority    String  // HIGH, MEDIUM, LOW
+  impact      String? @db.Text
+  territory   String?
+
+  // Relations
+  communities    Community[]
+  valueChains    ValueChain[]
+  filieres       Filiere[]
+  programs       Program[]
+  opportunities  Opportunity[]
+  services       PublicService[]
+  projects       Project[]
+  outcomes       Outcome[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ecosystem_challenges")
 }

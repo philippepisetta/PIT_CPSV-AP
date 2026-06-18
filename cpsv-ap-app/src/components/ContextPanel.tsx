@@ -31,15 +31,20 @@ interface ContextPanelProps {
 }
 
 const typeLabelMap: Record<string, string> = {
-  beneficiary: "Bénéficiaire / Entreprise",
+  beneficiary: "Bénéficiaire",
   member: "Membre de l'Écosystème",
   challenge: "Défi d'Écosystème",
+  ecosystemchallenge: "Défi d'Écosystème",
   service: "Service Public (CPSV-AP)",
   consortium: "Consortium Collaboratif",
   project: "Projet d'Innovation",
   filiere: "Filière S3",
   valuechain: "Chaîne de Valeur",
   opportunity: "Financement / Opportunité",
+  fundingprogram: "Programme de Financement",
+  fundingcall: "Appel à Projets",
+  fundinginstrument: "Instrument Financier",
+  fundingaward: "Octroi de Financement",
   outcome: "Résultat / Outcome",
   evidence: "Preuve / Evidence",
   strategicframework: "Cadre Stratégique",
@@ -50,12 +55,17 @@ const typeColorMap: Record<string, string> = {
   beneficiary: "from-fuchsia-500 to-pink-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/25",
   member: "from-teal-500 to-indigo-500 text-teal-600 dark:text-teal-400 bg-teal-500/10 border-teal-500/25",
   challenge: "from-rose-500 to-red-500 text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/25",
+  ecosystemchallenge: "from-rose-500 to-red-500 text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/25",
   service: "from-indigo-500 to-blue-500 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/25",
   consortium: "from-purple-500 to-pink-500 text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/25",
   project: "from-blue-500 to-cyan-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/25",
   filiere: "from-teal-500 to-emerald-500 text-teal-605 bg-teal-500/10 border-teal-500/25",
   valuechain: "from-indigo-500 to-teal-500 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/25",
   opportunity: "from-emerald-500 to-teal-500 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25",
+  fundingprogram: "from-amber-500 to-yellow-500 text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25",
+  fundingcall: "from-emerald-500 to-teal-500 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25",
+  fundinginstrument: "from-blue-500 to-indigo-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/25",
+  fundingaward: "from-fuchsia-500 to-pink-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/25",
   outcome: "from-amber-500 to-orange-500 text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25",
   evidence: "from-emerald-500 to-cyan-500 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25",
   strategicframework: "from-amber-500 to-yellow-500 text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25",
@@ -66,12 +76,17 @@ const typeIconMap: Record<string, any> = {
   beneficiary: Building2,
   member: Users,
   challenge: Target,
+  ecosystemchallenge: Target,
   service: FileText,
   consortium: Network,
   project: Activity,
   filiere: Layers,
   valuechain: Network,
   opportunity: FileCode,
+  fundingprogram: Shield,
+  fundingcall: FileCode,
+  fundinginstrument: Layers,
+  fundingaward: Award,
   outcome: TrendingUp,
   evidence: ClipboardCheck,
   strategicframework: Shield,
@@ -105,6 +120,16 @@ export default function ContextPanel({ isOpen, onClose, entityType, entityId, en
           url = `/api/v2/opportunities/${entityId}`;
         } else if (cleanType === "community") {
           url = `/api/v2/communities/${entityId}`;
+        } else if (cleanType === "ecosystemchallenge") {
+          url = `/api/v2/ecosystem-challenges/${entityId}`;
+        } else if (cleanType === "fundingprogram") {
+          url = `/api/v2/funding-programs/${entityId}`;
+        } else if (cleanType === "fundingcall") {
+          url = `/api/v2/funding-calls/${entityId}`;
+        } else if (cleanType === "fundinginstrument") {
+          url = `/api/v2/funding-instruments/${entityId}`;
+        } else if (cleanType === "fundingaward") {
+          url = `/api/v2/funding-awards/${entityId}`;
         } else {
           // General fallback
           setData({ id: entityId, name: `${typeLabelMap[entityType] || entityType} #${entityId}`, description: "Détails chargés en contexte." });

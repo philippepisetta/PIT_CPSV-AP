@@ -900,4 +900,354 @@ export function useV2OutcomesQuery() {
   });
 }
 
+export function useV2FilieresQuery() {
+  return useQuery({
+    queryKey: ["v2-filieres"],
+    queryFn: () => fetcher("/api/v2/filieres"),
+  });
+}
+
+export function useV2ValueChainsQuery() {
+  return useQuery({
+    queryKey: ["v2-value-chains"],
+    queryFn: () => fetcher("/api/v2/value-chains"),
+  });
+}
+
+// --- ECOSYSTEM CHALLENGES (v2.7.0) ---
+export function useV2EcosystemChallengesQuery() {
+  return useQuery({
+    queryKey: ["v2-ecosystem-challenges"],
+    queryFn: () => fetcher("/api/v2/ecosystem-challenges"),
+  });
+}
+
+export function useV2CreateEcosystemChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/ecosystem-challenges", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create ecosystem challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-ecosystem-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateEcosystemChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/ecosystem-challenges/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update ecosystem challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-ecosystem-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteEcosystemChallengeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/ecosystem-challenges/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete ecosystem challenge");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-ecosystem-challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// --- FUNDING PROGRAMS (v2.7.0) ---
+export function useV2FundingProgramsQuery() {
+  return useQuery({
+    queryKey: ["v2-funding-programs"],
+    queryFn: () => fetcher("/api/v2/funding-programs"),
+  });
+}
+
+export function useV2CreateFundingProgramMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/funding-programs", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create funding program");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-programs"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateFundingProgramMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/funding-programs/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update funding program");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-programs"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteFundingProgramMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/funding-programs/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete funding program");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-programs"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// --- FUNDING CALLS (v2.7.0) ---
+export function useV2FundingCallsQuery() {
+  return useQuery({
+    queryKey: ["v2-funding-calls"],
+    queryFn: () => fetcher("/api/v2/funding-calls"),
+  });
+}
+
+export function useV2CreateFundingCallMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/funding-calls", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create funding call");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-calls"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateFundingCallMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/funding-calls/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update funding call");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-calls"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteFundingCallMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/funding-calls/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete funding call");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-calls"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// --- FUNDING INSTRUMENTS (v2.7.0) ---
+export function useV2FundingInstrumentsQuery() {
+  return useQuery({
+    queryKey: ["v2-funding-instruments"],
+    queryFn: () => fetcher("/api/v2/funding-instruments"),
+  });
+}
+
+export function useV2CreateFundingInstrumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/funding-instruments", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create funding instrument");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-instruments"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateFundingInstrumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/funding-instruments/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update funding instrument");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-instruments"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteFundingInstrumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/funding-instruments/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete funding instrument");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-instruments"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+// --- FUNDING AWARDS (v2.7.0) ---
+export function useV2FundingAwardsQuery() {
+  return useQuery({
+    queryKey: ["v2-funding-awards"],
+    queryFn: () => fetcher("/api/v2/funding-awards"),
+  });
+}
+
+export function useV2CreateFundingAwardMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/funding-awards", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create funding award");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-awards"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2UpdateFundingAwardMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/funding-awards/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update funding award");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-awards"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+export function useV2DeleteFundingAwardMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/funding-awards/${id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete funding award");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-funding-awards"] });
+      queryClient.invalidateQueries({ queryKey: ["graph"] });
+      queryClient.invalidateQueries({ queryKey: ["meta"] });
+    },
+  });
+}
+
+
 

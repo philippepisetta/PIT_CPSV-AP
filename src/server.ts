@@ -146,7 +146,11 @@ app.get('/api/meta', async (req, res) => {
       beneficiaryEngagements,
       outcomeIndicators,
       impacts,
-      fundingInstruments
+      fundingInstruments,
+      ecosystemChallenges,
+      fundingPrograms,
+      fundingCalls,
+      fundingAwards
     ] = await Promise.all([
       prisma.organization.findMany({ orderBy: { name: 'asc' } }),
       prisma.channel.findMany({ orderBy: { name: 'asc' } }),
@@ -213,7 +217,7 @@ app.get('/api/meta', async (req, res) => {
         orderBy: { name: 'asc' }
       }),
       prisma.program.findMany({
-        include: { strategies: true, ownerOrganization: true, measures: true },
+        include: { strategies: true, priorities: true, ownerOrganization: true, measures: true },
         orderBy: { name: 'asc' }
       }),
       prisma.measure.findMany({
@@ -237,6 +241,19 @@ app.get('/api/meta', async (req, res) => {
       }),
       prisma.fundingInstrument.findMany({
         orderBy: { name: 'asc' }
+      }),
+      prisma.ecosystemChallenge.findMany({
+        where: { status: { not: 'ARCHIVED' } },
+        orderBy: { title: 'asc' }
+      }),
+      prisma.fundingProgram.findMany({
+        orderBy: { name: 'asc' }
+      }),
+      prisma.fundingCall.findMany({
+        orderBy: { name: 'asc' }
+      }),
+      prisma.fundingAward.findMany({
+        orderBy: { date: 'desc' }
       })
     ]);
 
@@ -275,7 +292,11 @@ app.get('/api/meta', async (req, res) => {
       beneficiaryEngagements,
       outcomeIndicators,
       impacts,
-      fundingInstruments
+      fundingInstruments,
+      ecosystemChallenges,
+      fundingPrograms,
+      fundingCalls,
+      fundingAwards
     };
     cachedMeta = data;
     cachedMetaTime = now;
@@ -924,6 +945,7 @@ app.get('/api/beneficiaries', async (req, res) => {
   }
   try {
     const data = await prisma.beneficiary.findMany({
+      where: { status: { not: 'ARCHIVED' } },
       include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
       orderBy: { name: 'asc' }
     });
@@ -943,6 +965,7 @@ app.get('/api/companies', async (req, res) => {
   }
   try {
     const data = await prisma.beneficiary.findMany({
+      where: { status: { not: 'ARCHIVED' } },
       include: { primaryNaceSector: true, secondaryNaceSectors: true, challenges: true, filieresS3: true, stages: true, needs: true },
       orderBy: { name: 'asc' }
     });
@@ -968,7 +991,7 @@ app.get('/api/beneficiaries/:id', async (req, res) => {
         deliveries: { include: { service: true, operator: true } }
       }
     });
-    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+    if (!item || item.status === 'ARCHIVED') return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
     res.json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -990,7 +1013,7 @@ app.get('/api/companies/:id', async (req, res) => {
         deliveries: { include: { service: true, operator: true } }
       }
     });
-    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+    if (!item || item.status === 'ARCHIVED') return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
     res.json(item);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -1406,7 +1429,11 @@ app.get('/api/graph', async (req, res) => {
       outcomeIndicators,
       impacts,
       fundingInstruments,
-      territories
+      territories,
+      ecosystemChallenges,
+      fundingPrograms,
+      fundingCalls,
+      fundingAwards
     ] = await Promise.all([
       prisma.beneficiary.findMany({
         include: { challenges: true, filieresS3: true, stages: true, needs: true, enrolledJourneys: true, deliveries: true }
@@ -1440,7 +1467,7 @@ app.get('/api/graph', async (req, res) => {
         include: { strategy: true, programs: true, measures: true, initiatives: true }
       }),
       prisma.program.findMany({
-        include: { strategies: true, priorities: true, measures: true, territories: true }
+        include: { strategies: true, priorities: true, ownerOrganization: true, measures: true, territories: true }
       }),
       prisma.measure.findMany({
         include: { programs: true, initiatives: true }
@@ -1456,10 +1483,22 @@ app.get('/api/graph', async (req, res) => {
         include: { beneficiary: true, indicator: true, territory: true, valueChain: true }
       }),
       prisma.fundingInstrument.findMany({
-        include: { strategies: true, programs: true, measures: true, initiatives: true, services: true, beneficiaries: true }
+        include: { strategies: true, programs: true, measures: true, initiatives: true, services: true, beneficiaries: true, call: true }
       }),
       prisma.territory.findMany({
         include: { parentTerritory: true }
+      }),
+      prisma.ecosystemChallenge.findMany({
+        include: { communities: true, valueChains: true, filieres: true, programs: true, opportunities: true, services: true, projects: true, outcomes: true }
+      }),
+      prisma.fundingProgram.findMany({
+        include: { calls: true }
+      }),
+      prisma.fundingCall.findMany({
+        include: { program: true, communities: true, filieres: true, valueChains: true, opportunities: true, beneficiaries: true, consortia: true, projects: true, instruments: true }
+      }),
+      prisma.fundingAward.findMany({
+        include: { project: true, instrument: true }
       })
     ]);
 
@@ -1744,6 +1783,55 @@ app.get('/api/graph', async (req, res) => {
       for (const init of fi.initiatives) addEdge(fiId, `initiative-${init.id}`, 'FINANCE_INITIATIVE');
       for (const s of fi.services) addEdge(fiId, `service-${s.id}`, 'FINANCE_SERVICE');
       for (const b of fi.beneficiaries) addEdge(fiId, `beneficiary-${b.id}`, 'ATTRIBUE_A');
+      if (fi.callId) {
+        addEdge(`fundingcall-${fi.callId}`, fiId, 'PROPOSE_INSTRUMENT');
+      }
+    }
+
+    // 20. Ecosystem Challenges
+    for (const ec of ecosystemChallenges) {
+      const ecId = `ecosystemchallenge-${ec.id}`;
+      addNode(ecId, ec.title, 'ecosystemchallenge', { type: ec.type, status: ec.status, priority: ec.priority, territory: ec.territory });
+
+      for (const c of ec.communities) addEdge(`community-${c.id}`, ecId, 'CONCERNEE_PAR');
+      for (const vc of ec.valueChains) addEdge(`valuechain-${vc.id}`, ecId, 'IMPACTEE_PAR');
+      for (const f of ec.filieres) addEdge(`filiere-${f.id}`, ecId, 'IMPACTEE_PAR');
+      for (const s of ec.services) addEdge(`service-${s.id}`, ecId, 'ADRESSE');
+      for (const p of ec.projects) addEdge(ecId, `project-${p.id}`, 'CONTRIBUE_A_RESOLUDRE');
+      for (const o of ec.outcomes) addEdge(ecId, `outcome-${o.id}`, 'DEMONTRE_RESOLUTION');
+    }
+
+    // 21. Funding Programs
+    for (const fp of fundingPrograms) {
+      const fpId = `fundingprogram-${fp.id}`;
+      addNode(fpId, fp.name, 'fundingprogram', { description: fp.description });
+    }
+
+    // 22. Funding Calls
+    for (const fc of fundingCalls) {
+      const fcId = `fundingcall-${fc.id}`;
+      addNode(fcId, fc.name, 'fundingcall', { status: fc.status, deadline: fc.deadline });
+      addEdge(`fundingprogram-${fc.programId}`, fcId, 'CONTIENT_APPEL');
+
+      for (const c of fc.communities) addEdge(fcId, `community-${c.id}`, 'CIBLE_COMMUNAUTE');
+      for (const f of fc.filieres) addEdge(fcId, `filiere-${f.id}`, 'CIBLE_FILIERE');
+      for (const vc of fc.valueChains) addEdge(fcId, `valuechain-${vc.id}`, 'CIBLE_VALCHAIN');
+      for (const o of fc.opportunities) addEdge(fcId, `opportunity-${o.id}`, 'GENERE_OPPORTUNITE');
+      for (const b of fc.beneficiaries) addEdge(fcId, `beneficiary-${b.id}`, 'FINANCE_BENEFICIAIRE');
+      for (const c of fc.consortia) addEdge(fcId, `consortium-${c.id}`, 'FINANCE_CONSORTIUM');
+      for (const p of fc.projects) addEdge(fcId, `project-${p.id}`, 'FINANCE_PROJET');
+    }
+
+    // 23. Funding Awards
+    for (const fa of fundingAwards) {
+      const faId = `fundingaward-${fa.id}`;
+      addNode(faId, `${fa.amount.toLocaleString()} €`, 'fundingaward', { amount: fa.amount, date: fa.date, status: fa.status });
+      if (fa.instrumentId) {
+        addEdge(`funding-${fa.instrumentId}`, faId, 'OCTROIE_AWARD');
+      }
+      if (fa.projectId) {
+        addEdge(faId, `project-${fa.projectId}`, 'FINANCE_PROJET');
+      }
     }
 
     const data = { nodes, edges };
@@ -2969,12 +3057,17 @@ v2Router.get('/beneficiaries', async (req, res) => {
   try {
     const { page, pageSize, skip } = getPagination(req);
     const q = req.query.q as string;
-    const where: any = {};
+    const where: any = { status: { not: 'ARCHIVED' } };
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { bce: { contains: q, mode: 'insensitive' } },
-        { location: { contains: q, mode: 'insensitive' } }
+      where.AND = [
+        { status: { not: 'ARCHIVED' } },
+        {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { bce: { contains: q, mode: 'insensitive' } },
+            { location: { contains: q, mode: 'insensitive' } }
+          ]
+        }
       ];
     }
     const [items, total] = await Promise.all([
@@ -2997,9 +3090,19 @@ v2Router.get('/beneficiaries/:id', async (req, res) => {
   try {
     const item = await prisma.beneficiary.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { primaryNaceSector: true, secondaryNaceSectors: true, territory: true }
+      include: {
+        primaryNaceSector: true,
+        secondaryNaceSectors: true,
+        territory: true,
+        contacts: true,
+        memberships: {
+          include: {
+            community: true
+          }
+        }
+      }
     });
-    if (!item) return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
+    if (!item || item.status === 'ARCHIVED') return res.status(404).json({ error: 'Bénéficiaire non trouvé' });
     res.json({ data: item });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -3008,6 +3111,7 @@ v2Router.get('/beneficiaries/:id', async (req, res) => {
 
 v2Router.post('/beneficiaries', async (req, res) => {
   try {
+    cachedBeneficiaries = null;
     const item = await prisma.beneficiary.create({
       data: {
         name: req.body.name,
@@ -3020,7 +3124,11 @@ v2Router.post('/beneficiaries', async (req, res) => {
         arrondissement: req.body.arrondissement || null,
         demand: req.body.demand || null,
         primaryNaceSectorId: req.body.primaryNaceSectorId ? parseInt(req.body.primaryNaceSectorId) : null,
-        territoryId: req.body.territoryId ? parseInt(req.body.territoryId) : null
+        territoryId: req.body.territoryId ? parseInt(req.body.territoryId) : null,
+        sourceSystem: req.body.sourceSystem || null,
+        sourceAuthority: req.body.sourceAuthority || null,
+        lastSyncDate: req.body.lastSyncDate ? new Date(req.body.lastSyncDate) : null,
+        status: req.body.status || 'ACTIVE'
       }
     });
     res.status(201).json({ data: item });
@@ -3031,23 +3139,73 @@ v2Router.post('/beneficiaries', async (req, res) => {
 
 v2Router.patch('/beneficiaries/:id', async (req, res) => {
   try {
+    cachedBeneficiaries = null;
+    const id = parseInt(req.params.id);
     const item = await prisma.beneficiary.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       data: {
         name: req.body.name,
         size: req.body.size,
         location: req.body.location,
-        bce: req.body.bce,
+        bce: req.body.bce !== undefined ? req.body.bce : undefined,
         employees: req.body.employees !== undefined ? (req.body.employees ? parseInt(req.body.employees) : null) : undefined,
         revenue: req.body.revenue !== undefined ? (req.body.revenue ? parseFloat(req.body.revenue) : null) : undefined,
-        province: req.body.province,
-        arrondissement: req.body.arrondissement,
-        demand: req.body.demand,
+        province: req.body.province !== undefined ? req.body.province : undefined,
+        arrondissement: req.body.arrondissement !== undefined ? req.body.arrondissement : undefined,
+        demand: req.body.demand !== undefined ? req.body.demand : undefined,
         primaryNaceSectorId: req.body.primaryNaceSectorId !== undefined ? (req.body.primaryNaceSectorId ? parseInt(req.body.primaryNaceSectorId) : null) : undefined,
-        territoryId: req.body.territoryId !== undefined ? (req.body.territoryId ? parseInt(req.body.territoryId) : null) : undefined
+        territoryId: req.body.territoryId !== undefined ? (req.body.territoryId ? parseInt(req.body.territoryId) : null) : undefined,
+        sourceSystem: req.body.sourceSystem !== undefined ? req.body.sourceSystem : undefined,
+        sourceAuthority: req.body.sourceAuthority !== undefined ? req.body.sourceAuthority : undefined,
+        lastSyncDate: req.body.lastSyncDate !== undefined ? (req.body.lastSyncDate ? new Date(req.body.lastSyncDate) : null) : undefined,
+        status: req.body.status !== undefined ? req.body.status : undefined
       }
     });
     res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/beneficiaries/:id', async (req, res) => {
+  try {
+    cachedBeneficiaries = null;
+    const id = parseInt(req.params.id);
+    const item = await prisma.beneficiary.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        size: req.body.size,
+        location: req.body.location,
+        bce: req.body.bce || null,
+        employees: req.body.employees ? parseInt(req.body.employees) : null,
+        revenue: req.body.revenue ? parseFloat(req.body.revenue) : null,
+        province: req.body.province || null,
+        arrondissement: req.body.arrondissement || null,
+        demand: req.body.demand || null,
+        primaryNaceSectorId: req.body.primaryNaceSectorId ? parseInt(req.body.primaryNaceSectorId) : null,
+        territoryId: req.body.territoryId ? parseInt(req.body.territoryId) : null,
+        sourceSystem: req.body.sourceSystem || null,
+        sourceAuthority: req.body.sourceAuthority || null,
+        lastSyncDate: req.body.lastSyncDate ? new Date(req.body.lastSyncDate) : null,
+        status: req.body.status || 'ACTIVE'
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/beneficiaries/:id', async (req, res) => {
+  try {
+    cachedBeneficiaries = null;
+    const id = parseInt(req.params.id);
+    const item = await prisma.beneficiary.update({
+      where: { id },
+      data: { status: 'ARCHIVED' }
+    });
+    res.json({ data: item, message: 'Bénéficiaire archivé avec succès' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -5518,8 +5676,15 @@ v2Router.get('/members/:id', async (req, res) => {
       where: { id },
       include: {
         organization: true,
-        beneficiary: true,
-        memberships: { include: { community: true } },
+        beneficiary: {
+          include: {
+            memberships: {
+              include: {
+                community: true
+              }
+            }
+          }
+        },
         projects: { include: { project: true } },
         services: { include: { service: true } },
         opportunities: { include: { opportunity: true } },
@@ -5528,7 +5693,8 @@ v2Router.get('/members/:id', async (req, res) => {
       }
     });
     if (!item) return res.status(404).json({ error: 'Membre non trouvé' });
-    res.json({ data: item });
+    const memberships = item.beneficiary ? item.beneficiary.memberships : [];
+    res.json({ data: { ...item, memberships } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -5539,7 +5705,7 @@ v2Router.get('/communities', async (req, res) => {
   try {
     const list = await prisma.community.findMany({
       include: {
-        members: { include: { member: true } },
+        members: { include: { beneficiary: { include: { primaryNaceSector: true } } } },
         projects: { include: { project: true } },
         events: { include: { eventResource: true } },
         opportunities: { include: { opportunity: true } }
@@ -5557,7 +5723,16 @@ v2Router.get('/communities', async (req, res) => {
           }
         } catch (e) {}
       }
-      return { ...c, themes };
+      const mappedMembers = (c.members || []).map((m: any) => ({
+        ...m,
+        member: m.beneficiary ? {
+          id: m.beneficiary.id,
+          name: m.beneficiary.name,
+          type: m.beneficiary.size,
+          nace: m.beneficiary.primaryNaceSector?.code || null
+        } : null
+      }));
+      return { ...c, themes, members: mappedMembers };
     });
     res.json({ data: items });
   } catch (err: any) {
@@ -5571,14 +5746,23 @@ v2Router.get('/communities/:id', async (req, res) => {
     const item = await prisma.community.findUnique({
       where: { id },
       include: {
-        members: { include: { member: true } },
+        members: { include: { beneficiary: { include: { primaryNaceSector: true } } } },
         projects: { include: { project: true } },
         events: { include: { eventResource: true } },
         opportunities: { include: { opportunity: true } }
       }
     });
     if (!item) return res.status(404).json({ error: 'Communauté non trouvée' });
-    res.json({ data: item });
+    const mappedMembers = (item.members || []).map((m: any) => ({
+      ...m,
+      member: m.beneficiary ? {
+        id: m.beneficiary.id,
+        name: m.beneficiary.name,
+        type: m.beneficiary.size,
+        nace: m.beneficiary.primaryNaceSector?.code || null
+      } : null
+    }));
+    res.json({ data: { ...item, members: mappedMembers } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -5736,7 +5920,7 @@ v2Router.get('/ecosystem/kpis', async (req, res) => {
   try {
     const [membersCount, activeMembersCount, projectsCount, opportunitiesCount, eventsCount, collaborationsCount] = await Promise.all([
       prisma.member.count(),
-      prisma.member.count({ where: { memberships: { some: { status: 'ACTIVE' } } } }),
+      prisma.member.count({ where: { beneficiary: { memberships: { some: { status: 'ACTIVE' } } } } }),
       prisma.project.count(),
       prisma.opportunity.count(),
       prisma.eventResource.count(),
@@ -6107,9 +6291,18 @@ v2Router.delete('/communities/:id', async (req, res) => {
 v2Router.get('/community-memberships', async (req, res) => {
   try {
     const items = await prisma.communityMembership.findMany({
-      include: { member: true, community: true }
+      include: { beneficiary: true, community: true }
     });
-    res.json({ data: items });
+    // Map for compatibility
+    const mappedItems = items.map((m: any) => ({
+      ...m,
+      member: m.beneficiary ? {
+        id: m.beneficiary.id,
+        name: m.beneficiary.name,
+        type: m.beneficiary.size
+      } : null
+    }));
+    res.json({ data: mappedItems });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -6117,17 +6310,27 @@ v2Router.get('/community-memberships', async (req, res) => {
 
 v2Router.post('/community-memberships', async (req, res) => {
   try {
-    const { memberId, communityId, role, status } = req.body;
+    const { beneficiaryId, communityId, role, status, membershipContext } = req.body;
     const CM = await prisma.communityMembership.create({
       data: {
-        memberId: parseInt(memberId),
+        beneficiaryId: parseInt(beneficiaryId),
         communityId: parseInt(communityId),
         role: role || 'Membre',
-        status: status || 'ACTIVE'
+        status: status || 'ACTIVE',
+        membershipContext: membershipContext || 'COMMUNITY'
       },
-      include: { member: true, community: true }
+      include: { beneficiary: true, community: true }
     });
-    res.status(201).json({ data: CM });
+    // Map for compatibility
+    const mapped = {
+      ...CM,
+      member: CM.beneficiary ? {
+        id: CM.beneficiary.id,
+        name: CM.beneficiary.name,
+        type: CM.beneficiary.size
+      } : null
+    };
+    res.status(201).json({ data: mapped });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -6136,12 +6339,22 @@ v2Router.post('/community-memberships', async (req, res) => {
 v2Router.put('/community-memberships/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { role, status } = req.body;
+    const { role, status, membershipContext } = req.body;
     const CM = await prisma.communityMembership.update({
       where: { id },
-      data: { role, status }
+      data: { role, status, membershipContext },
+      include: { beneficiary: true, community: true }
     });
-    res.json({ data: CM });
+    // Map for compatibility
+    const mapped = {
+      ...CM,
+      member: CM.beneficiary ? {
+        id: CM.beneficiary.id,
+        name: CM.beneficiary.name,
+        type: CM.beneficiary.size
+      } : null
+    };
+    res.json({ data: mapped });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -6151,6 +6364,101 @@ v2Router.delete('/community-memberships/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     await prisma.communityMembership.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- CONTACTS CRUD ---
+v2Router.get('/contacts', async (req, res) => {
+  try {
+    const items = await prisma.contact.findMany({
+      include: { beneficiary: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/beneficiaries/:id/contacts', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const items = await prisma.contact.findMany({
+      where: { beneficiaryId: id },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/contacts', async (req, res) => {
+  try {
+    const { name, email, phone, role, contactType, isPrimaryContact, beneficiaryId } = req.body;
+    
+    // If isPrimaryContact is true, unset other primary contacts of this beneficiary
+    if (isPrimaryContact) {
+      await prisma.contact.updateMany({
+        where: { beneficiaryId: parseInt(beneficiaryId) },
+        data: { isPrimaryContact: false }
+      });
+    }
+
+    const item = await prisma.contact.create({
+      data: {
+        name,
+        email: email || null,
+        phone: phone || null,
+        role: role || null,
+        contactType: contactType || 'OPERATIONAL',
+        isPrimaryContact: !!isPrimaryContact,
+        beneficiaryId: parseInt(beneficiaryId)
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/contacts/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, email, phone, role, contactType, isPrimaryContact, beneficiaryId } = req.body;
+
+    if (isPrimaryContact && beneficiaryId) {
+      await prisma.contact.updateMany({
+        where: { beneficiaryId: parseInt(beneficiaryId) },
+        data: { isPrimaryContact: false }
+      });
+    }
+
+    const item = await prisma.contact.update({
+      where: { id },
+      data: {
+        name,
+        email: email !== undefined ? email : undefined,
+        phone: phone !== undefined ? phone : undefined,
+        role: role !== undefined ? role : undefined,
+        contactType: contactType !== undefined ? contactType : undefined,
+        isPrimaryContact: isPrimaryContact !== undefined ? !!isPrimaryContact : undefined,
+        beneficiaryId: beneficiaryId !== undefined ? parseInt(beneficiaryId) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/contacts/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.contact.delete({ where: { id } });
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -7297,6 +7605,533 @@ v2Router.get('/beneficiaries/:id/outcomes', async (req, res) => {
       include: { indicator: true }
     });
     res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// --- 19. ECOSYSTEM CHALLENGES CRUD ---
+// ==========================================
+
+v2Router.get('/ecosystem-challenges', async (req, res) => {
+  try {
+    const list = await prisma.ecosystemChallenge.findMany({
+      where: {
+        status: { not: 'ARCHIVED' }
+      },
+      include: {
+        communities: true,
+        valueChains: true,
+        filieres: true,
+        programs: true,
+        opportunities: true,
+        services: true,
+        projects: true,
+        outcomes: true
+      },
+      orderBy: { title: 'asc' }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/ecosystem-challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.ecosystemChallenge.findUnique({
+      where: { id },
+      include: {
+        communities: true,
+        valueChains: true,
+        filieres: true,
+        programs: true,
+        opportunities: true,
+        services: true,
+        projects: true,
+        outcomes: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: "Défi d'écosystème non trouvé" });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/ecosystem-challenges', async (req, res) => {
+  try {
+    const { title, description, type, priority, status, impact, territory, communityIds, valueChainIds, filiereIds, programIds, opportunityIds, serviceIds, projectIds, outcomeIds } = req.body;
+    const item = await prisma.ecosystemChallenge.create({
+      data: {
+        title,
+        description,
+        type,
+        priority,
+        status: status || 'ACTIVE',
+        impact,
+        territory,
+        communities: communityIds ? { connect: communityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        valueChains: valueChainIds ? { connect: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieres: filiereIds ? { connect: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        programs: programIds ? { connect: programIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        opportunities: opportunityIds ? { connect: opportunityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        services: serviceIds ? { connect: serviceIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        projects: projectIds ? { connect: projectIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        outcomes: outcomeIds ? { connect: outcomeIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/ecosystem-challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, description, type, priority, status, impact, territory, communityIds, valueChainIds, filiereIds, programIds, opportunityIds, serviceIds, projectIds, outcomeIds } = req.body;
+    
+    const existing = await prisma.ecosystemChallenge.findUnique({
+      where: { id },
+      include: {
+        communities: true,
+        valueChains: true,
+        filieres: true,
+        programs: true,
+        opportunities: true,
+        services: true,
+        projects: true,
+        outcomes: true
+      }
+    });
+    
+    if (!existing) return res.status(404).json({ error: "Défi d'écosystème non trouvé" });
+
+    const item = await prisma.ecosystemChallenge.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        type,
+        priority,
+        status,
+        impact,
+        territory,
+        communities: {
+          disconnect: existing.communities.map(c => ({ id: c.id })),
+          connect: communityIds ? communityIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        valueChains: {
+          disconnect: existing.valueChains.map(vc => ({ id: vc.id })),
+          connect: valueChainIds ? valueChainIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        filieres: {
+          disconnect: existing.filieres.map(f => ({ id: f.id })),
+          connect: filiereIds ? filiereIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        programs: {
+          disconnect: existing.programs.map(p => ({ id: p.id })),
+          connect: programIds ? programIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        opportunities: {
+          disconnect: existing.opportunities.map(o => ({ id: o.id })),
+          connect: opportunityIds ? opportunityIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        services: {
+          disconnect: existing.services.map(s => ({ id: s.id })),
+          connect: serviceIds ? serviceIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        projects: {
+          disconnect: existing.projects.map(p => ({ id: p.id })),
+          connect: projectIds ? projectIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        outcomes: {
+          disconnect: existing.outcomes.map(o => ({ id: o.id })),
+          connect: outcomeIds ? outcomeIds.map((id: any) => ({ id: parseInt(id) })) : []
+        }
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/ecosystem-challenges/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.ecosystemChallenge.update({
+      where: { id },
+      data: { status: 'ARCHIVED' }
+    });
+    res.json({ data: item, message: "Défi d'écosystème archivé avec succès" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==========================================
+// --- 20. FUNDING PROGRAMS CRUD ---
+// ==========================================
+
+v2Router.get('/funding-programs', async (req, res) => {
+  try {
+    const list = await prisma.fundingProgram.findMany({ include: { calls: true }, orderBy: { name: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/funding-programs/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingProgram.findUnique({
+      where: { id },
+      include: { calls: { include: { instruments: true } } }
+    });
+    if (!item) return res.status(404).json({ error: "Programme de financement non trouvé" });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/funding-programs', async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const item = await prisma.fundingProgram.create({
+      data: { name, description }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/funding-programs/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, description } = req.body;
+    const item = await prisma.fundingProgram.update({
+      where: { id },
+      data: { name, description }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/funding-programs/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingProgram.delete({ where: { id } });
+    res.json({ data: item, message: "Programme de financement supprimé avec succès" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==========================================
+// --- 21. FUNDING CALLS CRUD ---
+// ==========================================
+
+v2Router.get('/funding-calls', async (req, res) => {
+  try {
+    const list = await prisma.fundingCall.findMany({
+      include: {
+        program: true,
+        communities: true,
+        filieres: true,
+        valueChains: true,
+        opportunities: true,
+        beneficiaries: true,
+        consortia: true,
+        projects: true,
+        instruments: true
+      },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/funding-calls/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingCall.findUnique({
+      where: { id },
+      include: {
+        program: true,
+        communities: true,
+        filieres: true,
+        valueChains: true,
+        opportunities: true,
+        beneficiaries: true,
+        consortia: true,
+        projects: true,
+        instruments: { include: { awards: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: "Appel de financement non trouvé" });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/funding-calls', async (req, res) => {
+  try {
+    const { name, description, programId, deadline, status, communityIds, filiereIds, valueChainIds, opportunityIds, beneficiaryIds, consortiumIds, projectIds } = req.body;
+    const item = await prisma.fundingCall.create({
+      data: {
+        name,
+        description,
+        programId: parseInt(programId),
+        deadline: deadline ? new Date(deadline) : null,
+        status: status || 'OPEN',
+        communities: communityIds ? { connect: communityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        filieres: filiereIds ? { connect: filiereIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        valueChains: valueChainIds ? { connect: valueChainIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        opportunities: opportunityIds ? { connect: opportunityIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        beneficiaries: beneficiaryIds ? { connect: beneficiaryIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        consortia: consortiumIds ? { connect: consortiumIds.map((id: any) => ({ id: parseInt(id) })) } : undefined,
+        projects: projectIds ? { connect: projectIds.map((id: any) => ({ id: parseInt(id) })) } : undefined
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/funding-calls/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, description, programId, deadline, status, communityIds, filiereIds, valueChainIds, opportunityIds, beneficiaryIds, consortiumIds, projectIds } = req.body;
+
+    const existing = await prisma.fundingCall.findUnique({
+      where: { id },
+      include: {
+        communities: true,
+        filieres: true,
+        valueChains: true,
+        opportunities: true,
+        beneficiaries: true,
+        consortia: true,
+        projects: true
+      }
+    });
+
+    if (!existing) return res.status(404).json({ error: "Appel de financement non trouvé" });
+
+    const item = await prisma.fundingCall.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        programId: programId ? parseInt(programId) : undefined,
+        deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined,
+        status,
+        communities: {
+          disconnect: existing.communities.map(c => ({ id: c.id })),
+          connect: communityIds ? communityIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        filieres: {
+          disconnect: existing.filieres.map(f => ({ id: f.id })),
+          connect: filiereIds ? filiereIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        valueChains: {
+          disconnect: existing.valueChains.map(vc => ({ id: vc.id })),
+          connect: valueChainIds ? valueChainIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        opportunities: {
+          disconnect: existing.opportunities.map(o => ({ id: o.id })),
+          connect: opportunityIds ? opportunityIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        beneficiaries: {
+          disconnect: existing.beneficiaries.map(b => ({ id: b.id })),
+          connect: beneficiaryIds ? beneficiaryIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        consortia: {
+          disconnect: existing.consortia.map(c => ({ id: c.id })),
+          connect: consortiumIds ? consortiumIds.map((id: any) => ({ id: parseInt(id) })) : []
+        },
+        projects: {
+          disconnect: existing.projects.map(p => ({ id: p.id })),
+          connect: projectIds ? projectIds.map((id: any) => ({ id: parseInt(id) })) : []
+        }
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/funding-calls/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingCall.delete({ where: { id } });
+    res.json({ data: item, message: "Appel de financement supprimé avec succès" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==========================================
+// --- 22. FUNDING INSTRUMENTS CRUD ---
+// ==========================================
+
+v2Router.get('/funding-instruments', async (req, res) => {
+  try {
+    const list = await prisma.fundingInstrument.findMany({ include: { call: true, awards: true }, orderBy: { name: 'asc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/funding-instruments/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingInstrument.findUnique({
+      where: { id },
+      include: { call: true, awards: { include: { project: true } } }
+    });
+    if (!item) return res.status(404).json({ error: "Instrument de financement non trouvé" });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/funding-instruments', async (req, res) => {
+  try {
+    const { name, type, description, callId } = req.body;
+    const item = await prisma.fundingInstrument.create({
+      data: {
+        name,
+        type,
+        description,
+        callId: callId ? parseInt(callId) : null
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/funding-instruments/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, type, description, callId } = req.body;
+    const item = await prisma.fundingInstrument.update({
+      where: { id },
+      data: {
+        name,
+        type,
+        description,
+        callId: callId !== undefined ? (callId ? parseInt(callId) : null) : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/funding-instruments/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingInstrument.delete({ where: { id } });
+    res.json({ data: item, message: "Instrument de financement supprimé avec succès" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==========================================
+// --- 23. FUNDING AWARDS CRUD ---
+// ==========================================
+
+v2Router.get('/funding-awards', async (req, res) => {
+  try {
+    const list = await prisma.fundingAward.findMany({ include: { project: true, instrument: true }, orderBy: { date: 'desc' } });
+    res.json({ data: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/funding-awards/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingAward.findUnique({
+      where: { id },
+      include: { project: true, instrument: { include: { call: true } } }
+    });
+    if (!item) return res.status(404).json({ error: "Octroi de financement (Award) non trouvé" });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/funding-awards', async (req, res) => {
+  try {
+    const { amount, date, projectId, instrumentId, status } = req.body;
+    const item = await prisma.fundingAward.create({
+      data: {
+        amount: parseFloat(amount),
+        date: date ? new Date(date) : new Date(),
+        projectId: projectId ? parseInt(projectId) : null,
+        instrumentId: instrumentId ? parseInt(instrumentId) : null,
+        status: status || 'GRANTED'
+      }
+    });
+    res.status(201).json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.put('/funding-awards/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { amount, date, projectId, instrumentId, status } = req.body;
+    const item = await prisma.fundingAward.update({
+      where: { id },
+      data: {
+        amount: amount !== undefined ? parseFloat(amount) : undefined,
+        date: date ? new Date(date) : undefined,
+        projectId: projectId !== undefined ? (projectId ? parseInt(projectId) : null) : undefined,
+        instrumentId: instrumentId !== undefined ? (instrumentId ? parseInt(instrumentId) : null) : undefined,
+        status: status !== undefined ? status : undefined
+      }
+    });
+    res.json({ data: item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/funding-awards/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.fundingAward.delete({ where: { id } });
+    res.json({ data: item, message: "Octroi de financement (Award) supprimé avec succès" });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -39,6 +39,7 @@ async function main() {
   await prisma.mission.deleteMany({});
   await prisma.valueChainSegment.deleteMany({});
   await prisma.filiere.deleteMany({});
+  await prisma.ecosystemChallenge.deleteMany({});
   await prisma.member.deleteMany({});
   await prisma.community.deleteMany({});
   await prisma.opportunity.deleteMany({});
@@ -259,6 +260,21 @@ async function main() {
 
   const memberInstances: Record<string, any> = {};
   for (const m of memberList) {
+    const beneficiary = await prisma.beneficiary.create({
+      data: {
+        name: m.name,
+        size: m.size || 'PME',
+        location: m.location || 'Wallonie',
+        status: 'ACTIVE',
+        maturityDigital: 1 + (m.name.charCodeAt(0) % 4),
+        maturityIa: 1 + (m.name.charCodeAt(1) % 4),
+        maturityCyber: 1 + (m.name.charCodeAt(2) % 4),
+        sourceSystem: 'SeedEcosystem',
+        sourceAuthority: 'PIT',
+        lastSyncDate: new Date()
+      }
+    });
+
     memberInstances[m.name] = await prisma.member.create({
       data: {
         name: m.name,
@@ -269,7 +285,8 @@ async function main() {
         competencies: m.comp,
         digitalMaturity: 1 + (m.name.charCodeAt(0) % 4),
         iaMaturity: 1 + (m.name.charCodeAt(1) % 4),
-        cyberMaturity: 1 + (m.name.charCodeAt(2) % 4)
+        cyberMaturity: 1 + (m.name.charCodeAt(2) % 4),
+        beneficiaryId: beneficiary.id
       }
     });
   }
@@ -277,30 +294,31 @@ async function main() {
   // 9. Community Memberships
   console.log('🤝 Inscription des Membres aux Communautés...');
   // BioWin / IA Santé
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['MedTech Namur'].id, communityId: commInstances['IA Santé'].id, role: 'Membre' } });
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['UCLouvain'].id, communityId: commInstances['IA Santé'].id, role: 'Expert' } });
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['CHU Liège'].id, communityId: commInstances['IA Santé'].id, role: 'Coordinateur' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['MedTech Namur'].beneficiaryId, communityId: commInstances['IA Santé'].id, role: 'Membre', membershipContext: 'COMMUNITY' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['UCLouvain'].beneficiaryId, communityId: commInstances['IA Santé'].id, role: 'Expert', membershipContext: 'COMMUNITY' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['CHU Liège'].beneficiaryId, communityId: commInstances['IA Santé'].id, role: 'Coordinateur', membershipContext: 'COMMUNITY' } });
   
   // Hydrogène / GreenWin / MecaTech
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['HydroGreen'].id, communityId: commInstances['Hydrogène'].id, role: 'Coordinateur' } });
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['Sirris'].id, communityId: commInstances['Hydrogène'].id, role: 'Expert' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['HydroGreen'].beneficiaryId, communityId: commInstances['Hydrogène'].id, role: 'Coordinateur', membershipContext: 'COMMUNITY' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['Sirris'].beneficiaryId, communityId: commInstances['Hydrogène'].id, role: 'Expert', membershipContext: 'COMMUNITY' } });
   
   // Smart Mobility / Logistics
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['LogiTrans'].id, communityId: commInstances['Smart Mobility'].id, role: 'Membre' } });
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['SmartFleet'].id, communityId: commInstances['Smart Mobility'].id, role: 'Expert' } });
-  await prisma.communityMembership.create({ data: { memberId: memberInstances['DataMove'].id, communityId: commInstances['Smart Mobility'].id, role: 'Membre' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['LogiTrans'].beneficiaryId, communityId: commInstances['Smart Mobility'].id, role: 'Membre', membershipContext: 'COMMUNITY' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['SmartFleet'].beneficiaryId, communityId: commInstances['Smart Mobility'].id, role: 'Expert', membershipContext: 'COMMUNITY' } });
+  await prisma.communityMembership.create({ data: { beneficiaryId: memberInstances['DataMove'].beneficiaryId, communityId: commInstances['Smart Mobility'].id, role: 'Membre', membershipContext: 'COMMUNITY' } });
 
   // Inscriptions en masse pour le reste
   const membersKeys = Object.keys(memberInstances);
   for (let idx = 10; idx < 50; idx++) {
     const mName = membersKeys[idx];
-    const mId = memberInstances[mName].id;
+    const bId = memberInstances[mName].beneficiaryId;
     const cName = idx % 2 === 0 ? 'Cyber PME' : 'Circularité';
     await prisma.communityMembership.create({
       data: {
-        memberId: mId,
+        beneficiaryId: bId,
         communityId: commInstances[cName].id,
-        role: 'Membre'
+        role: 'Membre',
+        membershipContext: 'COMMUNITY'
       }
     });
   }
@@ -540,6 +558,347 @@ async function main() {
       description: 'Certification de dispositif e-Santé via BioWin',
       value: 1.0,
       metric: 'unités'
+    }
+  });
+
+  // =========================================================================
+  // 15. PEUPLEMENT DES 5 SCENARIOS DE DEMONSTRATION MATURES (SPRINT FINAL)
+  // =========================================================================
+  console.log('🏁 Création des 5 scénarios de démonstration matures...');
+
+  // --- CAS 1 : BioWin ---
+  const bBioWin = await prisma.beneficiary.findFirst({ where: { name: 'MedTech Namur' } });
+  const bBioWinId = bBioWin ? bBioWin.id : 1;
+
+  // Set beneficiaryType for demo
+  await prisma.beneficiary.update({
+    where: { id: bBioWinId },
+    data: { beneficiaryType: 'STARTUP' }
+  });
+
+  const serviceAccIA = await prisma.publicService.create({
+    data: {
+      name: "Programme d'accompagnement IA",
+      description: "Service d'accompagnement pour les acteurs de la santé cherchant à intégrer des technologies IA.",
+      uri: "https://pit.wallonie.be/id/public-service/programme-accompagnement-ia",
+      organizationId: 1
+    }
+  });
+
+  const projectMedAI = await prisma.project.create({
+    data: {
+      name: "MedAI",
+      description: "Projet collaboratif de détection précoce des tumeurs via Deep Learning.",
+      status: "ACTIVE",
+      beneficiaryId: bBioWinId
+    }
+  });
+
+  const outcomePilotes = await prisma.outcome.create({
+    data: {
+      name: "3 nouveaux pilotes IA",
+      description: "Déploiement opérationnel de 3 pilotes IA en milieu hospitalier clinique.",
+      publicServiceId: serviceAccIA.id
+    }
+  });
+
+  await prisma.ecosystemChallenge.create({
+    data: {
+      title: "Manque d'experts IA santé",
+      description: "Pénurie critique de data scientists et experts en apprentissage profond appliqués à la santé en Wallonie.",
+      type: "COMPETENCY",
+      priority: "HIGH",
+      status: "ACTIVE",
+      territory: "Wallonie",
+      communities: { connect: [{ id: commInstances['IA Santé'].id }] },
+      filieres: { connect: [{ id: filiereInstances['Santé'].id }] },
+      valueChains: { connect: [{ id: vcInstances['Santé Numérique (e-Santé)'].id }] },
+      services: { connect: [{ id: serviceAccIA.id }] },
+      projects: { connect: [{ id: projectMedAI.id }] },
+      outcomes: { connect: [{ id: outcomePilotes.id }] }
+    }
+  });
+
+
+  // --- CAS 2 : GreenWin ---
+  const bGreenWin = await prisma.beneficiary.findFirst({ where: { name: 'HydroGreen' } });
+  const bGreenWinId = bGreenWin ? bGreenWin.id : 1;
+
+  // Set beneficiaryType for demo
+  await prisma.beneficiary.update({
+    where: { id: bGreenWinId },
+    data: { beneficiaryType: 'ENTREPRISE' }
+  });
+
+  const progInnovationFund = await prisma.fundingProgram.create({
+    data: {
+      name: "Innovation Fund",
+      description: "Programme de financement européen pour les technologies bas-carbone."
+    }
+  });
+
+  const callHydroGreen = await prisma.fundingCall.create({
+    data: {
+      name: "Appel Hydrogène S3",
+      description: "Appel à propositions officiel pour le développement de la filière hydrogène.",
+      programId: progInnovationFund.id,
+      status: "OPEN",
+      communities: { connect: [{ id: commInstances['Hydrogène'].id }] },
+      filieres: { connect: [{ id: filiereInstances['Chimie & Matériaux'].id }] },
+      valueChains: { connect: [{ id: vcInstances['Hydrogène Vert'].id }] }
+    }
+  });
+
+  const instSubventionGreen = await prisma.fundingInstrument.create({
+    data: {
+      name: "Subvention d'infrastructure hydrogène",
+      type: "FEDER",
+      description: "Financement à hauteur de 80% des équipements de production et stockage.",
+      callId: callHydroGreen.id
+    }
+  });
+
+  const projectHydroScale = await prisma.project.create({
+    data: {
+      name: "HydroScale",
+      description: "Déploiement d'un électrolyseur de 10MW pour l'industrie sidérurgique.",
+      status: "ACTIVE",
+      beneficiaryId: bGreenWinId
+    }
+  });
+
+  await prisma.fundingAward.create({
+    data: {
+      amount: 2500000.0,
+      projectId: projectHydroScale.id,
+      instrumentId: instSubventionGreen.id,
+      status: "GRANTED"
+    }
+  });
+
+  const outcomeCO2 = await prisma.outcome.create({
+    data: {
+      name: "Réduction CO2 HydroScale",
+      description: "Réduction effective de 15 000 tonnes de CO2 émises par an.",
+      publicServiceId: serviceId
+    }
+  });
+
+  await prisma.ecosystemChallenge.create({
+    data: {
+      title: "Manque d'infrastructures hydrogène",
+      description: "Absence de réseaux de distribution et stockage d'hydrogène à haute pression pour l'industrie lourde.",
+      type: "INFRASTRUCTURE",
+      priority: "HIGH",
+      status: "ACTIVE",
+      territory: "Wallonie",
+      communities: { connect: [{ id: commInstances['Hydrogène'].id }] },
+      filieres: { connect: [{ id: filiereInstances['Chimie & Matériaux'].id }] },
+      valueChains: { connect: [{ id: vcInstances['Hydrogène Vert'].id }] },
+      programs: { connect: [{ id: progInnovationFund.id }] },
+      projects: { connect: [{ id: projectHydroScale.id }] },
+      outcomes: { connect: [{ id: outcomeCO2.id }] }
+    }
+  });
+
+
+  // --- CAS 3 : EDIH ---
+  const bEDIH = await prisma.beneficiary.findFirst({ where: { name: 'Acteur Wallon Tech 13' } });
+  const bEDIHId = bEDIH ? bEDIH.id : 1;
+
+  await prisma.beneficiary.update({
+    where: { id: bEDIHId },
+    data: { beneficiaryType: 'STARTUP' }
+  });
+
+  const serviceTBI = await prisma.publicService.create({
+    data: {
+      name: "Test Before Invest",
+      description: "Permet aux entreprises de tester des technologies numériques avancées avant de s'engager financièrement.",
+      uri: "https://pit.wallonie.be/id/public-service/test-before-invest",
+      organizationId: 1
+    }
+  });
+
+  const serviceInvest = await prisma.publicService.create({
+    data: {
+      name: "Accompagnement à l'investissement",
+      description: "Support pour trouver des sources de financement privées ou publiques.",
+      uri: "https://pit.wallonie.be/id/public-service/accompagnement-investissement",
+      organizationId: 1
+    }
+  });
+
+  await prisma.journey.create({
+    data: {
+      name: "DMAT (Digital Maturity Assessment Tool)",
+      provider: "EDIH Wallonia",
+      objective: "Évaluer et augmenter la maturité numérique des PME industrielles.",
+      description: "Diagnostic complet en 3 phases pour tracer une feuille de route digitale."
+    }
+  });
+
+  await prisma.ecosystemChallenge.create({
+    data: {
+      title: "Faible maturité numérique",
+      description: "Retard d'adoption des technologies de l'industrie du futur et de la cybersécurité par les PME.",
+      type: "DIGITAL_MATURITY",
+      priority: "HIGH",
+      status: "ACTIVE",
+      territory: "Wallonie",
+      communities: { connect: [{ id: commInstances['Cyber PME'].id }] },
+      filieres: { connect: [{ id: filiereInstances['Industrie 5.0'].id }] },
+      services: { connect: [{ id: serviceTBI.id }, { id: serviceInvest.id }] }
+    }
+  });
+
+
+  // --- CAS 4 : WE ---
+  const bWE = await prisma.beneficiary.findFirst({ where: { name: 'Acteur Wallon Tech 14' } });
+  const bWEId = bWE ? bWE.id : 1;
+
+  await prisma.beneficiary.update({
+    where: { id: bWEId },
+    data: { beneficiaryType: 'ASBL' }
+  });
+
+  const progWECroissance = await prisma.fundingProgram.create({
+    data: {
+      name: "WE Croissance",
+      description: "Programme de capital-développement pour l'expansion économique wallonne."
+    }
+  });
+
+  const callWECroissance = await prisma.fundingCall.create({
+    data: {
+      name: "Appels PME Croissance 2026",
+      description: "Ouverture des candidatures pour le financement d'expansion territoriale.",
+      programId: progWECroissance.id,
+      status: "OPEN"
+    }
+  });
+
+  const instParticipationWE = await prisma.fundingInstrument.create({
+    data: {
+      name: "Prise de participation WE",
+      type: "FEDER",
+      description: "Prises de participation minoritaires en capital.",
+      callId: callWECroissance.id
+    }
+  });
+
+  const projectWECroissance = await prisma.project.create({
+    data: {
+      name: "DeepTech Growth Initiative",
+      description: "Soutien en capital pour l'expansion internationale.",
+      status: "ACTIVE",
+      beneficiaryId: bWEId
+    }
+  });
+
+  await prisma.fundingAward.create({
+    data: {
+      amount: 1200000.0,
+      projectId: projectWECroissance.id,
+      instrumentId: instParticipationWE.id,
+      status: "GRANTED"
+    }
+  });
+
+  const outcomeEmplois = await prisma.outcome.create({
+    data: {
+      name: "Création d'emplois",
+      description: "Création de 120 emplois directs qualifiés en région wallonne.",
+      publicServiceId: serviceId
+    }
+  });
+
+  await prisma.ecosystemChallenge.create({
+    data: {
+      title: "Absence de fonds DeepTech",
+      description: "Difficultés de levée de fonds d'amorçage et de capital-risque pour les startups DeepTech.",
+      type: "FUNDING",
+      priority: "HIGH",
+      status: "ACTIVE",
+      territory: "Wallonie",
+      programs: { connect: [{ id: progWECroissance.id }] },
+      projects: { connect: [{ id: projectWECroissance.id }] },
+      outcomes: { connect: [{ id: outcomeEmplois.id }] }
+    }
+  });
+
+
+  // --- CAS 5 : AWEX ---
+  const bAWEX = await prisma.beneficiary.findFirst({ where: { name: 'Acteur Wallon Tech 15' } });
+  const bAWEXId = bAWEX ? bAWEX.id : 1;
+
+  await prisma.beneficiary.update({
+    where: { id: bAWEXId },
+    data: { beneficiaryType: 'UNIVERSITE' }
+  });
+
+  const progAWEX = await prisma.fundingProgram.create({
+    data: {
+      name: "AWEX Export Program",
+      description: "Aides à la prospection de marchés internationaux hors Union Européenne."
+    }
+  });
+
+  const callAWEX = await prisma.fundingCall.create({
+    data: {
+      name: "Mission export USA Biotech",
+      description: "Accompagnement et subsides de voyage pour la foire Biotech Boston.",
+      programId: progAWEX.id,
+      status: "OPEN"
+    }
+  });
+
+  const instAccExport = await prisma.fundingInstrument.create({
+    data: {
+      name: "Accompagnement export",
+      type: "FEDER",
+      description: "Soutien financier forfaitaire et accompagnement logistique.",
+      callId: callAWEX.id
+    }
+  });
+
+  const projectAWEX = await prisma.project.create({
+    data: {
+      name: "Mission Export Boston",
+      description: "Mission de prospection commerciale aux États-Unis.",
+      status: "ACTIVE",
+      beneficiaryId: bAWEXId
+    }
+  });
+
+  await prisma.fundingAward.create({
+    data: {
+      amount: 10000.0,
+      projectId: projectAWEX.id,
+      instrumentId: instAccExport.id,
+      status: "GRANTED"
+    }
+  });
+
+  const outcomeAWEX = await prisma.outcome.create({
+    data: {
+      name: "Partenariats export",
+      description: "Signature de 5 nouveaux accords commerciaux de distribution aux USA.",
+      publicServiceId: serviceId
+    }
+  });
+
+  await prisma.ecosystemChallenge.create({
+    data: {
+      title: "Manque de visibilité à l'exportation",
+      description: "Difficultés pour les startups et PME technologiques wallonnes de pénétrer les marchés hors UE.",
+      type: "EXPORT",
+      priority: "MEDIUM",
+      status: "ACTIVE",
+      territory: "Wallonie",
+      programs: { connect: [{ id: progAWEX.id }] },
+      projects: { connect: [{ id: projectAWEX.id }] },
+      outcomes: { connect: [{ id: outcomeAWEX.id }] }
     }
   });
 

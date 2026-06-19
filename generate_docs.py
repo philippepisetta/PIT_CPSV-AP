@@ -5,7 +5,7 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # Define paths
-artifact_dir = r"C:\Users\Philippe Pisetta\.gemini\antigravity\brain\e948b4d7-9e9d-4cf0-a3f0-5b1f8f8394ca"
+artifact_dir = r"C:\Users\Philippe Pisetta\.gemini\antigravity\brain\1852d3de-cc1f-4e7e-8d9f-0331e0dfd276"
 output_dir = r"c:\Users\Philippe Pisetta\Downloads\testing CPSV-AP"
 
 def parse_markdown_to_docx(md_path, docx_path, title_text):
@@ -151,13 +151,13 @@ def parse_markdown_to_docx(md_path, docx_path, title_text):
 
 # Run generation
 parse_markdown_to_docx(
-    os.path.join(artifact_dir, "documentation_deploiement.md"),
+    os.path.join(artifact_dir, "pit_functional_workspaces_guide.md"),
     os.path.join(output_dir, "Documentation_Technique_PIT.docx"),
-    "PIT Wallonie - Documentation de Déploiement & Sécurité"
+    "PIT Wallonie - Guide des Workspaces & Spécifications Sémantiques (vNext)"
 )
 
 parse_markdown_to_docx(
-    os.path.join(artifact_dir, "guide_metier.md"),
+    os.path.join(artifact_dir, "pit_business_functional_guide.md"),
     os.path.join(output_dir, "Guide_Metier_PIT.docx"),
     "PIT Wallonie - Guide d'Usage Métier & Pilotage Territorial"
 )

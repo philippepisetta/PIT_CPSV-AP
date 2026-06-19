@@ -9,17 +9,17 @@ export default function OperationalPerspectivePlaceholderPage() {
   return (
     <PITLayout
       category="VUE D'ANALYSE"
-      title="Perspective opérationnelle"
+      title="Opérations & suivi"
       description="Suivre les activités, diagnostics, missions, services délivrés, financements, projets et preuves à valider."
       pageIcon={Activity}
-      breadcrumb={[{ label: "Vues d'analyse", href: "/analysis-views" }, { label: "Perspective opérationnelle" }]}
+      breadcrumb={[{ label: "Vues d'analyse", href: "/analysis-views" }, { label: "Opérations & suivi" }]}
     >
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-850 rounded-2xl shadow-xs max-w-2xl mx-auto space-y-6">
         <div className="p-4 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
           <Activity className="h-10 w-10 animate-pulse" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-lg font-black text-text">Perspective opérationnelle</h2>
+          <h2 className="text-lg font-black text-text">Opérations & suivi</h2>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
             Cette vue d'analyse consolidera toutes les actions d'accompagnement terrain : suivi des diagnostics de maturité numérique, des activités d'animation collective, de l'état d'avancement des projets et de la validation des preuves de livraison.
           </p>

@@ -9,7 +9,8 @@ import {
   Activity, 
   Globe, 
   Database, 
-  Zap 
+  Zap,
+  Shield
 } from "lucide-react";
 import PITLayout from "@/design-system/PITLayout";
 
@@ -67,7 +68,7 @@ const cards: PerspectiveCard[] = [
     icon: Database,
     badge: "Actif",
     colorClass: "hover:border-purple-500/50 hover:shadow-purple-500/5",
-    iconColorClass: "text-purple-600 dark:text-purple-400 bg-purple-500/10"
+    iconColorClass: "text-purple-605 dark:text-purple-400 bg-purple-500/10"
   },
   {
     title: "Parcours & transformation",
@@ -77,6 +78,15 @@ const cards: PerspectiveCard[] = [
     badge: "Bientôt",
     colorClass: "hover:border-emerald-500/50 hover:shadow-emerald-500/5",
     iconColorClass: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+  },
+  {
+    title: "Résilience territoriale",
+    description: "Analyser l’exposition, la vulnérabilité, la capacité d’absorption, d’adaptation et de rebond des acteurs économiques wallons face à différents chocs : crise énergétique, inondation, cybermenace, pandémie ou rupture d’approvisionnement.",
+    href: "/analysis-views/resilience",
+    icon: Shield,
+    badge: "Prototype",
+    colorClass: "hover:border-cyan-500/50 hover:shadow-cyan-500/5",
+    iconColorClass: "text-cyan-600 dark:text-cyan-405 bg-cyan-500/10"
   }
 ];
 

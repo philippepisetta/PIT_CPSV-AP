@@ -221,7 +221,7 @@ export default function GuidePage() {
                 Périmètre Opérationnel de la Plateforme (vNext Framework)
               </h3>
               <p className="text-xs text-text leading-relaxed font-medium">
-                La version actuelle de la PIT constitue un socle de back-office territorial sémantisé permettant de structurer des acteurs, services, communautés, projets, chaînes de valeur, justificatifs et données. La cible vNext est de faire évoluer ce socle vers un Territorial Knowledge Graph interopérable, exposable en JSON-LD, DCAT-AP et NGSI-LD, et exploitable par des vues métier spécialisées.
+                La version actuelle de la PIT constitue un socle de back-office territorial sémantisé. Le Territorial Knowledge Graph complet, les agents IA/RAG, le portail entreprise, les vues avancées et la résilience territoriale relèvent de la cible vNext ou de démonstrateurs à construire progressivement.
               </p>
             </div>
 
@@ -230,8 +230,8 @@ export default function GuidePage() {
               {/* Production */}
               <div className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Disponible en Production</h4>
-                  <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-500/20">Production</span>
+                  <h4 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Disponible en Production (Socle)</h4>
+                  <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-500/20">Disponible</span>
                 </div>
                 <ul className="space-y-2 text-xs text-emerald-900/90 font-medium">
                   <li className="flex items-start gap-1.5">
@@ -244,11 +244,11 @@ export default function GuidePage() {
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Gestion d'Écosystème</strong> : Suivi des communautés, acteurs territoriaux et consortiums.</span>
+                    <span><strong>Gestion d’Écosystème</strong> : Suivi des communautés, acteurs territoriaux et consortiums.</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Défis d'Écosystème</strong> : Formulaires de qualification et de liaison sémantique.</span>
+                    <span><strong>Défis d’Écosystème</strong> : Formulaires de qualification et de liaison sémantique.</span>
                   </li>
                 </ul>
               </div>
@@ -257,7 +257,7 @@ export default function GuidePage() {
               <div className="p-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-3">
                 <div className="flex justify-between items-center">
                   <h4 className="text-xs font-black text-indigo-700 uppercase tracking-wider">Disponible en Démonstrateur</h4>
-                  <span className="text-[9px] font-black uppercase bg-indigo-500/10 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-500/20">Prototype</span>
+                  <span className="text-[9px] font-black uppercase bg-indigo-500/10 text-indigo-650 px-2 py-0.5 rounded-full border border-indigo-500/20">Démonstrateur</span>
                 </div>
                 <ul className="space-y-2 text-xs text-indigo-900/90 font-medium">
                   <li className="flex items-start gap-1.5">
@@ -270,31 +270,55 @@ export default function GuidePage() {
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Mode Histoire</strong> : Scénarios métiers de démo pré-seédés (EDIH, BioWin, etc.).</span>
+                    <span><strong>Mode Histoire</strong> : Scénarios métiers de démo pré-seedés (EDIH, BioWin, etc.).</span>
                   </li>
                 </ul>
               </div>
 
-              {/* target vNext */}
-              <div className="p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 space-y-3">
+              {/* Prototype & Cible vNext */}
+              <div className="p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 space-y-3 md:col-span-2">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-black text-amber-700 uppercase tracking-wider">Prévu en cible vNext</h4>
-                  <span className="text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20">Cible vNext</span>
+                  <h4 className="text-xs font-black text-amber-700 uppercase tracking-wider">Prévu en Cible vNext ou Prototype</h4>
+                  <span className="text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20">Prototype / Cible vNext</span>
                 </div>
-                <ul className="space-y-2 text-xs text-amber-900/90 font-medium">
-                  <li className="flex items-start gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span><strong>Exports standards</strong> : Traduction automatique du graphe en RDF/XML, JSON-LD et NGSI-LD.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span><strong>RAG & Agents IA</strong> : Requêtage conversationnel s'appuyant sur l'ontologie.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span><strong>Data Marketplace</strong> : Partage de données décentralisé via DCAT-AP.</span>
-                  </li>
-                </ul>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-amber-900/90 font-medium">
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Résilience territoriale</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Prototype</span> : Vue d’analyse de la vulnérabilité et de la capacité de rebond.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Territorial Knowledge Graph complet</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Triplestore RDF natif avec requêtes SPARQL.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Agents IA / RAG</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Assistants intelligents d’aide à la décision.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Recommandation automatique avancée</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Moteur d’orientation prédictif complet.</span>
+                    </li>
+                  </ul>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Portail entreprise complet</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Espace interactif d’auto-évaluation pour les PME.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Cockpit DG complet</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Tableaux de bord stratégiques de pilotage du ROI territorial.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Data Marketplace complet</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Échange décentralisé de datasets.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                      <span><strong>Exports NGSI-LD industrialisés</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Standardisation et exposition temps réel.</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               {/* Out of scope */}

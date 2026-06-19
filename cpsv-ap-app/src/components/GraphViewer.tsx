@@ -1025,7 +1025,7 @@ export default function GraphViewer() {
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-4 bg-surface border border-muted rounded-2xl relative">
         <div className="flex items-center gap-2 shrink-0">
           <Filter className="h-4.5 w-4.5 text-primary" />
-          <span className="text-sm font-bold text-text">Perspective Métier :</span>
+          <span className="text-sm font-bold text-text">Vue d’analyse :</span>
         </div>
 
         {/* Search Panel inside Toolbar */}

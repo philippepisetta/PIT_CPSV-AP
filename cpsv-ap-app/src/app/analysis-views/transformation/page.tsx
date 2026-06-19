@@ -9,17 +9,17 @@ export default function TransformationPerspectivePlaceholderPage() {
   return (
     <PITLayout
       category="VUE D'ANALYSE"
-      title="Perspective transformation"
+      title="Parcours & transformation"
       description="Suivre les parcours des bénéficiaires, leur maturité, les services consommés, les recommandations et la progression."
       pageIcon={Zap}
-      breadcrumb={[{ label: "Vues d'analyse", href: "/analysis-views" }, { label: "Perspective transformation" }]}
+      breadcrumb={[{ label: "Vues d'analyse", href: "/analysis-views" }, { label: "Parcours & transformation" }]}
     >
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-850 rounded-2xl shadow-xs max-w-2xl mx-auto space-y-6">
         <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
           <Zap className="h-10 w-10 animate-bounce" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-lg font-black text-text">Perspective transformation</h2>
+          <h2 className="text-lg font-black text-text">Parcours & transformation</h2>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
             Cette vue d'analyse suivra l'impact de la transition numérique et écologique sur les bénéficiaires : évolution de leur niveau de maturité (IA, Cyber, Digital), efficacité des recommandations d'accompagnement et taux de succès des parcours.
           </p>

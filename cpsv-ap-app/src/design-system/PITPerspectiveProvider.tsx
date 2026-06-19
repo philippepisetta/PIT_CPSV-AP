@@ -21,31 +21,31 @@ export const PERSPECTIVES: Perspective[] = [
   },
   {
     id: "strategic",
-    label: "Perspective Stratégique",
+    label: "Stratégie & impacts",
     description: "Focus sur les politiques publiques, programmes et indicateurs d'impact.",
     allowedTypes: ["strategy", "strategicpriority", "program", "measure", "initiative", "impact", "outcomeindicator"]
   },
   {
     id: "operational",
-    label: "Perspective Opérationnelle",
+    label: "Opérations & suivi",
     description: "Focus sur l'accompagnement des bénéficiaires et l'activité des services.",
     allowedTypes: ["beneficiary", "service", "journey", "journeystage", "beneficiaryengagement", "actioninstance", "activity"]
   },
   {
     id: "territorial",
-    label: "Perspective Territoriale",
+    label: "Territoire & écosystèmes",
     description: "Focus sur l'ancrage régional, les filières S3 et les écosystèmes.",
     allowedTypes: ["ecosystem", "valuechain", "filiere", "organisation", "org", "territory", "beneficiary"]
   },
   {
     id: "data",
-    label: "Perspective Data",
+    label: "Données & interopérabilité",
     description: "Focus sur les catalogues de données DCAT-AP et actifs de connaissance.",
     allowedTypes: ["dataset", "knowledgeasset", "eventresource"]
   },
   {
     id: "transformation",
-    label: "Perspective Transformation",
+    label: "Parcours & transformation",
     description: "Focus sur les thématiques d'innovation (IA, Cyber, Industrie 4.0).",
     allowedTypes: ["service", "journey", "challenge", "beneficiary", "program"]
   }

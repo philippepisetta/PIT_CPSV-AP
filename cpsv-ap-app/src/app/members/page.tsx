@@ -138,7 +138,7 @@ export default function MembersPage() {
         <div className="text-xs text-teal-900 dark:text-teal-350">
           <p className="font-bold uppercase tracking-wider text-[10px]">Aide Métier : Affiliations</p>
           <p className="mt-1 leading-relaxed">
-            Un membre correspond à une organisation rattachée à une communauté, un programme, un consortium ou un cluster avec un rôle défini.
+            Un membre correspond à une organisation rattachée à une communauté, un programme, un consortium ou un cluster avec un rôle défini. Le membre n’est pas une entité isolée : il représente une relation d’affiliation entre un acteur territorial et un collectif.
           </p>
         </div>
       </div>

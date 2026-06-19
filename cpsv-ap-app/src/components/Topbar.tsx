@@ -5,18 +5,15 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Bell, User, Briefcase, Settings } from "lucide-react";
-import { usePerspective, PERSPECTIVES } from "@/design-system/PITPerspectiveProvider";
 import { useWorkspace, WORKSPACES } from "@/design-system/PITWorkspaceProvider";
 
 export default function Topbar() {
-  const { activePerspective, setPerspective } = usePerspective();
   const { activeWorkspace, setWorkspace } = useWorkspace();
 
   return (
     <header className="flex items-center justify-between border-b border-muted/20 pb-4 mb-6">
-      {/* Workspace & Perspective Switchers */}
+      {/* Workspace Switcher */}
       <div className="flex items-center gap-4">
-        {/* Workspace Switcher */}
         <div className="flex items-center gap-2">
           <Briefcase className="h-4 w-4 text-teal-600 dark:text-teal-400" />
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted hidden sm:inline select-none">
@@ -30,24 +27,6 @@ export default function Topbar() {
             {WORKSPACES.map((w) => (
               <option key={w.id} value={w.id} className="bg-background text-text">
                 {w.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Perspective Switcher */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted hidden sm:inline select-none">
-            Perspective :
-          </span>
-          <select
-            value={activePerspective}
-            onChange={(e) => setPerspective(e.target.value as any)}
-            className="bg-glass border border-muted/30 rounded-xl px-3 py-1.5 text-xs font-bold text-text focus:outline-none focus:border-teal-700 dark:focus:border-teal-400 transition-colors cursor-pointer"
-          >
-            {PERSPECTIVES.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
               </option>
             ))}
           </select>

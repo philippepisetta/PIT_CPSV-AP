@@ -15,7 +15,7 @@ export interface Perspective {
 export const PERSPECTIVES: Perspective[] = [
   {
     id: "all",
-    label: "Graphe Complet",
+    label: "Cartographie globale",
     description: "Afficher l'ensemble du Territorial Knowledge Graph.",
     allowedTypes: ["strategy", "strategicpriority", "program", "measure", "initiative", "service", "journey", "journeystage", "ecosystem", "valuechain", "filiere", "beneficiary", "beneficiaryengagement", "organisation", "dataset", "knowledgeasset", "challenge", "impact", "outcomeindicator", "activity", "org"]
   },

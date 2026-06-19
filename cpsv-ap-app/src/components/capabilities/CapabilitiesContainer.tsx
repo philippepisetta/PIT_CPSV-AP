@@ -361,7 +361,7 @@ function CapabilityDetailPanel({ capability, capabilities, onClose }: Capability
             <LinkIcon className="h-3.5 w-3.5" /> Gaps techniques documentés :
           </p>
           <p className="leading-relaxed">
-            Les relations directes <code>Capability ↔ Program</code> et <code>Capability ↔ Project</code> ne sont pas retournées par l'API v2 actuelle. Elles seront implémentées dans le Sprint 6 avec le graphe complet.
+            Les relations directes <code>Capability ↔ Program</code> et <code>Capability ↔ Project</code> ne sont pas retournées par l'API v2 actuelle. Elles seront implémentées dans le Sprint 6 avec la cartographie globale.
           </p>
         </div>
       </div>

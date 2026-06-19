@@ -90,6 +90,7 @@ const navBlocks: NavBlock[] = [
       { name: "Acteurs Territoriaux", href: "/organizations", icon: Building },
       { name: "Filières S3", href: "/filieres", icon: Layers },
       { name: "Explorateur de Chaînes", href: "/value-chain-explorer", icon: Network },
+      { name: "Vues d'analyse", href: "/analysis-views", icon: Layers },
     ]
   },
   {

@@ -2,26 +2,15 @@
 
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Bell, User, Sun, Moon, Briefcase } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { Bell, User, Briefcase, Settings } from "lucide-react";
 import { usePerspective, PERSPECTIVES } from "@/design-system/PITPerspectiveProvider";
 import { useWorkspace, WORKSPACES } from "@/design-system/PITWorkspaceProvider";
 
 export default function Topbar() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const { activePerspective, setPerspective } = usePerspective();
   const { activeWorkspace, setWorkspace } = useWorkspace();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  };
 
   return (
     <header className="flex items-center justify-between border-b border-muted/20 pb-4 mb-6">
@@ -67,26 +56,16 @@ export default function Topbar() {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        {/* Toggle Theme Button */}
-        <button
-          onClick={toggleTheme}
-          className={cn(
-            "rounded-full p-2 hover:bg-glass hover:text-primary transition-colors cursor-pointer border-0 bg-transparent",
-          )}
-          aria-label="Changer de thème"
-        >
-          {mounted && resolvedTheme === "dark" ? (
-            <Sun className="h-4 w-4 text-amber-500 animate-in spin-in-45 duration-300" />
-          ) : (
-            <Moon className="h-4 w-4 text-indigo-600 dark:text-indigo-400 animate-in spin-in-45 duration-300" />
-          )}
-        </button>
-
         <button className={cn(
           "rounded-full p-2 hover:bg-glass hover:text-primary transition-colors cursor-pointer border-0 bg-transparent text-text",
         )} aria-label="Notifications">
           <Bell className="h-4 w-4" />
         </button>
+        <Link href="/settings" className={cn(
+          "rounded-full p-2 hover:bg-glass hover:text-primary transition-colors cursor-pointer border-0 bg-transparent text-text flex items-center justify-center",
+        )} aria-label="Paramètres">
+          <Settings className="h-4 w-4" />
+        </Link>
         <button className={cn(
           "rounded-full p-2 hover:bg-glass hover:text-primary transition-colors cursor-pointer border-0 bg-transparent text-text",
         )} aria-label="Profil">

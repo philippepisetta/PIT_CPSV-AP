@@ -12,7 +12,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <PITPerspectiveProvider>
       <PITWorkspaceProvider>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
           {children}
         </ThemeProvider>
       </PITWorkspaceProvider>

@@ -203,34 +203,6 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="pt-4 border-t border-muted/10 space-y-1.5">
-        <Link
-          href="/value-proposition"
-          className={cn(
-            "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs font-bold text-muted hover:bg-glass hover:text-text transition-all duration-200",
-            pathname === "/value-proposition" && "bg-glass text-text"
-          )}
-        >
-          <Zap className="h-4 w-4 shrink-0 text-amber-500" />
-          <span>Pourquoi la PIT ?</span>
-        </Link>
-        <Link
-          href="/guide"
-          className={cn(
-            "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs font-bold text-muted hover:bg-glass hover:text-text transition-all duration-200"
-          )}
-        >
-          <HelpCircle className="h-4 w-4 shrink-0" />
-          <span>Guide Interactif</span>
-        </Link>
-        <Link
-          href="/settings"
-          className={cn(
-            "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs font-bold text-muted hover:bg-glass hover:text-text transition-all duration-200"
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          <span>Paramètres</span>
-        </Link>
         <div className="text-center pt-2">
           <span className="text-[8px] font-bold text-muted/40 uppercase tracking-widest">
             PIT vNext • Wallonie

@@ -49,7 +49,6 @@ const navBlocks: NavBlock[] = [
     title: "Workspace Animation",
     allowedWorkspaces: ["animateur"],
     items: [
-      { name: "Tableau de bord", href: "/animation", icon: Sparkles },
       { name: "Activités & événements", href: "/activities", icon: Compass },
       { name: "Communautés", href: "/communities", icon: Share2 },
       { name: "Défis d’écosystème", href: "/ecosystem-challenges", icon: Target },

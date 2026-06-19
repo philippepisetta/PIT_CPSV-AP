@@ -201,14 +201,6 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Sidebar Footer */}
-      <div className="pt-4 border-t border-muted/10 space-y-1.5">
-        <div className="text-center pt-2">
-          <span className="text-[8px] font-bold text-muted/40 uppercase tracking-widest">
-            PIT vNext • Wallonie
-          </span>
-        </div>
-      </div>
     </aside>
   );
 }

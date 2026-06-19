@@ -13,7 +13,7 @@ Ce script guide le présentateur de la PIT pour réaliser une démonstration imp
   2. Présentez la comparaison : « Avant la PIT » (la dispersion des données entre Excel, HubSpot et les silos de chaque pôle) vs « Avec la PIT » (l'unification du graphe territorial wallon).
   3. Montrez la chaîne de valeur : l'entreprise, ses défis, les services reçus, les projets financés, et enfin, la preuve d'impact validée qui alimente en temps réel le pilotage des politiques publiques.
 
-### Minute 2 - 5 : Étape 1 – L'Entrée par le Défi & Recommandation (Perspective Conseiller)
+### Minute 2 - 5 : Étape 1 – L'Entrée par le Défi & Recommandation (Espace Conseiller)
 - **Objectif** : Montrer comment la donnée opérationnelle naît d'un besoin réel.
 - **Action** :
   1. Basculez sur l'Espace **Conseiller** (dans le sélecteur d'espace en haut).
@@ -21,7 +21,7 @@ Ce script guide le présentateur de la PIT pour réaliser une démonstration imp
   3. Ouvrez le **Moteur de Recommandation** à droite. Sélectionnez « MedTech Namur » et cliquez sur **Générer Recommandations**.
   4. Wow Effect : La PIT affiche instantanément les partenaires R&D recommandés (UCLouvain, CETIC), les services d'IA clinique correspondants, et les aides financières ouvertes (Horizon Europe Health).
 
-### Minute 5 - 8 : Étape 2 – L'Accompagnement, le Parcours & le Consortium (Perspective Animateur)
+### Minute 5 - 8 : Étape 2 – L'Accompagnement, le Parcours & le Consortium (Espace Animateur)
 - **Objectif** : Montrer la mise en mouvement de l'écosystème.
 - **Action** :
   1. Basculez sur l'Espace **Animateur**.
@@ -29,7 +29,7 @@ Ce script guide le présentateur de la PIT pour réaliser une démonstration imp
   3. Cliquez sur **Nouveau Consortium**. Entrez : « Consortium MedTech IA », associez-le à l'appel « Appel Health Innovation 2026 », et ajoutez « MedTech Namur » (Lead Partner), « UCLouvain » (R&D Partner) et « CHU Liège » (End User).
   4. Validez. Le consortium est créé et indexé dans le graphe sémantique.
 
-### Minute 8 - 11 : Étape 3 – La Mesure d'Impact & l'Audit des Preuves (Perspective Animateur)
+### Minute 8 - 11 : Étape 3 – La Mesure d'Impact & l'Audit des Preuves (Espace Animateur)
 - **Objectif** : Prouver que la PIT ne contient pas de « déclaratif », mais uniquement de la donnée prouvée.
 - **Action** :
   1. Toujours sur l'espace Animateur, ouvrez l'écran **Justificatifs & preuves d’impact** (`/evidences` ou sur le dashboard principal).
@@ -37,7 +37,7 @@ Ce script guide le présentateur de la PIT pour réaliser une démonstration imp
   3. Expliquez : « C'est ici que l'animateur du pôle audite le document officiel. » Cliquez sur **Valider**.
   4. Le statut passe à vert `APPROVED`. Expliquez que cette validation va propager instantanément les indicateurs d'impact vers le cockpit du décideur.
 
-### Minute 11 - 14 : Étape 4 – Le Pilotage des Politiques Publiques (Perspective DG / Exécutif)
+### Minute 11 - 14 : Étape 4 – Le Pilotage des Politiques Publiques (Espace Cockpit DG / Exécutif)
 - **Objectif** : Montrer le Graal du pilotage stratégique sans saisie manuelle.
 - **Action** :
   1. Basculez sur l'Espace **Cockpit Exécutif (DG)**.

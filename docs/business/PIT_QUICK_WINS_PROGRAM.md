@@ -15,10 +15,10 @@ Chaque Quick Win est évalué selon son niveau d'**Effort** d'implémentation su
 | **3. Diagnostic Cyber PME (NIS2)** | Moyen | **Élevée** | **Élevée** | **Élevée** | **2 (Mois 1)** |
 | **4. Value Chain Explorer (Filières)**| **Faible** | **Élevée** | **Élevée** | **Très Élevée** | **1 (T0)** |
 | **5. Story Mode (Pitch 15 min)** | **Faible** | Moyenne | **Très Élevée** | **Très Élevée** | **1 (T0)** |
-| **6. Workspace Switcher (Perspectives)**| **Faible** | **Élevée** | Moyenne | **Très Élevée** | **1 (T0)** |
+| **6. Workspace Switcher (Espaces)**| **Faible** | **Élevée** | Moyenne | **Très Élevée** | **1 (T0)** |
 | **7. Catalogue Services CPSV-AP** | Moyen | **Élevée** | Moyenne | Élevée | 2 (Mois 1) |
 | **8. Recommender Matcher** | Moyen | **Élevée** | Moyenne | Élevée | 3 (Mois 2) |
-| **9. Evidence Audit Board (Animateur)** | Moyen | **Élevée** | Élevée | Moyenne | 3 (Mois 2) |
+| **9. Justificatifs & Preuves d'Impact (Animateur)** | Moyen | **Élevée** | Élevée | Moyenne | 3 (Mois 2) |
 | **10. Consortium Builder** | Moyen | **Élevée** | Moyenne | Moyenne | 3 (Mois 3) |
 
 ---

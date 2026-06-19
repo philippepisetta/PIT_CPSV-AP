@@ -16,12 +16,25 @@ export default function EvidencesPage() {
 
   return (
     <PITLayout
-      category="ECOSYSTEM CRM"
-      title="Audit & Vérification des Preuves"
-      description="Consultez et modifiez les statuts d'approbation des preuves d'impact avant agrégation politique."
+      category="WORKSPACE ANIMATION"
+      title="Justificatifs & Preuves d’Impact"
+      description="Consultez et validez les documents justificatifs d'accompagnement et les preuves de résultats territoriaux."
       pageIcon={ClipboardCheck}
       breadcrumb={[{ label: "Preuves" }]}
     >
+      {/* Help Banner */}
+      <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/25 flex items-start gap-3 mb-6">
+        <ClipboardCheck className="h-5 w-5 text-teal-655 shrink-0 mt-0.5" />
+        <div className="text-xs text-teal-900 dark:text-teal-350 space-y-1">
+          <p className="font-bold uppercase tracking-wider text-[10px]">Aide Métier : Typologies de Preuves</p>
+          <ul className="list-disc list-inside pl-1 space-y-0.5 font-medium">
+            <li><strong>Justificatif métier</strong> : Document officiel (ex: diagnostic DMAT, livrable) certifiant la bonne réalisation d'une prestation.</li>
+            <li><strong>Preuve d'impact</strong> : Justification d'un outcome mesurable (ex: attestation d'embauche, certificat NIS2).</li>
+            <li><strong>Audit technique</strong> : Logs de traçabilité système des actions, disponibles uniquement dans le volet de gouvernance.</li>
+          </ul>
+        </div>
+      </div>
+
       <div className="rounded-2xl bg-surface border border-muted/20 bg-glass/20 p-6 space-y-4">
         {isLoading ? (
           <div className="text-center py-8 text-muted">Chargement...</div>

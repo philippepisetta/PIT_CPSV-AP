@@ -45,12 +45,12 @@ export default function AnimationPage() {
 
   // Funnel steps data
   const funnelSteps = [
-    { label: "Participants", count: 120, pct: 100, desc: "Acteurs engagés dans les activités" },
-    { label: "Diagnostics", count: 45, pct: 37.5, desc: "Diagnostics de maturité complétés (DMAT)" },
-    { label: "Services", count: 30, pct: 66.7, desc: "Services / aides sémantiques délivrés" },
-    { label: "Financements", count: 15, pct: 50, desc: "Dossiers de financements connectés (WE, etc.)" },
-    { label: "Projets", count: 8, pct: 53.3, desc: "Projets R&D et d'innovation actifs" },
-    { label: "Outcomes", count: 5, pct: 62.5, desc: "Preuves d'impact qualifiées et validées" }
+    { label: "Participants", count: 120, pct: 100, desc: "Acteurs ayant participé à une activité collective, un atelier, un webinaire ou une action d’animation." },
+    { label: "Diagnostics", count: 45, pct: 37.5, desc: "Bénéficiaires ayant complété un diagnostic de maturité ou d’évaluation." },
+    { label: "Services", count: 30, pct: 66.7, desc: "Services ou accompagnements effectivement délivrés." },
+    { label: "Financements", count: 15, pct: 50, desc: "Opportunités, aides ou subsides connectés à un bénéficiaire, projet ou parcours." },
+    { label: "Projets", count: 8, pct: 53.3, desc: "Projets collaboratifs, R&D ou transformation lancés." },
+    { label: "Outcomes", count: 5, pct: 62.5, desc: "Résultats ou impacts qualifiés, idéalement rattachés à une preuve validée." }
   ];
 
   if (kpisLoading || activityLoading || evidencesLoading) {
@@ -87,7 +87,7 @@ export default function AnimationPage() {
                 <TrendingUp className="h-5 w-5 text-teal-650" />
                 Funnel d'Animation Régionale (Conversion de valeur)
               </h3>
-              <p className="text-[11px] text-muted mt-0.5">Mesure de l'impact opérationnel : de la prise de contact initiale jusqu'à la preuve d'impact.</p>
+              <p className="text-[11px] text-muted mt-0.5">Le funnel mesure la conversion de l’animation territoriale en valeur opérationnelle et en impact mesurable.</p>
             </div>
             <span className="text-xs font-black text-teal-650 bg-teal-500/10 px-2.5 py-0.5 rounded-full select-none">
               SoI Mode

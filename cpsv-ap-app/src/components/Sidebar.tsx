@@ -27,7 +27,8 @@ import {
   Zap,
   Building,
   Play,
-  Layers
+  Layers,
+  CheckCircle2
 } from "lucide-react";
 import { useWorkspace } from "@/design-system/PITWorkspaceProvider";
 
@@ -48,49 +49,56 @@ const navBlocks: NavBlock[] = [
     title: "Workspace Animation",
     allowedWorkspaces: ["animateur"],
     items: [
-      { name: "Workspace Animation", href: "/animation", icon: Sparkles },
-      { name: "Activity Explorer", href: "/activities", icon: Compass },
-      { name: "Community Dashboard", href: "/communities", icon: Share2 },
-    ]
-  },
-  {
-    title: "Portefeuille Conseiller",
-    allowedWorkspaces: ["conseiller"],
-    items: [
-      { name: "Workspace Bénéficiaires 360", href: "/beneficiaries", icon: Users },
-      { name: "Opportunités d'Innovation", href: "/opportunities", icon: FileCode },
-    ]
-  },
-  {
-    title: "Workspace Interop",
-    allowedWorkspaces: ["steward"],
-    items: [
-      { name: "Workspace Interop", href: "/interoperability", icon: Settings },
-      { name: "Data Marketplace", href: "/marketplace", icon: Database },
-    ]
-  },
-  {
-    title: "Ecosystem CRM",
-    allowedWorkspaces: ["animateur"],
-    items: [
-      { name: "Membres", href: "/members", icon: Users },
-      { name: "Défis d'Écosystème", href: "/ecosystem-challenges", icon: Target },
+      { name: "Tableau de bord", href: "/animation", icon: Sparkles },
+      { name: "Activités & événements", href: "/activities", icon: Compass },
+      { name: "Communautés", href: "/communities", icon: Share2 },
+      { name: "Défis d’écosystème", href: "/ecosystem-challenges", icon: Target },
       { name: "Consortiums", href: "/consortia", icon: Network },
       { name: "Projets", href: "/projects", icon: Activity },
-      { name: "Audit Preuves", href: "/evidences", icon: ClipboardCheck },
+      { name: "Justificatifs & preuves d’impact", href: "/evidences", icon: ClipboardCheck },
     ]
   },
   {
-    title: "Catalogue Territorial",
+    title: "Gestion de l’écosystème",
+    allowedWorkspaces: ["animateur", "conseiller"],
+    items: [
+      { name: "Acteurs territoriaux", href: "/organizations", icon: Building },
+      { name: "Bénéficiaires", href: "/beneficiaries", icon: Users },
+      { name: "Contacts", href: "/contacts", icon: Users },
+      { name: "Affiliations & membres", href: "/members", icon: Share2 },
+    ]
+  },
+  {
+    title: "Catalogue territorial",
     allowedWorkspaces: ["animateur", "conseiller", "steward"],
     items: [
-      { name: "Services (CPSV)", href: "/services", icon: FileText },
-      { name: "Parcours d'Accompagnement", href: "/journeys", icon: Compass },
-      { name: "Opportunités d'Innovation", href: "/opportunities", icon: FileCode },
-      { name: "Acteurs Territoriaux", href: "/organizations", icon: Building },
+      { name: "Services CPSV", href: "/services", icon: FileText },
+      { name: "Parcours d’accompagnement", href: "/journeys", icon: Compass },
+      { name: "Opportunités d’innovation", href: "/opportunities", icon: FileCode },
       { name: "Filières S3", href: "/filieres", icon: Layers },
-      { name: "Explorateur de Chaînes", href: "/value-chain-explorer", icon: Network },
-      { name: "Vues d'analyse", href: "/analysis-views", icon: Layers },
+      { name: "Explorateur de chaînes", href: "/value-chain-explorer", icon: Network },
+      { name: "Vues d’analyse", href: "/analysis-views", icon: Layers },
+    ]
+  },
+  {
+    title: "Données & interopérabilité",
+    allowedWorkspaces: ["steward"],
+    items: [
+      { name: "Sources de données", href: "/interoperability", icon: Settings },
+      { name: "Datasets", href: "/marketplace", icon: Database },
+      { name: "Mappings", href: "/interoperability?tab=mappings", icon: FileCode },
+      { name: "Qualité des données", href: "/interoperability/quality", icon: CheckCircle2 },
+      { name: "API & exports", href: "/interoperability/api-exports", icon: Zap },
+    ]
+  },
+  {
+    title: "Gouvernance",
+    allowedWorkspaces: ["animateur", "conseiller", "steward", "dg"],
+    items: [
+      { name: "Référentiels", href: "/governance/referentiels", icon: Database },
+      { name: "Rôles & droits", href: "/governance/roles", icon: Shield },
+      { name: "Audit technique", href: "/governance/audit-technical", icon: ClipboardCheck },
+      { name: "Documentation", href: "/guide", icon: BookOpen },
     ]
   },
   {

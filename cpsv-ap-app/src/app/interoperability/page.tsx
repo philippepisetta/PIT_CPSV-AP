@@ -265,70 +265,78 @@ export default function InteroperabilityPage() {
 
         {/* Screen 2: Data Flows flowchart */}
         {activeTab === "flows" && (
-          <div className="bg-glass/20 border border-muted/20 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
-            <h3 className="text-xs font-black uppercase text-muted tracking-wider mb-8 border-b border-muted/10 pb-2 self-start w-full">
-              Diagramme de Flux d&apos;Intégration Sémantique
-            </h3>
-
-            {/* flowchart diagram */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full relative z-10">
-              {/* Column 1: Source Systems */}
-              <div className="flex flex-col gap-4">
-                <span className="text-[9px] font-black uppercase text-center text-muted">1. Source Systems (SoR)</span>
-                {["BCE (Données admin)", "DMAT (Maturité)", "CRM WE (Aides)"].map(sys => (
-                  <div key={sys} className="px-4 py-3 bg-indigo-500/10 border border-indigo-500/25 text-xs font-extrabold text-indigo-750 dark:text-indigo-400 rounded-xl text-center w-48 shadow-sm">
-                    {sys}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-center shrink-0 rotate-95 md:rotate-0">
-                <Network className="h-6 w-6 text-muted animate-pulse" />
-              </div>
-
-              {/* Column 2: Data Products */}
-              <div className="flex flex-col gap-4">
-                <span className="text-[9px] font-black uppercase text-center text-muted">2. Data Products Registry</span>
-                {["dp-bce-companies", "dp-dmat-scores", "dp-we-subventions"].map(dp => (
-                  <div key={dp} className="px-4 py-3 bg-teal-500/10 border border-teal-500/25 text-xs font-extrabold text-teal-750 dark:text-teal-400 rounded-xl text-center w-48 shadow-sm">
-                    {dp}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-center shrink-0 rotate-95 md:rotate-0">
-                <ArrowRight className="h-6 w-6 text-muted" />
-              </div>
-
-              {/* Column 3: Semantic Graphe */}
-              <div className="flex flex-col gap-4">
-                <span className="text-[9px] font-black uppercase text-center text-muted">3. Knowledge Graph PIT</span>
-                <div className="px-5 py-8 bg-fuchsia-500/15 border-2 border-fuchsia-500/35 text-xs font-black text-fuchsia-700 dark:text-fuchsia-405 rounded-full text-center w-40 h-40 flex flex-col justify-center items-center shadow-lg relative">
-                  <div className="absolute inset-0 rounded-full border-2 border-dashed border-fuchsia-500/30 animate-spin" style={{ animationDuration: "12s" }} />
-                  <Database className="h-5 w-5 mb-1 text-fuchsia-605" />
-                  <span>PIT Knowledge Graph</span>
-                  <span className="text-[8px] text-muted font-bold mt-1">RDF / Triples Store</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center shrink-0 rotate-95 md:rotate-0">
-                <ArrowRight className="h-6 w-6 text-muted" />
-              </div>
-
-              {/* Column 4: Consumer Workspaces */}
-              <div className="flex flex-col gap-4">
-                <span className="text-[9px] font-black uppercase text-center text-muted">4. Systems of engagement</span>
-                {["Workspace Conseiller 360", "Cockpit Strategique DG", "Workspace Animation"].map(ws => (
-                  <div key={ws} className="px-4 py-3 bg-amber-500/10 border border-amber-500/25 text-xs font-extrabold text-amber-700 dark:text-amber-400 rounded-xl text-center w-48 shadow-sm">
-                    {ws}
-                  </div>
-                ))}
-              </div>
+          <div className="bg-glass/20 border border-muted/20 rounded-2xl p-6 flex flex-col space-y-6">
+            <div>
+              <h3 className="text-xs font-black uppercase text-muted tracking-wider border-b border-muted/10 pb-2">
+                Chaîne de Traitement & d'Intégration Sémantique
+              </h3>
+              <p className="text-[11px] text-muted mt-1 leading-snug">
+                Suivez la progression des données territoriales de leur système d'autorité d'origine jusqu'à leur exposition normalisée.
+              </p>
             </div>
 
-            {/* Glowing flowing lines background using CSS */}
-            <div className="absolute inset-0 pointer-events-none opacity-20">
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-teal-500 to-fuchsia-500 animate-pulse" />
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2">
+              {[
+                {
+                  step: "1. Source System",
+                  title: "Systèmes de Record",
+                  desc: "Récupération des données depuis les bases d'autorité (BCE, DMAT, CRM WE).",
+                  status: "Actif",
+                  statusColor: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                },
+                {
+                  step: "2. Mapping",
+                  title: "Alignement Sémantique",
+                  desc: "Traduction des champs physiques vers les schémas CPSV-AP, W3C ORG et LOCN.",
+                  status: "Actif",
+                  statusColor: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                },
+                {
+                  step: "3. Validation qualité",
+                  title: "Contrôle Qualité",
+                  desc: "Analyse des 9 dimensions de qualité (complétude, fraîcheur, précision, etc.).",
+                  status: "Prototype",
+                  statusColor: "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20"
+                },
+                {
+                  step: "4. Publication API / DCAT",
+                  title: "Exposition Ouverte",
+                  desc: "Génération des flux d'exportation DCAT-AP, NGSI-LD et points d'accès GraphQL.",
+                  status: "Prototype",
+                  statusColor: "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20"
+                },
+                {
+                  step: "5. Journal de provenance",
+                  title: "Audit & Traçabilité",
+                  desc: "Enregistrement des logs de synchronisation et de modification système (SoR).",
+                  status: "À valider",
+                  statusColor: "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                }
+              ].map((item, idx) => (
+                <div key={idx} className="bg-glass/35 border border-muted/15 p-4 rounded-xl flex flex-col justify-between space-y-3 relative overflow-hidden transition-all hover:scale-102">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-black uppercase text-muted">{item.step}</span>
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded-md ${item.statusColor}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-black text-text leading-tight mt-1">{item.title}</h4>
+                    <p className="text-[10px] text-muted font-semibold leading-relaxed">{item.desc}</p>
+                  </div>
+                  {idx < 4 && (
+                    <div className="hidden md:block absolute -right-2 top-1/2 -translate-y-1/2 text-muted/30 font-black text-xl select-none">
+                      →
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Visual note */}
+            <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/25 rounded-xl text-[10px] font-bold text-indigo-750 dark:text-indigo-300 flex items-center gap-2">
+              <span>⚠️</span>
+              <p>Les connecteurs DCAT-AP, NGSI-LD, les structures d'expositions RDF et le registre d'audit technique sont en cours de prototype/validation. Seules les requêtes GraphQL et API REST opérationnelles sont actives en production.</p>
             </div>
           </div>
         )}

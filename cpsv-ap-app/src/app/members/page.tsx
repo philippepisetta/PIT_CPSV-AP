@@ -126,12 +126,23 @@ export default function MembersPage() {
 
   return (
     <PITLayout
-      category="ECOSYSTEM CRM"
-      title="Répertoire des Membres"
-      description="Consultez et filtrez tous les acteurs enregistrés dans l'écosystème de compétitivité wallon."
+      category="GESTION DE L'ÉCOSYSTÈME"
+      title="Affiliations & Membres"
+      description="Pilotez les affiliations et memberships de l'écosystème territorial wallon."
       pageIcon={Users}
       breadcrumb={[{ label: "Membres" }]}
     >
+      {/* Help Banner */}
+      <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/25 flex items-start gap-3 mb-6">
+        <Users className="h-5 w-5 text-teal-605 shrink-0 mt-0.5" />
+        <div className="text-xs text-teal-900 dark:text-teal-350">
+          <p className="font-bold uppercase tracking-wider text-[10px]">Aide Métier : Affiliations</p>
+          <p className="mt-1 leading-relaxed">
+            Un membre correspond à une organisation rattachée à une communauté, un programme, un consortium ou un cluster avec un rôle défini.
+          </p>
+        </div>
+      </div>
+
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 w-full mb-6">
         <div className="bg-glass p-4 rounded-xl border border-muted/10">

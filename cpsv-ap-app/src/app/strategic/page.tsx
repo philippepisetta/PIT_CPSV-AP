@@ -20,7 +20,8 @@ import {
   Edit,
   Compass,
   FileText,
-  X
+  X,
+  Info
 } from "lucide-react";
 import PITLayout from "@/design-system/PITLayout";
 import { 
@@ -368,6 +369,17 @@ export default function StrategicPage() {
       breadcrumb={[{ label: "Cockpit DG" }]}
     >
       <div className="space-y-6">
+        
+        {/* Info Banner */}
+        <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/25 flex items-start gap-3">
+          <Info className="h-5 w-5 text-teal-605 shrink-0 mt-0.5" />
+          <div className="text-xs text-teal-900 dark:text-teal-350">
+            <p className="font-bold uppercase tracking-wider text-[10px]">Note Exécutive</p>
+            <p className="mt-1 leading-relaxed">
+              Cette vue consolide les données validées issues des services, projets, preuves et outcomes. Les modifications sont réservées aux profils autorisés.
+            </p>
+          </div>
+        </div>
         
         {/* Navigation Tabs Header */}
         <div className="flex bg-glass/25 p-1.5 rounded-2xl border border-muted/20 gap-1 overflow-x-auto scrollbar-thin">

@@ -16,13 +16,20 @@ import {
   ChevronRight, 
   ChevronLeft,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Database,
+  FileText,
+  Shield,
+  FileCode,
+  Zap,
+  Info
 } from "lucide-react";
 import PITLayout from "@/design-system/PITLayout";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function GuidePage() {
+  const [activeTab, setActiveTab] = useState<"scope" | "glossary" | "methodology">("scope");
   const [activeStep, setActiveStep] = useState(1);
 
   const steps = [
@@ -53,7 +60,7 @@ export default function GuidePage() {
       ],
       icon: Building2,
       cta: "Consulter les Écosystèmes",
-      href: "/ecosystems",
+      href: "/territories",
       color: "text-blue-600 dark:text-blue-400 bg-blue-500/10"
     },
     {
@@ -68,7 +75,7 @@ export default function GuidePage() {
       ],
       icon: Target,
       cta: "Créer une Stratégie",
-      href: "/strategies?action=new-strategy",
+      href: "/strategic",
       color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
     },
     {
@@ -83,7 +90,7 @@ export default function GuidePage() {
       ],
       icon: Layers,
       cta: "Planifier un Programme",
-      href: "/strategies?action=new-program",
+      href: "/opportunities",
       color: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10"
     },
     {
@@ -98,7 +105,7 @@ export default function GuidePage() {
       ],
       icon: Users,
       cta: "Ajouter une Entreprise (BCE)",
-      href: "/beneficiaries?action=new-beneficiary",
+      href: "/beneficiaries",
       color: "text-purple-600 dark:text-purple-400 bg-purple-500/10"
     },
     {
@@ -113,7 +120,7 @@ export default function GuidePage() {
       ],
       icon: Activity,
       cta: "Enregistrer une prestation",
-      href: "/beneficiaries?action=new-delivery",
+      href: "/beneficiaries",
       color: "text-rose-600 dark:text-rose-455 bg-rose-500/10",
       extraCtas: [
         { label: "Atelier Collectif", href: "/activities?action=new-collective" },
@@ -147,9 +154,24 @@ export default function GuidePage() {
       ],
       icon: TrendingUp,
       cta: "Consulter le Pilotage",
-      href: "/pilotage",
+      href: "/strategic",
       color: "text-cyan-600 dark:text-cyan-400 bg-cyan-500/10"
     }
+  ];
+
+  const glossaryItems = [
+    { name: "Acteur territorial", desc: "Organisation publique, privée ou académique présente au sein de l'écosystème d'innovation wallon (ex: Sirris, CETIC, AdN)." },
+    { name: "Bénéficiaire", desc: "Organisation (PME, Startup, ASBL, Commune, Centre de recherche) qui est accompagnée ou susceptible de recevoir un service d'aide publique." },
+    { name: "Contact", desc: "Personne physique rattachée à une organisation, qualifiée par son rôle opérationnel ou technique et ses coordonnées directes." },
+    { name: "Membership (Affiliation)", desc: "Relation d'adhésion d'une organisation à une communauté thématique, un programme régional, un cluster ou un consortium R&D, dotée d'un rôle (ex: Membre, Coordinateur)." },
+    { name: "Communauté", desc: "Cercle d'animation thématique sectoriel ou technologique (ex: IA Santé, Construction durable) piloté par un pôle de compétitivité." },
+    { name: "Service", desc: "Offre standardisée de prestation d'accompagnement ou de financement, modélisée selon la spécification européenne CPSV-AP." },
+    { name: "Parcours", desc: "Suite séquentielle logique d'étapes (Journeys) combinant plusieurs services publics pour guider le bénéficiaire dans sa transition." },
+    { name: "ServiceDelivery", desc: "Réalisation effective d'une prestation de service individuel ou collectif pour le compte d'un bénéficiaire à une date donnée." },
+    { name: "Evidence (Justificatif / Preuve)", desc: "Pièce justificative physique (ex: PDF d'audit, contrat, livrable) attestant de la livraison d'un service (Preuve métier) ou démontrant l'atteinte d'un résultat d'impact (Preuve d'impact)." },
+    { name: "Outcome", desc: "Résultat qualifié ou effet mesurable induit par un service d'accompagnement ou un projet R&D (ex: +2 en maturité cybersécurité)." },
+    { name: "Dataset", desc: "Actif ou catalogue de données territoriales référencé au standard DCAT-AP pour l'échange inter-plateformes." },
+    { name: "SourceSystem", desc: "Système informatique source de référence (ex: Banque-Carrefour des Entreprises, CRM Wallonie Entreprendre) conférant l'autorité de données." }
   ];
 
   const current = steps[activeStep - 1];
@@ -157,133 +179,275 @@ export default function GuidePage() {
 
   return (
     <PITLayout
-      category="METHODOLOGIE"
-      title="Guide d'Utilisation Interactif"
-      description="Suivez les 8 étapes clés de la méthodologie PIT Wallonie pour structurer le pilotage territorial, aligner vos aides publiques et mesurer l'impact réel."
-      pageIcon={Compass}
-      breadcrumb={[{ label: "Guide interactif" }]}
+      category="GOUVERNANCE"
+      title="Documentation Fonctionnelle & Méthodologie"
+      description="Référentiel fonctionnel de la PIT Wallonie : périmètre opérationnel, glossaire du modèle métier sémantisé et guide de mise en œuvre territoriale."
+      pageIcon={BookOpen}
+      breadcrumb={[{ label: "Documentation" }]}
+      actions={
+        <div className="flex bg-glass/25 p-1 rounded-xl border border-muted/15 gap-1 shrink-0">
+          {[
+            { id: "scope", label: "Périmètre Projet", icon: Info },
+            { id: "glossary", label: "Modèle Métier", icon: FileText },
+            { id: "methodology", label: "Méthodologie", icon: Compass }
+          ].map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer border-0 bg-transparent ${
+                  activeTab === t.id 
+                    ? "bg-teal-500 text-white font-extrabold" 
+                    : "text-muted hover:text-text"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      }
     >
-
-      {/* PROGRESS BAR */}
-      <div className="bg-glass border border-muted/20 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-4">
-        <span className="text-xs font-black text-muted uppercase tracking-wider shrink-0">
-          Progression : Étape {activeStep} sur 8
-        </span>
-        <div className="flex-1 h-2 bg-muted/10 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-teal-500 to-amber-500 transition-all duration-300" 
-            style={{ width: `${(activeStep / 8) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* STEPPER GRID SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left Side: Step selector */}
-        <div className="lg:col-span-1 bg-glass border border-muted/20 rounded-2xl p-4 shadow-sm space-y-2">
-          <h3 className="text-xs font-black uppercase text-muted tracking-wider border-b border-muted/10 pb-2 mb-2">
-            Étapes de la Méthodologie
-          </h3>
-          <div className="space-y-1.5">
-            {steps.map((s) => {
-              const isPassed = activeStep > s.id;
-              const isActive = activeStep === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveStep(s.id)}
-                  className={cn(
-                    "w-full flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-all text-xs font-bold",
-                    isActive 
-                      ? "bg-primary/10 border-primary/40 text-primary shadow-xs" 
-                      : "bg-transparent border-transparent hover:bg-glass/50 text-text/80"
-                  )}
-                >
-                  <span className="truncate">{s.title}</span>
-                  {isPassed ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted/40 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Side: Step details cockpit */}
-        <div className="lg:col-span-2 bg-glass border border-muted/20 rounded-2xl p-6 shadow-sm space-y-6 relative overflow-hidden">
-          {/* Backdrop HSL glow */}
-          <div className="absolute top-0 right-0 w-36 h-36 bg-primary opacity-[0.03] blur-3xl rounded-full" />
-          
-          <div className="flex items-center gap-3 border-b border-muted/10 pb-4">
-            <div className={cn("p-3 rounded-xl shrink-0", current.color)}>
-              <StepIcon className="h-6 w-6" />
+      <div className="space-y-6">
+        
+        {/* TAB 1: SCOPE */}
+        {activeTab === "scope" && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-surface border border-muted/20 bg-glass/20 space-y-4">
+              <h3 className="text-sm font-extrabold text-text uppercase tracking-wider border-b border-muted/10 pb-3 flex items-center gap-2">
+                <Info className="h-5 w-5 text-teal-655" />
+                Périmètre Opérationnel de la Plateforme (vNext Framework)
+              </h3>
+              <p className="text-xs text-text leading-relaxed font-medium">
+                La version actuelle de la PIT constitue un socle de back-office territorial sémantisé permettant de structurer des acteurs, services, communautés, projets, chaînes de valeur, justificatifs et données. La cible vNext est de faire évoluer ce socle vers un Territorial Knowledge Graph interopérable, exposable en JSON-LD, DCAT-AP et NGSI-LD, et exploitable par des vues métier spécialisées.
+              </p>
             </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-muted">{current.subtitle}</span>
-              <h2 className="text-lg font-black text-text mt-0.5">{current.title}</h2>
-            </div>
-          </div>
 
-          <div className="space-y-4 text-xs">
-            <p className="text-text leading-relaxed font-semibold">
-              {current.description}
-            </p>
-
-            <div className="bg-glass/20 border border-muted/10 rounded-xl p-4 space-y-2.5">
-              <h4 className="font-extrabold text-muted text-[10px] uppercase tracking-wider">
-                Livrables et actions attendues :
-              </h4>
-              <ul className="space-y-2 pl-1.5">
-                {current.details.map((detail, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-text/90 font-medium">
-                    <CheckCircle2 className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                    <span>{detail}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Production */}
+              <div className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Disponible en Production</h4>
+                  <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-500/20">Production</span>
+                </div>
+                <ul className="space-y-2 text-xs text-emerald-900/90 font-medium">
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Bénéficiaires 360</strong> : Fiches unifiées avec typologie administrative et synchro BCE.</span>
                   </li>
-                ))}
-              </ul>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Catalogue CPSV</strong> : Indexation conforme CPSV-AP v3.0 avec grille de coûts.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Gestion d'Écosystème</strong> : Suivi des communautés, acteurs territoriaux et consortiums.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Défis d'Écosystème</strong> : Formulaires de qualification et de liaison sémantique.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Demonstrator */}
+              <div className="p-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black text-indigo-700 uppercase tracking-wider">Disponible en Démonstrateur</h4>
+                  <span className="text-[9px] font-black uppercase bg-indigo-500/10 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-500/20">Prototype</span>
+                </div>
+                <ul className="space-y-2 text-xs text-indigo-900/90 font-medium">
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <span><strong>Moteur de Matchmaking</strong> : Suggestions de services selon les scores de maturité DMAT.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <span><strong>Visualisation Graphe</strong> : Graph Explorer interactif (forces) et diagrammes locaux.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <span><strong>Mode Histoire</strong> : Scénarios métiers de démo pré-seédés (EDIH, BioWin, etc.).</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* target vNext */}
+              <div className="p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black text-amber-700 uppercase tracking-wider">Prévu en cible vNext</h4>
+                  <span className="text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20">Cible vNext</span>
+                </div>
+                <ul className="space-y-2 text-xs text-amber-900/90 font-medium">
+                  <li className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <span><strong>Exports standards</strong> : Traduction automatique du graphe en RDF/XML, JSON-LD et NGSI-LD.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <span><strong>RAG & Agents IA</strong> : Requêtage conversationnel s'appuyant sur l'ontologie.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <span><strong>Data Marketplace</strong> : Partage de données décentralisé via DCAT-AP.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Out of scope */}
+              <div className="p-5 rounded-2xl border border-gray-400/20 bg-gray-500/5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black text-gray-700 uppercase tracking-wider">Hors périmètre actuel</h4>
+                  <span className="text-[9px] font-black uppercase bg-gray-500/10 text-gray-600 px-2 py-0.5 rounded-full border border-gray-500/20">Exclu</span>
+                </div>
+                <ul className="space-y-2 text-xs text-gray-800/90 font-medium">
+                  <li className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-1.5 shrink-0" />
+                    <span><strong>CRM commercial classique</strong> : Prospection, facturation et vente commerciale privée.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-1.5 shrink-0" />
+                    <span><strong>Facturation & Comptabilité</strong> : Outils de transaction financière, comptabilité interne et taxes.</span>
+                  </li>
+                </ul>
+              </div>
+
             </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-muted/10">
-            <div className="flex items-center gap-2">
-              <button
-                disabled={activeStep === 1}
-                onClick={() => setActiveStep(prev => prev - 1)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 border border-muted/30 hover:bg-glass text-xs font-bold text-text rounded-lg disabled:opacity-50 cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" /> Précédent
-              </button>
-              <button
-                disabled={activeStep === 8}
-                onClick={() => setActiveStep(prev => prev + 1)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 border border-muted/30 hover:bg-glass text-xs font-bold text-text rounded-lg disabled:opacity-50 cursor-pointer"
-              >
-                Suivant <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {current.extraCtas?.map((btn, idx) => (
-                <Link
-                  key={idx}
-                  href={btn.href}
-                  className="inline-flex items-center px-3 py-1.5 text-xs font-extrabold bg-glass border border-muted/30 hover:border-primary/50 text-text rounded-lg transition-colors cursor-pointer"
-                >
-                  {btn.label}
-                </Link>
+        {/* TAB 2: GLOSSARY */}
+        {activeTab === "glossary" && (
+          <div className="bg-glass border border-muted/20 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="text-sm font-extrabold text-text uppercase tracking-wider border-b border-muted/10 pb-3 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-teal-655" />
+              Glossaire du Modèle Métier Sémantique
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {glossaryItems.map((item, index) => (
+                <div key={index} className="p-3.5 bg-glass/25 border border-muted/10 rounded-xl space-y-1">
+                  <h4 className="text-xs font-black text-teal-605">{item.name}</h4>
+                  <p className="text-[11px] text-muted font-semibold leading-relaxed">{item.desc}</p>
+                </div>
               ))}
-              <Link 
-                href={current.href}
-                className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-black text-white bg-primary hover:bg-primary/90 rounded-lg shadow-md shadow-primary/10 transition-colors cursor-pointer"
-              >
-                {current.cta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* TAB 3: METHODOLOGY */}
+        {activeTab === "methodology" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fade-in">
+            {/* Left Side: Step selector */}
+            <div className="lg:col-span-1 bg-glass border border-muted/20 rounded-2xl p-4 shadow-sm space-y-2">
+              <h3 className="text-xs font-black uppercase text-muted tracking-wider border-b border-muted/10 pb-2 mb-2">
+                Étapes de la Méthodologie
+              </h3>
+              <div className="space-y-1.5">
+                {steps.map((s) => {
+                  const isPassed = activeStep > s.id;
+                  const isActive = activeStep === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setActiveStep(s.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-all text-xs font-bold",
+                        isActive 
+                          ? "bg-primary/10 border-primary/40 text-primary shadow-xs" 
+                          : "bg-transparent border-transparent hover:bg-glass/50 text-text/80"
+                      )}
+                    >
+                      <span className="truncate">{s.title}</span>
+                      {isPassed ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted/40 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Side: Step details cockpit */}
+            <div className="lg:col-span-2 bg-glass border border-muted/20 rounded-2xl p-6 shadow-sm space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-primary opacity-[0.03] blur-3xl rounded-full" />
+              
+              <div className="flex items-center gap-3 border-b border-muted/10 pb-4">
+                <div className={cn("p-3 rounded-xl shrink-0", current.color)}>
+                  <StepIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">{current.subtitle}</span>
+                  <h2 className="text-lg font-black text-text mt-0.5">{current.title}</h2>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <p className="text-text leading-relaxed font-semibold">
+                  {current.description}
+                </p>
+
+                <div className="bg-glass/20 border border-muted/10 rounded-xl p-4 space-y-2.5">
+                  <h4 className="font-extrabold text-muted text-[10px] uppercase tracking-wider">
+                    Livrables et actions attendues :
+                  </h4>
+                  <ul className="space-y-2 pl-1.5">
+                    {current.details.map((detail, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-text/90 font-medium">
+                        <CheckCircle2 className="h-4 w-4 text-teal-605 shrink-0 mt-0.5" />
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-muted/10">
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={activeStep === 1}
+                    onClick={() => setActiveStep(prev => prev - 1)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-muted/30 hover:bg-glass text-xs font-bold text-text rounded-lg disabled:opacity-50 cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Précédent
+                  </button>
+                  <button
+                    disabled={activeStep === 8}
+                    onClick={() => setActiveStep(prev => prev + 1)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-muted/30 hover:bg-glass text-xs font-bold text-text rounded-lg disabled:opacity-50 cursor-pointer"
+                  >
+                    Suivant <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {current.extraCtas?.map((btn, idx) => (
+                    <Link
+                      key={idx}
+                      href={btn.href}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-extrabold bg-glass border border-muted/30 hover:border-primary/50 text-text rounded-lg transition-colors cursor-pointer"
+                    >
+                      {btn.label}
+                    </Link>
+                  ))}
+                  <Link 
+                    href={current.href}
+                    className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-black text-white bg-primary hover:bg-primary/90 rounded-lg shadow-md shadow-primary/10 transition-colors cursor-pointer"
+                  >
+                    {current.cta}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </PITLayout>
   );

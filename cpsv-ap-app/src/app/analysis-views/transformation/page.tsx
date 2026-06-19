@@ -25,7 +25,7 @@ export default function TransformationPerspectivePlaceholderPage() {
           </p>
         </div>
         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400 max-w-md leading-relaxed">
-          🚧 <strong>Module en cours de maturation</strong> : Le contenu détaillé et interactif de cette vue analytique sera construit et connecté lors d'une prochaine étape de développement.
+          🚧 Le contenu détaillé de cette vue sera construit dans une prochaine étape.
         </div>
         <Link 
           href="/analysis-views"

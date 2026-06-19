@@ -34,7 +34,7 @@ const cards: PerspectiveCard[] = [
     iconColorClass: "text-teal-600 dark:text-teal-400 bg-teal-500/10"
   },
   {
-    title: "Perspective stratégique",
+    title: "Stratégie & impacts",
     description: "Analyser les objectifs, priorités, programmes, KPI, outcomes et contributions aux stratégies régionales.",
     href: "/strategic",
     icon: Target,
@@ -43,7 +43,7 @@ const cards: PerspectiveCard[] = [
     iconColorClass: "text-amber-600 dark:text-amber-400 bg-amber-500/10"
   },
   {
-    title: "Perspective opérationnelle",
+    title: "Opérations & suivi",
     description: "Suivre les activités, diagnostics, missions, services délivrés, financements, projets et preuves à valider.",
     href: "/analysis-views/operational",
     icon: Activity,
@@ -52,7 +52,7 @@ const cards: PerspectiveCard[] = [
     iconColorClass: "text-rose-600 dark:text-rose-400 bg-rose-500/10"
   },
   {
-    title: "Perspective territoriale",
+    title: "Territoire & écosystèmes",
     description: "Explorer la répartition territoriale des acteurs, communautés, filières, chaînes de valeur et dynamiques locales.",
     href: "/territories",
     icon: Globe,
@@ -61,7 +61,7 @@ const cards: PerspectiveCard[] = [
     iconColorClass: "text-blue-600 dark:text-blue-400 bg-blue-500/10"
   },
   {
-    title: "Perspective data",
+    title: "Données & interopérabilité",
     description: "Analyser les datasets, demandes de données, accords, qualité, interopérabilité, API, DCAT-AP et NGSI-LD.",
     href: "/interoperability",
     icon: Database,
@@ -70,7 +70,7 @@ const cards: PerspectiveCard[] = [
     iconColorClass: "text-purple-600 dark:text-purple-400 bg-purple-500/10"
   },
   {
-    title: "Perspective transformation",
+    title: "Parcours & transformation",
     description: "Suivre les parcours des bénéficiaires, leur maturité, les services consommés, les recommandations et la progression.",
     href: "/analysis-views/transformation",
     icon: Zap,

@@ -124,9 +124,9 @@ export default function AnimationPage() {
           </div>
         </div>
 
-        {/* Side-by-side: Audit Preuves & Recent Activities */}
+        {/* Side-by-side: Justificatifs & Preuves d’Impact & Recent Activities */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Audit Preuves */}
+          {/* Justificatifs & Preuves d’Impact */}
           <div className="lg:col-span-2 rounded-2xl bg-surface border border-muted/20 bg-glass/20 p-6 flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b border-muted/10 pb-4">
               <h3 className="font-extrabold text-text flex items-center gap-2 text-sm uppercase text-muted tracking-wider">

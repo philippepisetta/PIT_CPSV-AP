@@ -32,7 +32,7 @@ Ce script guide le présentateur de la PIT pour réaliser une démonstration imp
 ### Minute 8 - 11 : Étape 3 – La Mesure d'Impact & l'Audit des Preuves (Perspective Animateur)
 - **Objectif** : Prouver que la PIT ne contient pas de « déclaratif », mais uniquement de la donnée prouvée.
 - **Action** :
-  1. Toujours sur l'espace Animateur, ouvrez l'écran **Audit Preuves** (`/evidences` ou sur le dashboard principal).
+  1. Toujours sur l'espace Animateur, ouvrez l'écran **Justificatifs & preuves d’impact** (`/evidences` ou sur le dashboard principal).
   2. Présentez la liste des justificatifs soumis : montrez la ligne « Rapport de validation clinique CHU Liège » avec le statut orange `PENDING`.
   3. Expliquez : « C'est ici que l'animateur du pôle audite le document officiel. » Cliquez sur **Valider**.
   4. Le statut passe à vert `APPROVED`. Expliquez que cette validation va propager instantanément les indicateurs d'impact vers le cockpit du décideur.

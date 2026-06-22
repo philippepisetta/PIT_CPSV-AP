@@ -272,6 +272,10 @@ export default function GuidePage() {
                     <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                     <span><strong>Mode Histoire</strong> : Scénarios métiers de démo pré-seedés (EDIH, BioWin, etc.).</span>
                   </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <span><strong>Résilience & Cabinet</strong> : Simulation de chocs (Crise Énergétique x3), radar OCDE 6 axes, conséquences et aides d'urgence.</span>
+                  </li>
                 </ul>
               </div>
 
@@ -285,7 +289,7 @@ export default function GuidePage() {
                   <ul className="space-y-2">
                     <li className="flex items-start gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                      <span><strong>Résilience territoriale</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Prototype</span> : Vue d’analyse de la vulnérabilité et de la capacité de rebond.</span>
+                      <span><strong>Résilience industrialisée</strong> <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1 rounded">Cible vNext</span> : Intégration de l'ensemble des scénarios de crise et scoring automatique de vulnérabilité.</span>
                     </li>
                     <li className="flex items-start gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />

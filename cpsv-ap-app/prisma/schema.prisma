@@ -2457,6 +2457,11 @@ model RiskRegister {
   validTo     DateTime?
   uri         String?  @unique
 
+  // Soft Delete
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  deletedBy   String?
+
   risks       Risk[]
 
   createdAt   DateTime @default(now())
@@ -2476,6 +2481,11 @@ model Risk {
   likelihood  Int     @default(3) // 1-5
   riskScore   Int     @default(9) // severity x likelihood
   uri         String? @unique
+
+  // Soft Delete
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  deletedBy   String?
 
   riskRegisterId Int?
   riskRegister   RiskRegister? @relation(fields: [riskRegisterId], references: [id], onDelete: SetNull)
@@ -2545,6 +2555,11 @@ model Scenario {
   severity    String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
   uri         String? @unique
 
+  // Soft Delete
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  deletedBy   String?
+
   riskId Int
   risk   Risk @relation("RiskScenarios", fields: [riskId], references: [id], onDelete: Cascade)
 
@@ -2570,6 +2585,11 @@ model RiskAssessment {
   overallScore   Int?    // 0-10
   notes          String? @db.Text
   assessedAt     DateTime @default(now())
+
+  // Soft Delete
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  deletedBy   String?
 
   scenarioId     Int
   scenario       Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
@@ -2609,6 +2629,15 @@ model ResilienceProfile {
   methodology        String?
   notes              String?  @db.Text
   assessedAt         DateTime @default(now())
+
+  // Future-proofing
+  calculationMethod  String?  @default("OECD_BASIC")
+  calculationVersion String?  @default("1.0")
+
+  // Soft Delete
+  isActive           Boolean   @default(true)
+  deletedAt          DateTime?
+  deletedBy          String?
 
   organizationId Int?      @unique
   organization   Organization? @relation("OrgResilienceProfile", fields: [organizationId], references: [id], onDelete: Cascade)
@@ -3525,3 +3554,20 @@ model ChallengeObjective {
 // ALTER TABLE journey_templates ADD COLUMN IF NOT EXISTS code TEXT UNIQUE;
 // ALTER TABLE journey_templates ADD COLUMN IF NOT EXISTS challenge_type TEXT;
 
+
+
+// ==========================================
+// PIT vNext — Audit Logs for Resilience Domain
+// ==========================================
+model ResilienceAuditLog {
+  id           Int      @id @default(autoincrement())
+  entityType   String   // e.g. "Risk", "ResilienceProfile"
+  entityId     Int
+  action       String   // e.g. "CREATE", "UPDATE", "DELETE", "RESTORE"
+  userId       String?
+  timestamp    DateTime @default(now())
+  beforeValue  Json?
+  afterValue   Json?
+
+  @@map("resilience_audit_logs")
+}

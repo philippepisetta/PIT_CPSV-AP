@@ -45,6 +45,24 @@ model Organization {
 
   member Member?
 
+  // vNext back-references
+  risks                Risk[]                   @relation("OrganizationRisks")
+  riskAssessments      RiskAssessment[]         @relation("OrgRiskAssessments")
+  resilienceProfile    ResilienceProfile?       @relation("OrgResilienceProfile")
+  resilienceImpacts    ResilienceImpact[]       @relation("OrgResilienceImpacts")
+  impactAssessments    ImpactAssessment[]       @relation("OrgImpactAssessments")
+  dependencies         Dependency[]             @relation("OrgDependencies")
+  vulnerabilities      Vulnerability[]          @relation("OrgVulnerabilities")
+  indicators           TerritorialIndicator[]   @relation("OrgIndicators")
+  observations         TerritorialObservation[] @relation("OrgObservations")
+  assets               TerritorialAsset[]       @relation("OrgAssets")
+  capacities           OrganizationalCapacity[] @relation("OrgCapacities")
+  dataSources          PitDataSource[]          @relation("OrgDataSources")
+  recommendations      PitRecommendation[]      @relation("OrgRecommendations")
+  supplierLinks        SupplyChainLink[]        @relation("SupplierLinks")
+  buyerLinks           SupplyChainLink[]        @relation("BuyerLinks")
+  eventImpacts         TerritorialEventImpact[] @relation("OrgEventImpacts")
+
   @@map("organizations")
 }
 
@@ -113,6 +131,12 @@ model PublicService {
   memberServices     MemberService[]
   valueChainSegments ValueChainSegment[]
   ecosystemChallenges EcosystemChallenge[]
+
+  // vNext back-references
+  policyMeasures    PolicyMeasure[]          @relation("PolicyMeasureServices")
+  resilienceMeasures ResilienceMeasure[]     @relation("ResilienceServiceMeasures")
+  observations      TerritorialObservation[] @relation("ServiceObservations")
+  recommendations   PitRecommendation[]      @relation("ServiceRecommendations")
 
   @@index([organizationId])
   @@map("public_services")
@@ -577,6 +601,16 @@ model Ecosystem {
   capabilities             CapabilityDimension[]      @relation("EcosystemCapabilities")
   impacts                  ImpactDimension[]          @relation("EcosystemImpacts")
 
+  // vNext back-references
+  risks                Risk[]                   @relation("EcosystemRisks")
+  resilienceProfile    ResilienceProfile?       @relation("EcosystemResilienceProfile")
+  resilienceImpacts    ResilienceImpact[]       @relation("EcosystemResilienceImpacts")
+  indicators           TerritorialIndicator[]   @relation("EcosystemIndicators")
+  observations         TerritorialObservation[] @relation("EcosystemObservations")
+  assets               TerritorialAsset[]       @relation("EcosystemAssets")
+  capacities           OrganizationalCapacity[] @relation("EcosystemCapacities")
+  territorialChallenges TerritorialChallenge[]  @relation("EcosystemChallenges2")
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   Filiere   Filiere[]
@@ -588,6 +622,9 @@ model Ecosystem {
 model Journey {
   id             Int      @id @default(autoincrement())
   uri            String?  @unique
+  // R4 — Raffinement vNext
+  code           String?  @unique
+  journeyStatus  String?  @default("ACTIVE") // TEMPLATE|ACTIVE|DEPRECATED
   name           String
   provider       String
   objective      String?  @db.Text
@@ -610,6 +647,11 @@ model Journey {
   transformationDimensions TransformationDimension[]  @relation("JourneyTransformations")
   strategicDomains         StrategicDomainDimension[] @relation("JourneyStrategicDomains")
 
+  // vNext back-references
+  policyMeasures        PolicyMeasure[]       @relation("PolicyMeasureJourneys")
+  recommendations       PitRecommendation[]   @relation("RecommendationJourneys")
+  territorialChallenges TerritorialChallenge[] @relation("ChallengeJourneys")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -621,6 +663,9 @@ model JourneyStage {
   id                 Int                 @id @default(autoincrement())
   name               String // ex: Sensibilisation, Diagnostic, Financement...
   position           Int
+  // R4 — Raffinement vNext
+  stepType           String?  // DIAGNOSTIC|ORIENTATION|SUPPORT|EVALUATION|MONITORING
+  expectedOutcome    String?  @db.Text
   journeyId          Int?
   journey            Journey?            @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   services           PublicService[]     @relation("StageServices")
@@ -988,6 +1033,10 @@ model Territory {
   name        String
   type        TerritoryType // Enum type
   description String?       @db.Text
+  // R1 — Raffinement géospatial & hiérarchie vNext
+  level       String?       // SUPRANATIONAL|REGION|PROVINCE|ARRONDISSEMENT|MUNICIPALITY
+  geometry    Json?         // GeoJSON polygon
+  centroid    Json?         // GeoJSON point {lat, lng}
 
   parentTerritoryId Int?
   parentTerritory   Territory?  @relation("TerritoryHierarchy", fields: [parentTerritoryId], references: [id], onDelete: SetNull)
@@ -999,6 +1048,22 @@ model Territory {
   ecosystems    Ecosystem[]             @relation("EcosystemTerritories")
   engagements   BeneficiaryEngagement[]
   impacts       Impact[]
+
+  // vNext back-references
+  risks                Risk[]                   @relation("TerritoryRisks")
+  riskAssessments      RiskAssessment[]         @relation("TerritoryRiskAssessments")
+  resilienceProfile    ResilienceProfile?       @relation("TerritoryResilienceProfile")
+  resilienceImpacts    ResilienceImpact[]       @relation("TerritoryResilienceImpacts")
+  impactAssessments    ImpactAssessment[]       @relation("TerritoryImpactAssessments")
+  indicators           TerritorialIndicator[]   @relation("TerritoryIndicators")
+  observations         TerritorialObservation[] @relation("TerritoryObservations")
+  assets               TerritorialAsset[]       @relation("TerritoryAssets")
+  capacities           OrganizationalCapacity[] @relation("TerritoryCapacities")
+  recommendations      PitRecommendation[]      @relation("TerritoryRecommendations")
+  criticalInfras       CriticalInfrastructure[] @relation("TerritoryInfras")
+  territorialEvents    TerritorialEvent[]       @relation("TerritoryEvents")
+  eventImpacts         TerritorialEventImpact[] @relation("TerritoryEventImpacts")
+  challenges           TerritorialChallenge[]   @relation("TerritoryChallenges")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1161,6 +1226,10 @@ model Program {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ecosystemChallenges EcosystemChallenge[]
+
+  // vNext back-references
+  policyMeasures PolicyMeasure[]          @relation("PolicyMeasurePrograms")
+  observations   TerritorialObservation[] @relation("ProgramObservations")
 
   @@map("programs")
 }
@@ -1784,6 +1853,15 @@ model ValueChain {
   ecosystemChallenges EcosystemChallenge[]
   fundingCalls        FundingCall[]
 
+  // vNext back-references
+  risks            Risk[]                   @relation("ValueChainRisks")
+  dependencies     Dependency[]             @relation("ValueChainDependencies")
+  indicators       TerritorialIndicator[]   @relation("ValueChainIndicators")
+  observations     TerritorialObservation[] @relation("ValueChainObservations")
+  criticalMaterials CriticalMaterial[]      @relation("ValueChainMaterials")
+  criticalResources CriticalResource[]      @relation("ValueChainResources")
+  supplyChainLinks  SupplyChainLink[]       @relation("ValueChainLinks")
+
   @@map("value_chains")
 }
 
@@ -2036,6 +2114,14 @@ model Filiere {
   ecosystemChallenges EcosystemChallenge[]
   fundingCalls        FundingCall[]
 
+  // vNext back-references
+  risks           Risk[]                   @relation("FiliereRisks")
+  dependencies    Dependency[]             @relation("FiliereDependencies")
+  vulnerabilities Vulnerability[]          @relation("FiliereVulnerabilities")
+  indicators      TerritorialIndicator[]   @relation("FiliereIndicators")
+  observations    TerritorialObservation[] @relation("FiliereObservations")
+  challenges      TerritorialChallenge[]   @relation("FiliereChallenges")
+
   @@map("filieres")
 }
 
@@ -2064,13 +2150,16 @@ model ValueChainSegment {
 // --- Journey Framework ---
 
 model JourneyTemplate {
-  id          Int               @id @default(autoincrement())
-  name        String
-  description String?           @db.Text
-  stages      JourneyStage[]
-  instances   JourneyInstance[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id            Int               @id @default(autoincrement())
+  name          String
+  description   String?           @db.Text
+  // R4 — Raffinement vNext
+  code          String?           @unique
+  challengeType String?           // DIGITAL|CIRCULAR|ENERGY|EXPORT|INDUSTRIAL|RESILIENCE
+  stages        JourneyStage[]
+  instances     JourneyInstance[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@map("journey_templates")
 }
@@ -2346,3 +2435,1093 @@ model EcosystemChallenge {
 
   @@map("ecosystem_challenges")
 }
+
+// ==========================================
+// PIT vNext — ARCHITECTURAL REFINEMENTS (R1-R5)
+// Applied inline below via model extensions
+// ==========================================
+
+// ==========================================
+// PIT vNext — DOMAIN 8: RISK MANAGEMENT
+// Aligned: CORTEX / BNRA / OCDE
+// ==========================================
+
+model RiskRegister {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  version     String?  @default("1.0")
+  status      String   @default("ACTIVE") // ACTIVE, ARCHIVED, DRAFT
+  campaignCode String?
+  validFrom   DateTime?
+  validTo     DateTime?
+  uri         String?  @unique
+
+  risks       Risk[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("risk_registers")
+}
+
+model Risk {
+  id          Int     @id @default(autoincrement())
+  code        String? @unique
+  name        String
+  description String? @db.Text
+  category    String  // NATURAL|ECONOMIC|HEALTH|CYBER|INFRASTRUCTURE|SOCIAL|POLITICAL
+  subcategory String?
+  severity    Int     @default(3) // 1-5
+  likelihood  Int     @default(3) // 1-5
+  riskScore   Int     @default(9) // severity x likelihood
+  uri         String? @unique
+
+  riskRegisterId Int?
+  riskRegister   RiskRegister? @relation(fields: [riskRegisterId], references: [id], onDelete: SetNull)
+
+  threats          Threat[]
+  hazards          Hazard[]
+  scenarios        Scenario[]       @relation("RiskScenarios")
+  riskAssessments  RiskAssessment[] @relation("RiskAssessments")
+  indicators       TerritorialIndicator[] @relation("RiskIndicators")
+  observations     TerritorialObservation[] @relation("RiskObservations")
+  territorialEvents TerritorialEvent[] @relation("EventRisks")
+
+  // Relations transversales
+  organizations        Organization[]    @relation("OrganizationRisks")
+  territories          Territory[]       @relation("TerritoryRisks")
+  filieres             Filiere[]         @relation("FiliereRisks")
+  valueChains          ValueChain[]      @relation("ValueChainRisks")
+  ecosystems           Ecosystem[]       @relation("EcosystemRisks")
+  assets               TerritorialAsset[] @relation("AssetRisks")
+  territorialChallenges TerritorialChallenge[] @relation("ChallengeRisks")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("risks")
+}
+
+model Threat {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  threatType  String  // INTENTIONAL|ACCIDENTAL|NATURAL
+  uri         String? @unique
+
+  riskId Int
+  risk   Risk @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("threats")
+}
+
+model Hazard {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  hazardType  String  // FLOOD|DROUGHT|STORM|SEISM|HEAT|COLD|EPIDEMIC|WILDFIRE|LANDSLIDE
+  source      String? // BNRA|OCDE|LOCAL
+  uri         String? @unique
+
+  riskId Int
+  risk   Risk @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("hazards")
+}
+
+model Scenario {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  horizon     String  @default("MEDIUM") // SHORT|MEDIUM|LONG
+  probability Float?  // 0-1
+  severity    String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  uri         String? @unique
+
+  riskId Int
+  risk   Risk @relation("RiskScenarios", fields: [riskId], references: [id], onDelete: Cascade)
+
+  riskAssessments  RiskAssessment[]
+  impactRules      ImpactRule[]
+  impactAssessments ImpactAssessment[]
+  resilienceImpacts ResilienceImpact[]
+  territorialEvents TerritorialEvent[] @relation("EventScenarios")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("scenarios")
+}
+
+model RiskAssessment {
+  id             Int     @id @default(autoincrement())
+  assessmentType String  @default("LOCAL") // CORTEX|BNRA|LOCAL|OCDE
+  methodology    String?
+  exposureScore  Int?    // 0-10
+  vulnerabilityScore Int? // 0-10
+  consequenceScore Int?  // 0-10
+  overallScore   Int?    // 0-10
+  notes          String? @db.Text
+  assessedAt     DateTime @default(now())
+
+  scenarioId     Int
+  scenario       Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  organizationId Int?
+  organization   Organization? @relation("OrgRiskAssessments", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId    Int?
+  territory      Territory? @relation("TerritoryRiskAssessments", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  policyEvidences PolicyEvidence[] @relation("RiskAssessmentEvidences")
+
+  riskId         Int?
+  risk           Risk? @relation("RiskAssessments", fields: [riskId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("risk_assessments")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 9: RESILIENCE
+// Aligned: OCDE 7 dimensions / CORTEX / BNRA
+// ==========================================
+
+model ResilienceProfile {
+  id                 Int      @id @default(autoincrement())
+  // OCDE 7 dimensions (0-10)
+  exposure           Float    @default(5)
+  sensitivity        Float    @default(5)
+  vulnerability      Float    @default(5) // calculé: f(exposure, sensitivity)
+  absorptionCapacity Float    @default(5)
+  adaptiveCapacity   Float    @default(5)
+  recoveryCapacity   Float    @default(5)
+  overallResilience  Float    @default(5)
+  methodology        String?
+  notes              String?  @db.Text
+  assessedAt         DateTime @default(now())
+
+  organizationId Int?      @unique
+  organization   Organization? @relation("OrgResilienceProfile", fields: [organizationId], references: [id], onDelete: Cascade)
+
+  territoryId    Int?      @unique
+  territory      Territory? @relation("TerritoryResilienceProfile", fields: [territoryId], references: [id], onDelete: Cascade)
+
+  ecosystemId    Int?      @unique
+  ecosystem      Ecosystem? @relation("EcosystemResilienceProfile", fields: [ecosystemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resilience_profiles")
+}
+
+model Dependency {
+  id                 Int     @id @default(autoincrement())
+  name               String
+  description        String? @db.Text
+  category           String  // ENERGY|SUPPLY|LOGISTICS|DIGITAL|HUMAN|FINANCIAL|WATER|TRANSPORT
+  criticalLevel      String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  substitutability   String  @default("POSSIBLE") // EASY|POSSIBLE|DIFFICULT|IMPOSSIBLE
+  uri                String? @unique
+
+  criticalInfrastructureId Int?
+  criticalInfrastructure   CriticalInfrastructure? @relation(fields: [criticalInfrastructureId], references: [id], onDelete: SetNull)
+
+  organizations Organization[] @relation("OrgDependencies")
+  filieres      Filiere[]      @relation("FiliereDependencies")
+  valueChains   ValueChain[]   @relation("ValueChainDependencies")
+  assets        TerritorialAsset[] @relation("AssetDependencies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("dependencies")
+}
+
+model CriticalInfrastructure {
+  id              Int     @id @default(autoincrement())
+  name            String
+  description     String? @db.Text
+  type            String  // ENERGY|TRANSPORT|WATER|DIGITAL|HEALTH|FOOD|FINANCE
+  operator        String?
+  territory       String?
+  isCrossBorder   Boolean @default(false)
+  uri             String? @unique
+
+  dependencies    Dependency[]
+  territories     Territory[] @relation("TerritoryInfras")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("critical_infrastructures")
+}
+
+model Vulnerability {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  category    String  // ENERGY|SUPPLY|FINANCIAL|HUMAN|DIGITAL|ENVIRONMENTAL|GEOGRAPHIC
+  severity    String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  indicator   String? // Indicateur mesurable associé
+
+  organizations Organization[] @relation("OrgVulnerabilities")
+  filieres      Filiere[]      @relation("FiliereVulnerabilities")
+  assets        TerritorialAsset[] @relation("AssetVulnerabilities")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vulnerabilities")
+}
+
+model ResilienceImpact {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  category    String  // ECONOMIC|OPERATIONAL|EMPLOYMENT|TERRITORIAL|ENVIRONMENTAL|SOCIAL|GOVERNANCE
+  magnitude   Float?
+  unit        String?
+  timeHorizon String  @default("SHORT") // IMMEDIATE|SHORT|MEDIUM|LONG
+
+  scenarioId     Int?
+  scenario       Scenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+
+  organizationId Int?
+  organization   Organization? @relation("OrgResilienceImpacts", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId    Int?
+  territory      Territory? @relation("TerritoryResilienceImpacts", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  ecosystemId    Int?
+  ecosystem      Ecosystem? @relation("EcosystemResilienceImpacts", fields: [ecosystemId], references: [id], onDelete: SetNull)
+
+  resilienceMeasures ResilienceMeasure[] @relation("ImpactMeasures")
+  recommendations    PitRecommendation[] @relation("ImpactRecommendations")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resilience_impacts")
+}
+
+model ResilienceMeasure {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String? @db.Text
+  measureType    String  // PREVENTION|PROTECTION|RESPONSE|RECOVERY
+  targetDimension String // EXPOSURE|VULNERABILITY|ABSORPTION|ADAPTATION|RECOVERY
+  status         String  @default("PLANNED") // PLANNED|ACTIVE|COMPLETED
+  uri            String? @unique
+
+  resilienceImpacts ResilienceImpact[] @relation("ImpactMeasures")
+  lessonsLearned    LessonLearned[]    @relation("LessonMeasures")
+
+  publicServiceId Int?
+  publicService   PublicService? @relation("ResilienceServiceMeasures", fields: [publicServiceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resilience_measures")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 10: IMPACT & POLICY
+// Aligned: CPSV-AP / OCDE / D4WTA
+// ==========================================
+
+model ImpactRule {
+  id                 Int     @id @default(autoincrement())
+  name               String
+  description        String? @db.Text
+  targetEntityType   String  // ORGANIZATION|TERRITORY|FILIERE|ECOSYSTEM|ASSET
+  targetCategory     String? // Filtre sur secteur/type
+  impactCategory     String  // ECONOMIC|OPERATIONAL|EMPLOYMENT|TERRITORIAL|ENVIRONMENTAL
+  magnitudeLevel     String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  isActive           Boolean @default(true)
+
+  scenarioId Int
+  scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  impactAssessments ImpactAssessment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("impact_rules")
+}
+
+model ImpactAssessment {
+  id          Int     @id @default(autoincrement())
+  methodology String?
+  status      String  @default("DRAFT") // DRAFT|VALIDATED|PUBLISHED
+  notes       String? @db.Text
+  assessedAt  DateTime @default(now())
+
+  scenarioId Int?
+  scenario   Scenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+
+  impactRuleId Int?
+  impactRule   ImpactRule? @relation(fields: [impactRuleId], references: [id], onDelete: SetNull)
+
+  organizationId Int?
+  organization   Organization? @relation("OrgImpactAssessments", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId    Int?
+  territory      Territory? @relation("TerritoryImpactAssessments", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  policyEvidences PolicyEvidence[] @relation("ImpactAssessmentEvidences")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("impact_assessments")
+}
+
+model PolicyObjective {
+  id          Int     @id @default(autoincrement())
+  code        String? @unique
+  name        String
+  description String? @db.Text
+  level       String  @default("REGIONAL") // EUROPEAN|NATIONAL|REGIONAL|LOCAL
+  framework   String? // S3|CIRCULAR|DIGITAL|RESILIENCE|COHESION|EDIH
+  uri         String? @unique
+
+  policyMeasures     PolicyMeasure[]
+  challengeObjectives ChallengeObjective[] @relation("ObjectiveChallengeObjectives")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_objectives")
+}
+
+model PolicyMeasure {
+  id          Int     @id @default(autoincrement())
+  code        String? @unique
+  name        String
+  description String? @db.Text
+  measureType String  @default("INFORMATIONAL") // REGULATORY|FINANCIAL|INFORMATIONAL|ORGANIZATIONAL
+  status      String  @default("PLANNED") // PLANNED|ACTIVE|EVALUATED|CLOSED
+  uri         String? @unique
+
+  policyObjectiveId Int?
+  policyObjective   PolicyObjective? @relation(fields: [policyObjectiveId], references: [id], onDelete: SetNull)
+
+  publicServiceId Int?
+  publicService   PublicService? @relation("PolicyMeasureServices", fields: [publicServiceId], references: [id], onDelete: SetNull)
+
+  programId Int?
+  program   Program? @relation("PolicyMeasurePrograms", fields: [programId], references: [id], onDelete: SetNull)
+
+  policyEvaluations  PolicyEvaluation[]
+  policyOutcomes     PolicyOutcome[]
+  policyEvidences    PolicyEvidence[]   @relation("PolicyMeasureEvidences")
+  journeys           Journey[]          @relation("PolicyMeasureJourneys")
+  lessonsLearned     LessonLearned[]    @relation("LessonPolicyMeasures")
+  recommendations    PitRecommendation[] @relation("RecommendationPolicyMeasures")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_measures")
+}
+
+model PolicyOutcome {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String? @db.Text
+  expectedValue  String?
+  unit           String?
+  achievedValue  String?
+  status         String  @default("PLANNED") // PLANNED|ACHIEVED|PARTIAL|AT_RISK
+
+  policyMeasureId Int
+  policyMeasure   PolicyMeasure @relation(fields: [policyMeasureId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_outcomes")
+}
+
+model PolicyEvaluation {
+  id               Int     @id @default(autoincrement())
+  evaluator        String?
+  methodology      String?
+  overallJudgment  String  @default("PARTIAL") // EFFECTIVE|PARTIAL|INEFFECTIVE
+  achievementRate  Float?
+  notes            String? @db.Text
+  evaluatedAt      DateTime @default(now())
+
+  policyMeasureId Int
+  policyMeasure   PolicyMeasure @relation(fields: [policyMeasureId], references: [id], onDelete: Cascade)
+
+  policyEvidences PolicyEvidence[] @relation("PolicyEvaluationEvidences")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_evaluations")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 11: INDICATOR & OBSERVATION
+// Aligned: NGSI-LD Property / SDMX / OCDE
+// ==========================================
+
+model TerritorialIndicator {
+  id                Int     @id @default(autoincrement())
+  code              String? @unique
+  name              String
+  description       String? @db.Text
+  unit              String?
+  category          String  // ECONOMIC|SOCIAL|ENVIRONMENTAL|ENERGY|INNOVATION|DIGITAL|RESILIENCE|GOVERNANCE
+  source            String?
+  owner             String?
+  frequency         String  @default("ANNUAL") // DAILY|WEEKLY|MONTHLY|QUARTERLY|ANNUAL
+  aggregationType   String  @default("LAST") // SUM|AVG|MAX|MIN|COUNT|LAST
+  dataType          String  @default("NUMERIC") // NUMERIC|PERCENTAGE|BOOLEAN|TEXT
+  // Raffinement R3: calcul composite
+  computationType   String  @default("DIRECT") // DIRECT|DERIVED|COMPOSITE|RATIO|TREND|SIMULATION
+  formula           String? // Expression ou JSON pour indicateurs composites
+  isComposite       Boolean @default(false)
+  uri               String? @unique
+
+  parentIndicatorId Int?
+  parentIndicator   TerritorialIndicator?  @relation("IndicatorHierarchy", fields: [parentIndicatorId], references: [id], onDelete: SetNull)
+  childIndicators   TerritorialIndicator[] @relation("IndicatorHierarchy")
+
+  observations TerritorialObservation[]
+
+  // Relations transversales (Raffinement R2 + modèle complet)
+  organizations        Organization[]        @relation("OrgIndicators")
+  territories          Territory[]           @relation("TerritoryIndicators")
+  filieres             Filiere[]             @relation("FiliereIndicators")
+  valueChains          ValueChain[]          @relation("ValueChainIndicators")
+  ecosystems           Ecosystem[]           @relation("EcosystemIndicators")
+  risks                Risk[]                @relation("RiskIndicators")
+  assets               TerritorialAsset[]    @relation("AssetIndicators")
+  territorialChallenges TerritorialChallenge[] @relation("ChallengeIndicators")
+  challengeObjectives  ChallengeObjective[]  @relation("ObjectiveIndicators")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("territorial_indicators")
+}
+
+model TerritorialObservation {
+  id              Int     @id @default(autoincrement())
+  value           Float?
+  textValue       String? @db.Text
+  period          String  // "2024", "2024-Q1", "2024-01"
+  observedAt      DateTime @default(now())
+  source          String?
+  confidenceLevel Float?  @default(1.0) // 0-1
+  qualityNote     String?
+
+  indicatorId Int
+  indicator   TerritorialIndicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  // Raffinement R2: FKs analytiques complètes
+  organizationId         Int?
+  organization           Organization? @relation("OrgObservations", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId            Int?
+  territory              Territory? @relation("TerritoryObservations", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  programId              Int?
+  program                Program? @relation("ProgramObservations", fields: [programId], references: [id], onDelete: SetNull)
+
+  publicServiceId        Int?
+  publicService          PublicService? @relation("ServiceObservations", fields: [publicServiceId], references: [id], onDelete: SetNull)
+
+  valueChainId           Int?
+  valueChain             ValueChain? @relation("ValueChainObservations", fields: [valueChainId], references: [id], onDelete: SetNull)
+
+  ecosystemId            Int?
+  ecosystem              Ecosystem? @relation("EcosystemObservations", fields: [ecosystemId], references: [id], onDelete: SetNull)
+
+  riskId                 Int?
+  risk                   Risk? @relation("RiskObservations", fields: [riskId], references: [id], onDelete: SetNull)
+
+  filiereId              Int?
+  filiere                Filiere? @relation("FiliereObservations", fields: [filiereId], references: [id], onDelete: SetNull)
+
+  // Raffinement R2: FK TerritorialChallenge
+  territorialChallengeId Int?
+  territorialChallenge   TerritorialChallenge? @relation("ChallengeObservations", fields: [territorialChallengeId], references: [id], onDelete: SetNull)
+
+  assetId                Int?
+  asset                  TerritorialAsset? @relation("AssetObservations", fields: [assetId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([indicatorId, period])
+  @@index([organizationId, period])
+  @@index([territoryId, period])
+  @@map("territorial_observations")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 12: DATA GOVERNANCE
+// Aligned: DCAT-AP / W3C PROV-O / DQV
+// ==========================================
+
+model PitDataSource {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  owner       String?
+  steward     String?
+  frequency   String  @default("ANNUAL") // REALTIME|DAILY|WEEKLY|MONTHLY|ANNUAL
+  accessLevel String  @default("RESTRICTED") // PUBLIC|RESTRICTED|CONFIDENTIAL
+  legalBasis  String? // GDPR|OpenData|Convention|...
+  format      String  @default("JSON") // CSV|JSON|API|XML|RDF|SPARQL
+  endpoint    String?
+  uri         String? @unique
+
+  organizationId Int?
+  organization   Organization? @relation("OrgDataSources", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  qualityProfile PitDataQualityProfile?
+  lineages       PitDataLineage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pit_data_sources")
+}
+
+model PitDataQualityProfile {
+  id           Int   @id @default(autoincrement())
+  completeness Float @default(0.5) // 0-1
+  accuracy     Float @default(0.5)
+  consistency  Float @default(0.5)
+  timeliness   Float @default(0.5)
+  traceability Float @default(0.5)
+  availability Float @default(0.5)
+  overallScore Float @default(0.5)
+  assessedAt   DateTime @default(now())
+
+  dataSourceId Int?           @unique
+  dataSource   PitDataSource? @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pit_data_quality_profiles")
+}
+
+model PitDataLineage {
+  id                  Int     @id @default(autoincrement())
+  sourceType          String  // MANUAL|API|ETL|IMPORT|COMPUTED
+  sourceRef           String?
+  transformationDesc  String? @db.Text
+  processedAt         DateTime @default(now())
+
+  dataSourceId Int?
+  dataSource   PitDataSource? @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pit_data_lineages")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 13: SUPPLY CHAIN
+// ==========================================
+
+model CriticalSupplier {
+  id                 Int     @id @default(autoincrement())
+  name               String
+  country            String?
+  category           String? // RAW_MATERIAL|COMPONENT|SERVICE|ENERGY|DIGITAL
+  substitutability   String  @default("POSSIBLE") // EASY|POSSIBLE|DIFFICULT|IMPOSSIBLE
+  criticality        String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  uri                String? @unique
+
+  supplyChainLinks   SupplyChainLink[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("critical_suppliers")
+}
+
+model CriticalMaterial {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  origin      String?
+  category    String  @default("RAW") // RAW|COMPONENT|ENERGY|DIGITAL|BIOLOGICAL
+  isStrategic Boolean @default(false)
+  uri         String? @unique
+
+  supplyChainLinks SupplyChainLink[]
+  valueChains      ValueChain[] @relation("ValueChainMaterials")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("critical_materials")
+}
+
+model CriticalResource {
+  id           Int     @id @default(autoincrement())
+  name         String
+  resourceType String  // HUMAN|MATERIAL|ENERGY|DATA|CAPITAL|LAND
+  availability String  @default("SCARCE") // ABUNDANT|SCARCE|CRITICAL
+  description  String? @db.Text
+  uri          String? @unique
+
+  valueChains  ValueChain[] @relation("ValueChainResources")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("critical_resources")
+}
+
+model SupplyChainLink {
+  id               Int     @id @default(autoincrement())
+  linkType         String  // SUPPLIER|CUSTOMER|PARTNER|SUBCONTRACTOR|DISTRIBUTOR
+  strength         String  @default("MEDIUM") // STRONG|MEDIUM|WEAK
+  isCritical       Boolean @default(false)
+  description      String? @db.Text
+
+  supplierOrganizationId Int?
+  supplierOrganization   Organization? @relation("SupplierLinks", fields: [supplierOrganizationId], references: [id], onDelete: SetNull)
+
+  buyerOrganizationId    Int?
+  buyerOrganization      Organization? @relation("BuyerLinks", fields: [buyerOrganizationId], references: [id], onDelete: SetNull)
+
+  criticalMaterialId     Int?
+  criticalMaterial       CriticalMaterial? @relation(fields: [criticalMaterialId], references: [id], onDelete: SetNull)
+
+  criticalSupplierId     Int?
+  criticalSupplier       CriticalSupplier? @relation(fields: [criticalSupplierId], references: [id], onDelete: SetNull)
+
+  valueChainId           Int?
+  valueChainLink         ValueChain? @relation("ValueChainLinks", fields: [valueChainId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("supply_chain_links")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 14: RECOMMENDATION ENGINE
+// ==========================================
+
+model PitRecommendation {
+  id                 Int     @id @default(autoincrement())
+  title              String
+  description        String? @db.Text
+  recommendationType String  @default("SERVICE") // SERVICE|MEASURE|PROGRAM|JOURNEY|ACTION
+  status             String  @default("DRAFT") // DRAFT|PUBLISHED|APPLIED|DISMISSED
+  relevanceScore     Float?  @default(0.5) // 0-1
+  generatedAt        DateTime @default(now())
+
+  organizationId     Int?
+  organization       Organization? @relation("OrgRecommendations", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId        Int?
+  territory          Territory? @relation("TerritoryRecommendations", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  resilienceImpactId Int?
+  resilienceImpact   ResilienceImpact? @relation("ImpactRecommendations", fields: [resilienceImpactId], references: [id], onDelete: SetNull)
+
+  publicServiceId    Int?
+  publicService      PublicService? @relation("ServiceRecommendations", fields: [publicServiceId], references: [id], onDelete: SetNull)
+
+  policyMeasures     PolicyMeasure[]    @relation("RecommendationPolicyMeasures")
+  journeys           Journey[]          @relation("RecommendationJourneys")
+  policyEvidences    PolicyEvidence[]   @relation("RecommendationEvidences")
+
+  ruleId             Int?
+  rule               RecommendationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pit_recommendations")
+}
+
+model RecommendationRule {
+  id               Int     @id @default(autoincrement())
+  name             String
+  description      String? @db.Text
+  triggerCondition Json    // JSON rule definition: {"field": "riskScore", "operator": "gte", "value": 15}
+  actionType       String  // RECOMMEND_SERVICE|RECOMMEND_MEASURE|RECOMMEND_JOURNEY|ALERT
+  isActive         Boolean @default(true)
+  priority         Int     @default(5) // 1 = highest
+
+  recommendations  PitRecommendation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("recommendation_rules")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 15: DIGITAL TWIN FOUNDATIONS
+// Aligned: NGSI-LD Entity/Property/Relationship
+// (Simulation models deferred to Lot 12)
+// ==========================================
+
+model ContextEntity {
+  id             Int     @id @default(autoincrement())
+  entityId       String  @unique // ngsi-ld URN: urn:ngsi-ld:Organization:123
+  entityType     String  // Organization|Territory|Risk|Asset|PublicService|...
+  context        String? // JSON-LD @context URL
+  properties     Json?
+  refEntityId    Int?    // PIT internal ID
+  refEntityType  String? // PIT model name
+  updatedAt      DateTime @updatedAt
+
+  observations     ContextEntityObservation[]
+  sourceRelations  ContextEntityRelationship[] @relation("RelationshipSource")
+  targetRelations  ContextEntityRelationship[] @relation("RelationshipTarget")
+
+  createdAt DateTime @default(now())
+
+  @@map("context_entities")
+}
+
+model ContextEntityObservation {
+  id              Int     @id @default(autoincrement())
+  property        String
+  value           Json
+  unitCode        String?
+  observedAt      DateTime @default(now())
+
+  contextEntityId Int
+  contextEntity   ContextEntity @relation(fields: [contextEntityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("context_entity_observations")
+}
+
+model ContextEntityRelationship {
+  id               Int     @id @default(autoincrement())
+  relationshipType String
+  metadata         Json?
+
+  sourceEntityId   Int
+  sourceEntity     ContextEntity @relation("RelationshipSource", fields: [sourceEntityId], references: [id], onDelete: Cascade)
+
+  targetEntityId   Int
+  targetEntity     ContextEntity @relation("RelationshipTarget", fields: [targetEntityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("context_entity_relationships")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 16: CAPABILITY & CAPACITY
+// (Capability existant enrichi via relations)
+// ==========================================
+
+model OrganizationalCapacity {
+  id           Int     @id @default(autoincrement())
+  name         String
+  description  String? @db.Text
+  capacityType String  // HUMAN|PRODUCTION|SURFACE|DIGITAL|FINANCIAL|ENERGY
+  value        Float
+  unit         String  // ETP|MW|m2|EUR|units|GWh
+  period       String? // "2024", "2024-Q1"
+
+  organizationId Int?
+  organization   Organization? @relation("OrgCapacities", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId    Int?
+  territory      Territory? @relation("TerritoryCapacities", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  ecosystemId    Int?
+  ecosystem      Ecosystem? @relation("EcosystemCapacities", fields: [ecosystemId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("organizational_capacities")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 17: ASSET
+// Aligned: BNRA Asset / OCDE Natural Capital / NGSI-LD
+// ==========================================
+
+model TerritorialAsset {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String? @db.Text
+  assetType      String  // ECONOMIC|INFRASTRUCTURE|DIGITAL|NATURAL|HUMAN|KNOWLEDGE
+  subType        String? // datacenter|factory|forest|watershed|workforce|lab|network
+  owner          String?
+  location       String?
+  estimatedValue Float?
+  currency       String? @default("EUR")
+  metadata       Json?   // Attributs spécifiques au type
+  uri            String? @unique
+
+  organizationId Int?
+  organization   Organization? @relation("OrgAssets", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  territoryId    Int?
+  territory      Territory? @relation("TerritoryAssets", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  ecosystemId    Int?
+  ecosystem      Ecosystem? @relation("EcosystemAssets", fields: [ecosystemId], references: [id], onDelete: SetNull)
+
+  // Résilience
+  risks           Risk[]          @relation("AssetRisks")
+  dependencies    Dependency[]    @relation("AssetDependencies")
+  vulnerabilities Vulnerability[] @relation("AssetVulnerabilities")
+  indicators      TerritorialIndicator[] @relation("AssetIndicators")
+  observations    TerritorialObservation[] @relation("AssetObservations")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("territorial_assets")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 18: TERRITORIAL EVENT
+// Aligned: CORTEX IncidentEvent / BNRA Historical
+// ==========================================
+
+model TerritorialEvent {
+  id           Int     @id @default(autoincrement())
+  name         String
+  description  String? @db.Text
+  eventDate    DateTime
+  endDate      DateTime?
+  eventType    String  // FLOOD|DROUGHT|CYBER|PANDEMIC|ENERGY_CRISIS|INDUSTRIAL|SOCIAL|POLITICAL|STORM|FIRE
+  severity     String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CATASTROPHIC
+  location     String?
+  source       String?
+  isHistorical Boolean @default(true)
+  uri          String? @unique
+
+  territoryId  Int?
+  territory    Territory? @relation("TerritoryEvents", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  riskId       Int?
+  risk         Risk? @relation("EventRisks", fields: [riskId], references: [id], onDelete: SetNull)
+
+  scenarioId   Int?
+  scenario     Scenario? @relation("EventScenarios", fields: [scenarioId], references: [id], onDelete: SetNull)
+
+  eventImpacts  TerritorialEventImpact[]
+  lessons       LessonLearned[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("territorial_events")
+}
+
+model TerritorialEventImpact {
+  id                    Int     @id @default(autoincrement())
+  impactType            String  // ECONOMIC|HUMAN|INFRASTRUCTURE|ENVIRONMENTAL|SOCIAL
+  description           String? @db.Text
+  magnitude             Float?
+  unit                  String?
+  affectedEntitiesCount Int?
+  estimatedCost         Float?
+  currency              String? @default("EUR")
+
+  territorialEventId    Int
+  territorialEvent      TerritorialEvent @relation(fields: [territorialEventId], references: [id], onDelete: Cascade)
+
+  territoryId           Int?
+  territory             Territory? @relation("TerritoryEventImpacts", fields: [territoryId], references: [id], onDelete: SetNull)
+
+  organizationId        Int?
+  organization          Organization? @relation("OrgEventImpacts", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("territorial_event_impacts")
+}
+
+model LessonLearned {
+  id              Int     @id @default(autoincrement())
+  title           String
+  description     String  @db.Text
+  category        String  // PREVENTION|RESPONSE|RECOVERY|GOVERNANCE|COMMUNICATION
+  applicability   String  @default("ALL") // SECTOR|TERRITORY|ALL
+  validatedAt     DateTime?
+
+  territorialEventId Int
+  territorialEvent   TerritorialEvent @relation(fields: [territorialEventId], references: [id], onDelete: Cascade)
+
+  policyMeasures     PolicyMeasure[]    @relation("LessonPolicyMeasures")
+  resilienceMeasures ResilienceMeasure[] @relation("LessonMeasures")
+  policyEvidences    PolicyEvidence[]   @relation("LessonEvidences")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("lessons_learned")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 19: POLICY EVIDENCE
+// Aligned: OCDE EvidenceBase / DCAT-AP / ADMS
+// (Distinct from Evidence CPSV-AP)
+// ==========================================
+
+model PolicyEvidence {
+  id              Int     @id @default(autoincrement())
+  title           String
+  description     String? @db.Text
+  evidenceType    String  // REPORT|AUDIT|STUDY|SURVEY|EVALUATION|STATISTICS|BEST_PRACTICE|POLICY_BRIEF
+  publicationDate DateTime?
+  publisher       String?
+  url             String?
+  doi             String?
+  qualityLevel    String  @default("INSTITUTIONAL") // PEER_REVIEWED|INSTITUTIONAL|GREY|ADMINISTRATIVE
+  uri             String? @unique
+
+  evidenceSources PolicyEvidenceSource[]
+
+  // Usages multiples
+  riskAssessments   RiskAssessment[]   @relation("RiskAssessmentEvidences")
+  impactAssessments ImpactAssessment[] @relation("ImpactAssessmentEvidences")
+  policyMeasures    PolicyMeasure[]    @relation("PolicyMeasureEvidences")
+  policyEvaluations PolicyEvaluation[] @relation("PolicyEvaluationEvidences")
+  lessonsLearned    LessonLearned[]    @relation("LessonEvidences")
+  recommendations   PitRecommendation[] @relation("RecommendationEvidences")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_evidences")
+}
+
+model PolicyEvidenceSource {
+  id               Int     @id @default(autoincrement())
+  name             String
+  sourceType       String  // OECD|EUROSTAT|SPW|IWEPS|RESEARCH|NGO|PRIVATE|FEDERAL
+  url              String?
+  reliability      String  @default("MEDIUM") // HIGH|MEDIUM|LOW
+
+  policyEvidenceId Int
+  policyEvidence   PolicyEvidence @relation(fields: [policyEvidenceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("policy_evidence_sources")
+}
+
+// ==========================================
+// PIT vNext — DOMAIN 20: TERRITORIAL CHALLENGE
+// Aligned: D4WTA Priority / OCDE PolicyChallenge / S3
+// ==========================================
+
+model TerritorialChallenge {
+  id          Int     @id @default(autoincrement())
+  code        String? @unique
+  name        String
+  description String? @db.Text
+  category    String  // DECARBONISATION|DIGITAL|INDUSTRIAL|RESILIENCE|SKILLS|CIRCULAR|SOCIAL|GOVERNANCE|HEALTH|FOOD
+  horizon     String  @default("MEDIUM") // SHORT|MEDIUM|LONG
+  priority    String  @default("HIGH") // CRITICAL|HIGH|MEDIUM|LOW
+  status      String  @default("ACTIVE") // IDENTIFIED|ACTIVE|MONITORED|RESOLVED
+  uri         String? @unique
+
+  // Hiérarchie
+  parentChallengeId Int?
+  parentChallenge   TerritorialChallenge?  @relation("ChallengeHierarchy", fields: [parentChallengeId], references: [id], onDelete: SetNull)
+  childChallenges   TerritorialChallenge[] @relation("ChallengeHierarchy")
+
+  objectives    ChallengeObjective[]
+
+  // Liens stratégiques
+  territories   Territory[]            @relation("TerritoryChallenges")
+  filieres      Filiere[]              @relation("FiliereChallenges")
+  ecosystems    Ecosystem[]            @relation("EcosystemChallenges2")
+  risks         Risk[]                 @relation("ChallengeRisks")
+  indicators    TerritorialIndicator[] @relation("ChallengeIndicators")
+  observations  TerritorialObservation[] @relation("ChallengeObservations")
+  journeys      Journey[]              @relation("ChallengeJourneys")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("territorial_challenges")
+}
+
+model ChallengeObjective {
+  id                    Int     @id @default(autoincrement())
+  code                  String?
+  name                  String
+  description           String? @db.Text
+  targetValue           Float?
+  targetUnit            String?
+  targetYear            Int?
+  currentValue          Float?
+  status                String  @default("NOT_STARTED") // NOT_STARTED|IN_PROGRESS|ACHIEVED|AT_RISK
+
+  territorialChallengeId Int
+  territorialChallenge   TerritorialChallenge @relation(fields: [territorialChallengeId], references: [id], onDelete: Cascade)
+
+  indicatorId           Int?
+  indicator             TerritorialIndicator? @relation("ObjectiveIndicators", fields: [indicatorId], references: [id], onDelete: SetNull)
+
+  policyObjectiveId     Int?
+  policyObjective       PolicyObjective? @relation("ObjectiveChallengeObjectives", fields: [policyObjectiveId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("challenge_objectives")
+}
+
+// ==========================================
+// PIT vNext — REFINEMENTS ON EXISTING MODELS
+// Applied below via back-references
+// ==========================================
+
+// R1 — Territory: level, geometry, centroid
+// R3 — TerritorialIndicator: computationType, formula, parentIndicatorId (done above)
+// R4 — Journey: code, status
+// R4 — JourneyStage: stepType, expectedOutcome
+// R4 — JourneyTemplate: code, challengeType
+// Note: Existing models extended via new relation fields above.
+// Fields on existing models must be applied via separate migration statements.
+// The following comment block documents the ALTER TABLE equivalents for Lot 1b:
+
+// ALTER TABLE territories ADD COLUMN IF NOT EXISTS level TEXT;
+// ALTER TABLE territories ADD COLUMN IF NOT EXISTS geometry JSONB;
+// ALTER TABLE territories ADD COLUMN IF NOT EXISTS centroid JSONB;
+// ALTER TABLE journeys ADD COLUMN IF NOT EXISTS code TEXT UNIQUE;
+// ALTER TABLE journeys ADD COLUMN IF NOT EXISTS journey_status TEXT DEFAULT 'ACTIVE';
+// ALTER TABLE journey_stages ADD COLUMN IF NOT EXISTS step_type TEXT;
+// ALTER TABLE journey_stages ADD COLUMN IF NOT EXISTS expected_outcome TEXT;
+// ALTER TABLE journey_templates ADD COLUMN IF NOT EXISTS code TEXT UNIQUE;
+// ALTER TABLE journey_templates ADD COLUMN IF NOT EXISTS challenge_type TEXT;
+

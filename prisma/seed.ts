@@ -1,4 +1,5 @@
 import { PrismaClient, TerritoryType, KnowledgeAssetType, ProgramStatus, InitiativeStatus, ParticipationRole, ServiceDeliveryStatus, CollectiveDeliveryStatus, SecondLineMissionStatus, ActivityType } from '@prisma/client';
+import { cleanVNext, seedVNext } from './seed-vnext';
 
 const prisma = new PrismaClient();
 
@@ -7,6 +8,7 @@ async function main() {
 
   // Nettoyage de la base de données en respectant l'ordre des contraintes d'intégrité référentielle
   console.log('🧹 Nettoyage des anciennes données...');
+  await cleanVNext(prisma);
   await prisma.ecosystemChallenge.deleteMany({});
   await prisma.evidence.deleteMany({});
   await prisma.activity.deleteMany({}); // New Activity table
@@ -2250,6 +2252,17 @@ async function main() {
       companiesCount: 15,
       companies: { connect: [{ id: bH2Energy.id }, { id: bTechConstruct.id }] }
     }
+  });
+
+  // 7. Initialisation des données vNext (Lot 2 - Résilience, Intelligence, Policy)
+  await seedVNext(prisma, {
+    tWall, tLiege, tNamur, tHainaut, tBrabant, tLux, cNamurCity, cCharleroi, cLiegeCity, cWavre, bBassinSambre,
+    orgAdn, orgWe, orgAwex, orgUcm, orgSirris, orgBioWin, orgMecaTech, orgTweed,
+    s3Num, s3Indus, s3Sante, s3Circ, s3Ener,
+    vcNum, vcIndus, vcSante, vcBiotech, vcAgri, vcHydro, vcEner, vcConst, vcCirc,
+    chDigital, chIa, chCyber, chExport, chDecarb, chInno, chRh, chFund, chCirc, chConf,
+    fiFeder, fiCheques, fiHorizon, fiDigitalEurope,
+    ecoEdih, ecoDw, ecoBioWin, ecoTweed
   });
 
 console.log('✅ Base de données initialisée avec succès avec la gouvernance stratégique territoriale et les enums conformes !');

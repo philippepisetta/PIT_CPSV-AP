@@ -113,6 +113,7 @@ const navBlocks: NavBlock[] = [
     allowedWorkspaces: ["dg"],
     items: [
       { name: "Missions & Roadmaps", href: "/strategic", icon: LineChart },
+      { name: "Démonstrateur Cabinet", href: "/strategic/demonstrator", icon: Play },
       { name: "Politiques Publiques", href: "/strategic-frameworks", icon: Shield },
       { name: "Gap Analysis", href: "/gap-analysis", icon: Shield },
       { name: "Graph Explorer", href: "/graph-explorer", icon: BarChart2 },

@@ -84,9 +84,9 @@ const cards: PerspectiveCard[] = [
     description: "Analyser l’exposition, la vulnérabilité, la capacité d’absorption, d’adaptation et de rebond des acteurs économiques wallons face à différents chocs : crise énergétique, inondation, cybermenace, pandémie ou rupture d’approvisionnement.",
     href: "/analysis-views/resilience",
     icon: Shield,
-    badge: "Prototype",
+    badge: "Actif",
     colorClass: "hover:border-cyan-500/50 hover:shadow-cyan-500/5",
-    iconColorClass: "text-cyan-600 dark:text-cyan-405 bg-cyan-500/10"
+    iconColorClass: "text-cyan-605 dark:text-cyan-400 bg-cyan-500/10"
   }
 ];
 

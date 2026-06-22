@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { 
   Settings, 
   Database, 
@@ -12,7 +13,8 @@ import {
   FileCode, 
   Activity, 
   RefreshCw,
-  Plus
+  Plus,
+  Shield
 } from "lucide-react";
 import PITLayout from "@/design-system/PITLayout";
 import PITFilterBar from "@/design-system/PITFilterBar";
@@ -194,9 +196,22 @@ export default function InteroperabilityPage() {
             { id: "catalogue", label: "Systèmes Sources", icon: Database },
             { id: "flows", label: "Flux de Données (Flows)", icon: Network },
             { id: "mappings", label: "Mappings Sémantiques", icon: FileCode },
+            { id: "resilience-catalogue", label: "Catalogue Résilience", icon: Shield, href: "/interoperability/resilience-data-catalogue" },
             { id: "create", label: "Enregistrer Système", icon: Plus }
           ].map((t) => {
             const Icon = t.icon;
+            if ("href" in t && t.href) {
+              return (
+                <Link
+                  key={t.id}
+                  href={t.href}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer border-0 bg-transparent text-muted hover:text-text hover:bg-glass/10"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </Link>
+              );
+            }
             return (
               <button
                 key={t.id}
@@ -219,6 +234,26 @@ export default function InteroperabilityPage() {
         {/* Screen 1: Catalogue des systèmes */}
         {activeTab === "catalogue" && (
           <div className="space-y-4">
+            {/* Resilience Data Catalogue Banner */}
+            <div className="bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 border border-cyan-500/25 rounded-2xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-[8px] font-black uppercase tracking-wider text-cyan-605 bg-cyan-500/10 px-2 py-0.5 rounded-full">
+                  Nouveau • Intelligence de Résilience
+                </span>
+                <h4 className="font-extrabold text-sm text-text">Catalogue de Données de Résilience</h4>
+                <p className="text-xs text-muted leading-snug">
+                  Explorez les datasets critiques identifiés par l'OCDE et la Wallonie pour analyser la vulnérabilité et l'exposition des acteurs face aux chocs.
+                </p>
+              </div>
+              <Link 
+                href="/interoperability/resilience-data-catalogue"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow self-start md:self-center shrink-0"
+              >
+                <span>Consulter le Catalogue</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
             <PITFilterBar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}

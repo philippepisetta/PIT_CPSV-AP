@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { 
   LineChart, 
   Target, 
@@ -379,6 +380,25 @@ export default function StrategicPage() {
               Cette vue consolide les données validées issues des services, projets, preuves et outcomes. Les modifications sont réservées aux profils autorisés.
             </p>
           </div>
+        </div>
+
+        {/* Cabinet Demonstrator Banner */}
+        <div className="p-4 rounded-xl bg-gradient-to-r from-teal-500/10 to-indigo-500/10 border border-teal-500/25 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-1">
+            <h4 className="text-xs font-black text-text uppercase tracking-wider flex items-center gap-1.5">
+              <Compass className="h-4 w-4 text-teal-655" />
+              Démonstrateur Politique Exécutif (Cabinet / DG)
+            </h4>
+            <p className="text-[10px] text-muted font-semibold leading-relaxed">
+              Simulez la répercussion d'une hausse énergétique sur le territoire et découvrez comment la PIT soutient l'Evidence-Based Policy Making.
+            </p>
+          </div>
+          <Link
+            href="/strategic/demonstrator"
+            className="px-3.5 py-1.5 bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white rounded-xl text-[10px] font-black shrink-0 shadow-sm"
+          >
+            Lancer le Démonstrateur ➔
+          </Link>
         </div>
         
         {/* Navigation Tabs Header */}

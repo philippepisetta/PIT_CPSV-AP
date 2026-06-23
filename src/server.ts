@@ -4236,7 +4236,7 @@ v2Router.get('/programs/:id', async (req, res) => {
   try {
     const item = await prisma.program.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { ownerOrganization: true }
+      include: { ownerOrganization: true, mitigatedVulnerabilities: true }
     });
     if (!item) return res.status(404).json({ error: 'Programme non trouvé' });
     res.json({ data: item });
@@ -4708,7 +4708,7 @@ v2Router.get('/programs/:id/contributions', async (req, res) => {
     const id = parseInt(req.params.id);
     const program = await prisma.program.findUnique({
       where: { id },
-      include: { ownerOrganization: true, territories: true, ecosystems: true }
+      include: { ownerOrganization: true, territories: true, ecosystems: true, mitigatedVulnerabilities: true }
     });
     if (!program) return res.status(404).json({ error: 'Program non trouvé' });
 
@@ -8132,6 +8132,49 @@ v2Router.delete('/funding-awards/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     const item = await prisma.fundingAward.delete({ where: { id } });
     res.json({ data: item, message: "Octroi de financement (Award) supprimé avec succès" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/vulnerabilities', async (req, res) => {
+  try {
+    const items = await prisma.vulnerability.findMany({
+      include: {
+        dependencies: { include: { parentDependency: true } },
+        valueChains: true,
+        beneficiaries: true,
+        risks: true,
+        mitigations: true,
+        programs: true
+      },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/vulnerabilities/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.vulnerability.findUnique({
+      where: { id },
+      include: {
+        dependencies: { include: { parentDependency: true, childDependencies: true } },
+        valueChains: true,
+        beneficiaries: { include: { primaryNaceSector: true } },
+        risks: true,
+        mitigations: true,
+        programs: true,
+        organizations: true,
+        filieres: true,
+        assets: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Vulnérabilité non trouvée' });
+    res.json({ data: item });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

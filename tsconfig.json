@@ -7,6 +7,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
     "outDir": "./dist"
   },
   "include": ["prisma/**/*", "src/**/*", "testing/**/*", "tests/**/*"]

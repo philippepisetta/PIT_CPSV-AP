@@ -137,6 +137,7 @@ model PublicService {
   resilienceMeasures ResilienceMeasure[]     @relation("ResilienceServiceMeasures")
   observations      TerritorialObservation[] @relation("ServiceObservations")
   recommendations   PitRecommendation[]      @relation("ServiceRecommendations")
+  vulnerabilities   Vulnerability[]          @relation("VulnerabilityMitigations")
 
   @@index([organizationId])
   @@map("public_services")
@@ -419,6 +420,7 @@ model Beneficiary {
   contacts                Contact[]
   memberships             CommunityMembership[]
   fundingCalls            FundingCall[]
+  vulnerabilities         Vulnerability[] @relation("VulnerabilityBeneficiaries")
 
   roadmapLogs Json?
   createdAt   DateTime @default(now())
@@ -1226,6 +1228,7 @@ model Program {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ecosystemChallenges EcosystemChallenge[]
+  mitigatedVulnerabilities Vulnerability[] @relation("ProgramMitigatedVulnerabilities")
 
   // vNext back-references
   policyMeasures PolicyMeasure[]          @relation("PolicyMeasurePrograms")
@@ -1861,6 +1864,7 @@ model ValueChain {
   criticalMaterials CriticalMaterial[]      @relation("ValueChainMaterials")
   criticalResources CriticalResource[]      @relation("ValueChainResources")
   supplyChainLinks  SupplyChainLink[]       @relation("ValueChainLinks")
+  vulnerabilities    Vulnerability[]         @relation("VulnerabilityValueChains")
 
   @@map("value_chains")
 }
@@ -2506,6 +2510,7 @@ model Risk {
   ecosystems           Ecosystem[]       @relation("EcosystemRisks")
   assets               TerritorialAsset[] @relation("AssetRisks")
   territorialChallenges TerritorialChallenge[] @relation("ChallengeRisks")
+  vulnerabilities      Vulnerability[]   @relation("VulnerabilityRisks")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2663,6 +2668,10 @@ model Dependency {
   substitutability   String  @default("POSSIBLE") // EASY|POSSIBLE|DIFFICULT|IMPOSSIBLE
   uri                String? @unique
 
+  parentDependencyId Int?
+  parentDependency   Dependency?  @relation("DependencyHierarchy", fields: [parentDependencyId], references: [id], onDelete: SetNull)
+  childDependencies  Dependency[] @relation("DependencyHierarchy")
+
   criticalInfrastructureId Int?
   criticalInfrastructure   CriticalInfrastructure? @relation(fields: [criticalInfrastructureId], references: [id], onDelete: SetNull)
 
@@ -2670,6 +2679,7 @@ model Dependency {
   filieres      Filiere[]      @relation("FiliereDependencies")
   valueChains   ValueChain[]   @relation("ValueChainDependencies")
   assets        TerritorialAsset[] @relation("AssetDependencies")
+  vulnerabilities    Vulnerability[] @relation("VulnerabilityDependencies")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2697,22 +2707,36 @@ model CriticalInfrastructure {
 }
 
 model Vulnerability {
-  id          Int     @id @default(autoincrement())
-  name        String
-  description String? @db.Text
-  category    String  // ENERGY|SUPPLY|FINANCIAL|HUMAN|DIGITAL|ENVIRONMENTAL|GEOGRAPHIC
-  severity    String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
-  indicator   String? // Indicateur mesurable associé
+  id                    Int                @id @default(autoincrement())
+  code                  String?            @unique
+  name                  String
+  description           String?            @db.Text
+  category              String             // ENERGY|SUPPLY|FINANCIAL|HUMAN|DIGITAL|ENVIRONMENTAL|GEOGRAPHIC
+  severity              String             @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  indicator             String?            // Indicateur mesurable associé
+  criticalityScore      Int                @default(50) // Score de 0 à 100
+  territorialImportance String?            // Description textuelle des zones exposées
+  strategicImportance   String?            // Importance stratégique régionale
+  confidenceLevel       String             @default("MEDIUM") // LOW|MEDIUM|HIGH
+  remediationPlan       String?            @db.Text
 
-  organizations Organization[] @relation("OrgVulnerabilities")
-  filieres      Filiere[]      @relation("FiliereVulnerabilities")
-  assets        TerritorialAsset[] @relation("AssetVulnerabilities")
+  organizations         Organization[]     @relation("OrgVulnerabilities")
+  filieres              Filiere[]          @relation("FiliereVulnerabilities")
+  assets                TerritorialAsset[] @relation("AssetVulnerabilities")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dependencies          Dependency[]       @relation("VulnerabilityDependencies")
+  valueChains           ValueChain[]       @relation("VulnerabilityValueChains")
+  beneficiaries         Beneficiary[]      @relation("VulnerabilityBeneficiaries")
+  risks                 Risk[]             @relation("VulnerabilityRisks")
+  mitigations           PublicService[]    @relation("VulnerabilityMitigations")
+  programs              Program[]          @relation("ProgramMitigatedVulnerabilities")
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   @@map("vulnerabilities")
 }
+
 
 model ResilienceImpact {
   id          Int     @id @default(autoincrement())
@@ -3571,3 +3595,4 @@ model ResilienceAuditLog {
 
   @@map("resilience_audit_logs")
 }
+

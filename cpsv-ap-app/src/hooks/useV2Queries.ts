@@ -804,3 +804,23 @@ export function useV2DeleteMembershipMutation() {
     },
   });
 }
+
+// --------------------------------------------------
+// PIT vNext — Vulnerability Queries (Phase 4.2)
+// --------------------------------------------------
+export function useV2Vulnerabilities() {
+  return useQuery({
+    queryKey: ["v2-vulnerabilities"],
+    queryFn: () => fetcher("/api/v2/vulnerabilities"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2VulnerabilityDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["v2-vulnerability-detail", id],
+    queryFn: () => fetcher(`/api/v2/vulnerabilities/${id}`),
+    enabled: id !== null && !isNaN(id),
+    staleTime: 30 * 1000,
+  });
+}

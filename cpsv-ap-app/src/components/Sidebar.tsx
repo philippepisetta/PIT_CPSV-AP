@@ -62,7 +62,7 @@ const navBlocks: NavBlock[] = [
     allowedWorkspaces: ["accompaniment", "pilotage"],
     items: [
       { name: "Défis territoriaux", href: "/challenges", icon: Target },
-      { name: "Programmes & Initiatives", href: "/accompaniment/funding?tab=programs", icon: Layers },
+      { name: "Programmes", href: "/programs", icon: Layers },
       { name: "Projets", href: "/projects", icon: FileText },
       { name: "Financements", href: "/accompaniment/funding?tab=awards", icon: Zap },
     ]
@@ -96,6 +96,7 @@ const navBlocks: NavBlock[] = [
       { name: "Territoires", href: "/territories", icon: Compass },
       { name: "Filières", href: "/filieres", icon: Layers },
       { name: "Chaînes de valeur", href: "/value-chain-explorer", icon: Network },
+      { name: "Vulnérabilités", href: "/vulnerabilities", icon: Shield },
       { name: "Écosystèmes", href: "/organizations", icon: Building },
       { name: "Graph Explorer", href: "/intelligence/graph", icon: BarChart2 },
     ]

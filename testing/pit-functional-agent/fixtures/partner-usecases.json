@@ -1,0 +1,151 @@
+[
+  {
+    "id": "CAS-01",
+    "partner": "WE",
+    "title": "Orientation Financement PME",
+    "beneficiary": "MecaTech SRL",
+    "type": "ENTREPRISE",
+    "size": "PME",
+    "etp": 38,
+    "location": "Charleroi",
+    "project": "Projet Robot Collaboratif",
+    "budget": 180000,
+    "challenge": "Automation/Robotique",
+    "expectedRecommendation": "EDIH, WE, Intégrateur robotique"
+  },
+  {
+    "id": "CAS-02",
+    "partner": "WE",
+    "title": "Détection proactive d'entreprises",
+    "beneficiary": "GreenSensor SA",
+    "type": "STARTUP",
+    "size": "Startup",
+    "etp": 15,
+    "location": "Namur",
+    "growth": "+28%",
+    "intellectualProperty": "Brevet déposé",
+    "expectedCandidate": "Accompagnement Croissance/Export"
+  },
+  {
+    "id": "CAS-03",
+    "partner": "SPW",
+    "title": "Cartographie dynamique S3",
+    "beneficiary": "Smart Factory Wallonia",
+    "type": "UNIVERSITE",
+    "location": "Liège",
+    "dis": "Industrie du Futur",
+    "expectedVisual": "Projets, financements et impacts"
+  },
+  {
+    "id": "CAS-04",
+    "partner": "SPW",
+    "title": "Détection de synergies inter-DIS",
+    "beneficiary": "Synergie IA & Vibrations",
+    "type": "CENTRE_RECHERCHE",
+    "projects": ["IA Agriculture", "Maintenance prédictive"],
+    "expectedSynergy": "Technologies communes & collaboration"
+  },
+  {
+    "id": "CAS-05",
+    "partner": "AKT",
+    "title": "Matching entreprises / partenaires",
+    "beneficiary": "BuildTech SRL",
+    "type": "ENTREPRISE",
+    "need": "Solution BIM + IA",
+    "expectedPartner": "Sirris, CETIC"
+  },
+  {
+    "id": "CAS-06",
+    "partner": "AKT",
+    "title": "Détection des besoins sectoriels",
+    "sector": "Construction",
+    "trends": ["BIM", "Cybersécurité"],
+    "expectedTrigger": "Action collective sectorielle"
+  },
+  {
+    "id": "CAS-07",
+    "partner": "UCM",
+    "title": "Assistant administratif PME",
+    "beneficiary": "Boulangerie Dupont",
+    "type": "ENTREPRISE",
+    "size": "TPE",
+    "need": "Digitalisation des commandes",
+    "expectedJourney": "Chèques-entreprises"
+  },
+  {
+    "id": "CAS-08",
+    "partner": "UCM",
+    "title": "Détection des fragilités",
+    "beneficiary": "Salon Clara",
+    "type": "ENTREPRISE",
+    "size": "TPE",
+    "revenueDrop": "18%",
+    "digitalMaturity": "Faible",
+    "expectedAlert": "Recommandation proactive d'accompagnement"
+  },
+  {
+    "id": "CAS-09",
+    "partner": "AWEX",
+    "title": "Recommandation marchés export",
+    "beneficiary": "GreenSensor SA",
+    "type": "STARTUP",
+    "product": "Capteurs environnementaux",
+    "market": "Smart City",
+    "expectedDestination": "Mission économique Pays-Bas"
+  },
+  {
+    "id": "CAS-10",
+    "partner": "AWEX",
+    "title": "Détection d'entreprises exportables",
+    "beneficiary": "BioPack Wallonia",
+    "type": "ENTREPRISE",
+    "size": "PME",
+    "product": "Emballages biosourcés",
+    "expectedStatus": "Export-ready"
+  },
+  {
+    "id": "CAS-11",
+    "partner": "WBI",
+    "title": "Recommandation programmes UE",
+    "beneficiary": "IA Énergie Europe",
+    "type": "CENTRE_RECHERCHE",
+    "project": "IA efficacité énergétique",
+    "expectedProgram": "Horizon Europe, Interreg"
+  },
+  {
+    "id": "CAS-12",
+    "partner": "Clusters",
+    "title": "Détection automatique de consortiums",
+    "project": "Maintenance prédictive",
+    "components": ["PME", "Startup IA", "Centre de recherche"],
+    "expectedConsortium": "Consortium généré automatiquement"
+  },
+  {
+    "id": "CAS-13",
+    "partner": "Clusters",
+    "title": "Cartographie chaînes de valeur",
+    "chain": "Batteries",
+    "location": "Wallonie",
+    "expectedGap": "Identification des maillons manquants"
+  },
+  {
+    "id": "CAS-14",
+    "partner": "Transversal",
+    "title": "Moteur de recommandation de services",
+    "beneficiary": "DataWood SRL",
+    "type": "ENTREPRISE",
+    "size": "PME",
+    "need": "Automatisation devis et production",
+    "expectedServices": ["EDIH", "WE", "AWEX", "Cluster"]
+  },
+  {
+    "id": "CAS-15",
+    "partner": "Transversal",
+    "title": "Customer Journey territorial",
+    "beneficiary": "FoodProcess SA",
+    "type": "ENTREPRISE",
+    "size": "PME",
+    "need": "Optimisation énergétique",
+    "expectedSteps": ["Sensibilisation", "Financement", "Déploiement"]
+  }
+]

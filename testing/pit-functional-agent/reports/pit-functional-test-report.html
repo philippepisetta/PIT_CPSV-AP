@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport de Recette Fonctionnelle PIT vNext</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at top right, #1E1B4B, #0F172A 50%, #020617); }
+    .outfit { font-family: 'Outfit', sans-serif; }
+    .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen py-10 px-6">
+  <div class="max-w-7xl mx-auto space-y-8">
+    <header class="border-b border-slate-800 pb-6">
+      <span class="px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-xs font-bold uppercase tracking-widest border border-teal-500/20">AGENT TESTEUR PIT</span>
+      <h1 class="outfit text-4xl font-black mt-2">Rapport de Recette Fonctionnelle <span class="bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">PIT vNext</span></h1>
+      <p class="text-slate-400 text-xs mt-1">Exécuté automatiquement le 23/06/2026 13:47:07</p>
+    </header>
+
+    <!-- Stats -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="glass p-5 rounded-2xl">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Taux de réussite</span>
+        <span class="outfit text-4xl font-black text-teal-400 block mt-2">100%</span>
+        <span class="text-xs text-slate-400 font-semibold">33/33 tests validés</span>
+      </div>
+      <div class="glass p-5 rounded-2xl">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Anomalies bloquantes</span>
+        <span class="outfit text-4xl font-black text-rose-500 block mt-2">0</span>
+        <span class="text-xs text-slate-400 font-semibold">Erreurs de permission / navigation</span>
+      </div>
+      <div class="glass p-5 rounded-2xl">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Anomalies majeures</span>
+        <span class="outfit text-4xl font-black text-amber-500 block mt-2">0</span>
+        <span class="text-xs text-slate-400 font-semibold">Anomalies dans le cycle CRUD / Calculs</span>
+      </div>
+      <div class="glass p-5 rounded-2xl">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Statut Global</span>
+        <span class="outfit text-2xl font-black text-teal-400 block mt-4">
+          PROD READY
+        </span>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="glass rounded-2xl overflow-hidden">
+      <div class="p-5 border-b border-slate-800 bg-slate-900/40">
+        <h3 class="outfit text-lg font-bold text-teal-400">Détails d'Exécution des Tests</h3>
+      </div>
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-900/60 text-slate-400 font-bold uppercase border-b border-slate-800">
+            <th class="p-4">ID</th>
+            <th class="p-4">Cas de test</th>
+            <th class="p-4">Statut</th>
+            <th class="p-4">Criticité</th>
+            <th class="p-4">Attendu</th>
+            <th class="p-4">Obtenu</th>
+            <th class="p-4">Commentaire</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/50">
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-001</td>
+              <td class="p-4 font-semibold">Should create, edit, add contact, and soft-delete a beneficiary</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-002</td>
+              <td class="p-4 font-semibold">Verify Espace Données header & Source Systems</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-003</td>
+              <td class="p-4 font-semibold">Verify Data Quality Dashboard and 9 Quality Dimensions</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-004</td>
+              <td class="p-4 font-semibold">Verify Mappings & API configuration</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-005</td>
+              <td class="p-4 font-semibold">Validate CAS-01 - WE - Orientation Financement PME</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-006</td>
+              <td class="p-4 font-semibold">Validate CAS-02 - WE - Détection proactive d'entreprises</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-007</td>
+              <td class="p-4 font-semibold">Validate CAS-03 - SPW - Cartographie dynamique S3</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-008</td>
+              <td class="p-4 font-semibold">Validate CAS-04 - SPW - Détection de synergies inter-DIS</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-009</td>
+              <td class="p-4 font-semibold">Validate CAS-05 - AKT - Matching entreprises / partenaires</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-010</td>
+              <td class="p-4 font-semibold">Validate CAS-06 - AKT - Détection des besoins sectoriels</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-011</td>
+              <td class="p-4 font-semibold">Validate CAS-07 - UCM - Assistant administratif PME</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-012</td>
+              <td class="p-4 font-semibold">Validate CAS-08 - UCM - Détection des fragilités</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-013</td>
+              <td class="p-4 font-semibold">Validate CAS-09 - AWEX - Recommandation marchés export</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-014</td>
+              <td class="p-4 font-semibold">Validate CAS-10 - AWEX - Détection d'entreprises exportables</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-015</td>
+              <td class="p-4 font-semibold">Validate CAS-11 - WBI - Recommandation programmes UE</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-016</td>
+              <td class="p-4 font-semibold">Validate CAS-12 - Clusters - Détection automatique de consortiums</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-017</td>
+              <td class="p-4 font-semibold">Validate CAS-13 - Clusters - Cartographie chaînes de valeur</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-018</td>
+              <td class="p-4 font-semibold">Validate CAS-14 - Transversal - Moteur de recommandation de services</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-019</td>
+              <td class="p-4 font-semibold">Validate CAS-15 - Transversal - Customer Journey territorial</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-020</td>
+              <td class="p-4 font-semibold">Verify Espace Résilience contains 6 OECD Dimensions & crises selection</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-021</td>
+              <td class="p-4 font-semibold">Verify Caroline Demonstrator Wizard Step-by-Step Flow</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-022</td>
+              <td class="p-4 font-semibold">Verify Espace Pilotage contains exactly the 4 structured tabs</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-023</td>
+              <td class="p-4 font-semibold">Verify Registre des Preuves is in read-only mode for Pilotage user</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-024</td>
+              <td class="p-4 font-semibold">Verify Strategic Lineage Trace Visualizer in Demonstrator</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-025</td>
+              <td class="p-4 font-semibold">Verify Territoires page loads regional data and maps</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-026</td>
+              <td class="p-4 font-semibold">Verify Filières S3 page shows industrial sectors</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-027</td>
+              <td class="p-4 font-semibold">Verify Value Chain Explorer allows drill-down</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-028</td>
+              <td class="p-4 font-semibold">Verify Écosystèmes (Organizations) lists actors and hubs</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-029</td>
+              <td class="p-4 font-semibold">Verify Graph Explorer visualizes the ssemantic network</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-030</td>
+              <td class="p-4 font-semibold">Verify default workspace is Espace Accompagnement</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-031</td>
+              <td class="p-4 font-semibold">Switch workspace to Espace Pilotage (Décideur role) and verify isolation</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-032</td>
+              <td class="p-4 font-semibold">Switch workspace to Espace Données (Data Steward role) and verify isolation</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+            <tr class="hover:bg-slate-800/20">
+              <td class="p-4 font-mono font-bold">PIT-TS-033</td>
+              <td class="p-4 font-semibold">Check routing redirections from Next.js config</td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-teal-500/10 text-teal-400">PASS</span></td>
+              <td class="p-4"><span class="px-2.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Majeur</span></td>
+              <td class="p-4 text-slate-400">Comportement conforme aux spécifications</td>
+              <td class="p-4 font-semibold">Succès</td>
+              <td class="p-4 text-slate-400 italic">—</td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="glass p-6 rounded-2xl space-y-4">
+      <h3 class="outfit text-xl font-bold text-teal-400 border-b border-slate-800 pb-2">💡 Recommandations de Recette</h3>
+      <ul class="list-disc pl-5 space-y-2 text-xs text-slate-300 font-semibold">
+        <li><strong>Reroutage des Identifiants</strong> : Limiter l'accès en écriture des fiches Bénéficiaires aux seuls utilisateurs disposant du rôle Conseiller.</li>
+        <li><strong>Optimisation des Mappings</strong> : Accélérer la réponse de la base PostgreSQL en créant des index sémantiques sur les jointures de la table <code>EntityClassification</code>.</li>
+        <li><strong>Indice de Confiance Résilience</strong> : Introduire des contrôles supplémentaires pour garantir qu'aucune donnée de résilience factice n'influence les indicateurs macro du Cabinet.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

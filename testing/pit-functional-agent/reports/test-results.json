@@ -1,0 +1,1438 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\Philippe Pisetta\\Downloads\\testing CPSV-AP\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "C:\\Users\\Philippe Pisetta\\Downloads\\testing CPSV-AP\\testing\\pit-functional-agent\\playwright.config.ts"
+    ],
+    "configFile": "C:\\Users\\Philippe Pisetta\\Downloads\\testing CPSV-AP\\testing\\pit-functional-agent\\playwright.config.ts",
+    "rootDir": "C:/Users/Philippe Pisetta/Downloads/testing CPSV-AP/testing/pit-functional-agent/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/Philippe Pisetta/Downloads/testing CPSV-AP/testing/pit-functional-agent/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/Philippe Pisetta/Downloads/testing CPSV-AP/testing/pit-functional-agent/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./reports/test-results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "./reports/playwright-html",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "crud-beneficiaries.spec.ts",
+      "file": "crud-beneficiaries.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Beneficiaries CRUD & Soft-Delete Tests",
+          "file": "crud-beneficiaries.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Should create, edit, add contact, and soft-delete a beneficiary",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15197,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:06.382Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3990131fc63f14686708-f6994396946abf1531d5",
+              "file": "crud-beneficiaries.spec.ts",
+              "line": 41,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "data-governance.spec.ts",
+      "file": "data-governance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Data Governance & Quality Monitoring Tests",
+          "file": "data-governance.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify Espace Données header & Source Systems",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1264,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:22.221Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a56a915d30d63bec8a08-467ca12820ba33a156dd",
+              "file": "data-governance.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "Verify Data Quality Dashboard and 9 Quality Dimensions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1878,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:23.497Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a56a915d30d63bec8a08-0136766d39fbc7306435",
+              "file": "data-governance.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "Verify Mappings & API configuration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1937,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:25.386Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a56a915d30d63bec8a08-c15ddb6b0d1e5039df7e",
+              "file": "data-governance.spec.ts",
+              "line": 46,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "partner-validation.spec.ts",
+      "file": "partner-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Partner Recette Use Cases Validation",
+          "file": "partner-validation.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Validate CAS-01 - WE - Orientation Financement PME",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3749,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-01: Orientation Financement PME\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary MecaTech SRL not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:27.349Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-9f17961be00d474a6d17",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-02 - WE - Détection proactive d'entreprises",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3307,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-02: Détection proactive d'entreprises\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary GreenSensor SA not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:31.111Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-31755e839feb57d26079",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-03 - SPW - Cartographie dynamique S3",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3441,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-03: Cartographie dynamique S3\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary Smart Factory Wallonia not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:34.427Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-9bfd91afe2cae9716bfe",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-04 - SPW - Détection de synergies inter-DIS",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3490,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-04: Détection de synergies inter-DIS\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary Synergie IA & Vibrations not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:37.878Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-d084860bc551c85433e7",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-05 - AKT - Matching entreprises / partenaires",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3323,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-05: Matching entreprises / partenaires\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary BuildTech SRL not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:41.379Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-a773f9690df15a2dcecf",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-06 - AKT - Détection des besoins sectoriels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2343,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-06: Détection des besoins sectoriels\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:44.711Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-daf49018638c45b894a4",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-07 - UCM - Assistant administratif PME",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3284,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-07: Assistant administratif PME\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary Boulangerie Dupont not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:47.065Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-4f99a87731483ed02162",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-08 - UCM - Détection des fragilités",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3258,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-08: Détection des fragilités\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary Salon Clara not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:50.359Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-e33025c669aa65e687b0",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-09 - AWEX - Recommandation marchés export",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3290,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-09: Recommandation marchés export\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary GreenSensor SA not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:53.629Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-821dc77a4d5ffc7afcd1",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-10 - AWEX - Détection d'entreprises exportables",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3272,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-10: Détection d'entreprises exportables\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary BioPack Wallonia not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:45:56.930Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-1b7c11dc350eb7f5e748",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-11 - WBI - Recommandation programmes UE",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3319,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-11: Recommandation programmes UE\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary IA Énergie Europe not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:00.214Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-567e5328422665ee44ab",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-12 - Clusters - Détection automatique de consortiums",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2388,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-12: Détection automatique de consortiums\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:03.545Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-dc14c7390879f1a9797a",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-13 - Clusters - Cartographie chaînes de valeur",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2113,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-13: Cartographie chaînes de valeur\n"
+                        },
+                        {
+                          "text": "Found value chains: Espace Accompagnement, Espace Pilotage, Espace Données\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:05.942Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-fb57686e97fa693a4ace",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-14 - Transversal - Moteur de recommandation de services",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3472,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-14: Moteur de recommandation de services\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary DataWood SRL not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:08.065Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-7bc2e69f5e7502fea50e",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Validate CAS-15 - Transversal - Customer Journey territorial",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3271,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Running validation for CAS-15: Customer Journey territorial\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️ Beneficiary FoodProcess SA not found in seeding data, skipping detail checks.\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:11.548Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0f2a098bcee194716329-3b725c05200da4b4b340",
+              "file": "partner-validation.spec.ts",
+              "line": 14,
+              "column": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "resilience-scenarios.spec.ts",
+      "file": "resilience-scenarios.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Resilience Framework & Scenario Caroline Tests",
+          "file": "resilience-scenarios.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify Espace Résilience contains 6 OECD Dimensions & crises selection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7502,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:14.834Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1189a9cd381da4e9d4b-9117e45faad1fbff4554",
+              "file": "resilience-scenarios.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "Verify Caroline Demonstrator Wizard Step-by-Step Flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7555,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:22.346Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1189a9cd381da4e9d4b-8137bd006db34f9f011d",
+              "file": "resilience-scenarios.spec.ts",
+              "line": 30,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "strategic-lineage.spec.ts",
+      "file": "strategic-lineage.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Strategic Lineage & 4-Tab Pilotage Cockpit Tests",
+          "file": "strategic-lineage.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify Espace Pilotage contains exactly the 4 structured tabs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2127,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:29.916Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30642e4fe6d46569e221-1cb81fc9dcf690a271ed",
+              "file": "strategic-lineage.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "Verify Registre des Preuves is in read-only mode for Pilotage user",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2953,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:32.053Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30642e4fe6d46569e221-6807d935be845fb3272a",
+              "file": "strategic-lineage.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Verify Strategic Lineage Trace Visualizer in Demonstrator",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4146,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:35.017Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30642e4fe6d46569e221-fd0ee70d58c88b7c3576",
+              "file": "strategic-lineage.spec.ts",
+              "line": 54,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "territorial-intelligence.spec.ts",
+      "file": "territorial-intelligence.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Territorial Intelligence & Graph Explorer Tests",
+          "file": "territorial-intelligence.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify Territoires page loads regional data and maps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1340,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:39.179Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d64ee02bfacb3b9d7cc-abaccf706b59c405ae33",
+              "file": "territorial-intelligence.spec.ts",
+              "line": 10,
+              "column": 7
+            },
+            {
+              "title": "Verify Filières S3 page shows industrial sectors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1991,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:40.529Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d64ee02bfacb3b9d7cc-b07d060d070411119cfc",
+              "file": "territorial-intelligence.spec.ts",
+              "line": 19,
+              "column": 7
+            },
+            {
+              "title": "Verify Value Chain Explorer allows drill-down",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2920,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:42.529Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d64ee02bfacb3b9d7cc-c955f976d4a8856bf08f",
+              "file": "territorial-intelligence.spec.ts",
+              "line": 31,
+              "column": 7
+            },
+            {
+              "title": "Verify Écosystèmes (Organizations) lists actors and hubs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2308,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:45.459Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d64ee02bfacb3b9d7cc-a610132392870b303522",
+              "file": "territorial-intelligence.spec.ts",
+              "line": 50,
+              "column": 7
+            },
+            {
+              "title": "Verify Graph Explorer visualizes the ssemantic network",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9471,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:47.777Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d64ee02bfacb3b9d7cc-b407362cf68f03eaef25",
+              "file": "territorial-intelligence.spec.ts",
+              "line": 62,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "workspace-navigation.spec.ts",
+      "file": "workspace-navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UX Navigation & Workspace Isolation Tests",
+          "file": "workspace-navigation.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify default workspace is Espace Accompagnement",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 789,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:57.265Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "62ee0100868f01d700c4-1b33613133d01e7736af",
+              "file": "workspace-navigation.spec.ts",
+              "line": 10,
+              "column": 7
+            },
+            {
+              "title": "Switch workspace to Espace Pilotage (Décideur role) and verify isolation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1896,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:58.069Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "62ee0100868f01d700c4-488be9d34898602bb959",
+              "file": "workspace-navigation.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Switch workspace to Espace Données (Data Steward role) and verify isolation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1887,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:46:59.976Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "62ee0100868f01d700c4-e6b20e20e195600af82f",
+              "file": "workspace-navigation.spec.ts",
+              "line": 51,
+              "column": 7
+            },
+            {
+              "title": "Check routing redirections from Next.js config",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4514,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-06-23T11:47:01.873Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "62ee0100868f01d700c4-4a36937b96caaa289ee6",
+              "file": "workspace-navigation.spec.ts",
+              "line": 72,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-06-23T11:45:05.630Z",
+    "duration": 121326.604,
+    "expected": 33,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

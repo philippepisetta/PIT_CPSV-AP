@@ -13,7 +13,10 @@
     "seed:edih": "ts-node prisma/seed-edih-services.ts",
     "postinstall": "prisma generate",
     "pit:audit": "ts-node tests/pit-auditor/audit.ts",
-    "pit:audit:prod": "cross-env PIT_TARGET_URL=https://pit-cpsv-ap.vercel.app ts-node tests/pit-auditor/audit.ts"
+    "pit:audit:prod": "cross-env PIT_TARGET_URL=https://pit-cpsv-ap.vercel.app ts-node tests/pit-auditor/audit.ts",
+    "test:pit": "ts-node testing/pit-functional-agent/pit-test-agent.ts",
+    "test:pit:headed": "npx playwright test -c testing/pit-functional-agent/playwright.config.ts --headed",
+    "test:pit:report": "npx playwright show-report testing/pit-functional-agent/reports/playwright-html"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -28,6 +31,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^20.12.12",

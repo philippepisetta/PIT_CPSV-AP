@@ -15,14 +15,24 @@ export default function Topbar() {
       {/* Workspace Switcher */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <Briefcase className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+          <Briefcase className={cn(
+            "h-4 w-4",
+            activeWorkspace === "accompaniment" && "text-teal-600 dark:text-teal-400",
+            activeWorkspace === "pilotage" && "text-amber-600 dark:text-amber-400",
+            activeWorkspace === "data" && "text-purple-600 dark:text-purple-400"
+          )} />
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted hidden sm:inline select-none">
             Espace :
           </span>
           <select
             value={activeWorkspace}
             onChange={(e) => setWorkspace(e.target.value as any)}
-            className="bg-teal-500/10 border border-teal-500/30 rounded-xl px-3 py-1.5 text-xs font-black text-teal-700 dark:text-teal-400 focus:outline-none focus:border-teal-750 transition-colors cursor-pointer"
+            className={cn(
+              "border rounded-xl px-3 py-1.5 text-xs font-black focus:outline-none transition-colors cursor-pointer",
+              activeWorkspace === "accompaniment" && "bg-teal-500/10 border-teal-500/30 text-teal-700 dark:text-teal-400 focus:border-teal-600",
+              activeWorkspace === "pilotage" && "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 focus:border-amber-600",
+              activeWorkspace === "data" && "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-400 focus:border-purple-600"
+            )}
           >
             {WORKSPACES.map((w) => (
               <option key={w.id} value={w.id} className="bg-background text-text">

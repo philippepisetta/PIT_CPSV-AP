@@ -1,4 +1,4 @@
-// cpsv-ap-app/src/app/strategic/demonstrator/page.tsx
+// src/app/resilience/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -263,7 +263,7 @@ const SCENARIOS: Record<string, ScenarioData> = {
   }
 };
 
-export default function EnrichedStrategicDemonstratorPage() {
+export default function ResilienceDemonstratorPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState<"scenario" | "impact" | "gaps" | "response">("scenario");
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
@@ -285,13 +285,13 @@ export default function EnrichedStrategicDemonstratorPage() {
 
   return (
     <PITLayout
-      category="PILOTAGE STRATÉGIQUE"
+      category="RÉSILIENCE STRATÉGIQUE"
       title="Démonstrateur Politique Exécutif"
       description="Parcours de simulation et d'aide à la décision stratégique pour le Cabinet et la Direction Générale."
       pageIcon={Compass}
       breadcrumb={[
-        { label: "Pilotage", href: "/pilotage" },
-        { label: "Démonstrateur Cabinet" }
+        { label: "Cockpit", href: "/strategic" },
+        { label: "Questions Décideur" }
       ]}
     >
       <div className="space-y-8">
@@ -300,12 +300,12 @@ export default function EnrichedStrategicDemonstratorPage() {
         <div className="p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 to-indigo-500/10 border border-teal-500/20 space-y-2 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500 opacity-[0.04] blur-2xl rounded-full" />
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black uppercase bg-teal-500/15 text-teal-655 px-2 py-0.5 rounded-full border border-teal-500/20">
+            <span className="text-[9px] font-black uppercase bg-teal-500/15 text-teal-605 px-2 py-0.5 rounded-full border border-teal-500/20">
               Cadre Méthodologique Officiel
             </span>
           </div>
           <h2 className="text-xs font-black text-text uppercase tracking-wider flex items-center gap-1.5">
-            <ShieldCheck className="h-4.5 w-4.5 text-teal-650" />
+            <ShieldCheck className="h-4.5 w-4.5 text-teal-605" />
             Positionnement de la PIT : Outil d'Aide à la Décision
           </h2>
           <p className="text-[11px] text-muted font-bold leading-relaxed">
@@ -337,7 +337,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                       <ShieldAlert className="h-6 w-6" />
                     </span>
                     <span className="text-[8px] font-black uppercase bg-amber-500/10 text-amber-655 px-2 py-0.5 rounded border border-amber-500/15">
-                      Actif • Caroline
+                      Actif • Cabinet
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -355,7 +355,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </ul>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-black text-amber-600 dark:text-amber-400 mt-4 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center gap-1 text-[10px] font-black text-amber-605 dark:text-amber-400 mt-4 group-hover:translate-x-1 transition-transform">
                   <span>Lancer la simulation</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
@@ -391,7 +391,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </ul>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-black text-blue-600 dark:text-blue-400 mt-4 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center gap-1 text-[10px] font-black text-blue-605 dark:text-blue-400 mt-4 group-hover:translate-x-1 transition-transform">
                   <span>Lancer la simulation</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
@@ -405,7 +405,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 opacity-10 blur-xl group-hover:scale-125 transition-transform" />
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
-                    <span className="p-3 bg-rose-500/10 text-rose-650 rounded-xl">
+                    <span className="p-3 bg-rose-500/10 text-rose-600 rounded-xl">
                       <Target className="h-6 w-6" />
                     </span>
                     <span className="text-[8px] font-black uppercase bg-rose-500/10 text-rose-655 px-2 py-0.5 rounded border border-rose-500/15">
@@ -413,7 +413,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-black text-text group-hover:text-rose-655 dark:group-hover:text-rose-400 transition-colors">🦠 Pandémie & Logistique</h4>
+                    <h4 className="text-sm font-black text-text group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">🦠 Pandémie & Logistique</h4>
                     <p className="text-[11px] text-muted font-semibold leading-relaxed">
                       Simulez les ruptures d'approvisionnement des maillons exportateurs et la mobilisation du télétravail.
                     </p>
@@ -427,7 +427,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </ul>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-black text-rose-655 dark:text-rose-400 mt-4 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center gap-1 text-[10px] font-black text-rose-605 dark:text-rose-400 mt-4 group-hover:translate-x-1 transition-transform">
                   <span>Lancer la simulation</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
@@ -549,9 +549,9 @@ export default function EnrichedStrategicDemonstratorPage() {
                           <Settings className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                           Hypothèses Utilisées (Assumptions)
                         </h5>
-                        <div className="space-y-2">
+                        <div className="space-y-2 font-bold">
                           {data.assumptions.map((a, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+                            <div key={idx} className="flex justify-between items-center text-[10px]">
                               <div>
                                 <span className="text-text block leading-tight">{a.name}</span>
                                 <span className="text-[8px] text-muted font-bold block uppercase">{a.type}</span>
@@ -606,7 +606,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                         <div className="border-t border-muted/5 pt-2">
                           <button
                             onClick={() => setExpandedKpi(expandedKpi === "structures" ? null : "structures")}
-                            className="text-[9px] font-black text-teal-655 hover:underline flex items-center gap-0.5 border-0 bg-transparent cursor-pointer"
+                            className="text-[9px] font-black text-teal-605 hover:underline flex items-center gap-0.5 border-0 bg-transparent cursor-pointer"
                           >
                             <span>{expandedKpi === "structures" ? "Masquer la méthode" : "Comment cette valeur est-elle estimée ? ➔"}</span>
                           </button>
@@ -772,7 +772,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
+                      <table className="w-full text-left text-xs border-collapse font-bold">
                         <thead>
                           <tr className="border-b border-muted/10 text-muted font-black uppercase text-[9px] tracking-wider">
                             <th className="py-2.5">Donnée Requise</th>
@@ -782,7 +782,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </thead>
                         <tbody>
                           {data.data_gaps.map((gap, idx) => (
-                            <tr key={idx} className="border-b border-muted/5 hover:bg-glass/5 transition-colors font-bold">
+                            <tr key={idx} className="border-b border-muted/5 hover:bg-glass/5 transition-colors">
                               <td className="py-3 pr-2 text-text text-[11px]">{gap.name}</td>
                               <td className="py-3 text-center">
                                 <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${
@@ -796,10 +796,10 @@ export default function EnrichedStrategicDemonstratorPage() {
                               </td>
                               <td className="py-3 text-right">
                                 <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase flex items-center gap-1 justify-end ${
-                                  gap.status === "AVAILABLE" ? "bg-emerald-500/10 text-emerald-600" :
-                                  gap.status === "PARTIAL" ? "bg-amber-500/10 text-amber-700" :
-                                  gap.status === "MISSING" ? "bg-rose-500/10 text-rose-600" :
-                                  "bg-blue-500/10 text-blue-700"
+                                  gap.status === "AVAILABLE" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/15" :
+                                  gap.status === "PARTIAL" ? "bg-amber-500/10 text-amber-705 border border-amber-500/15" :
+                                  gap.status === "MISSING" ? "bg-rose-500/10 text-rose-600 border border-rose-500/15" :
+                                  "bg-blue-500/10 text-blue-700 border border-blue-500/15"
                                 }`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${
                                     gap.status === "AVAILABLE" ? "bg-emerald-500" :
@@ -831,11 +831,11 @@ export default function EnrichedStrategicDemonstratorPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Services & Programs */}
-                      <div className="space-y-4">
+                      <div className="space-y-4 font-bold">
                         <div className="p-4 bg-glass border border-muted/15 rounded-xl space-y-3">
                           <span className="text-[9px] font-black text-muted uppercase block border-b border-muted/10 pb-1">Services d'Accompagnement</span>
                           {data.proposed_services.map((s, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+                            <div key={idx} className="flex justify-between items-center text-[10px]">
                               <div>
                                 <span className="text-text block leading-tight">{s.name}</span>
                                 <span className="text-[8px] text-muted font-bold block">{s.provider}</span>
@@ -850,7 +850,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                         <div className="p-4 bg-glass border border-muted/15 rounded-xl space-y-2">
                           <span className="text-[9px] font-black text-muted uppercase block border-b border-muted/10 pb-1">Programmes Cadres</span>
                           {data.proposed_programs.map((p, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-[10px] font-bold text-text">
+                            <div key={idx} className="flex items-center gap-2 text-[10px] text-text">
                               <Landmark className="h-3.5 w-3.5 text-indigo-500" />
                               <span>{p}</span>
                             </div>
@@ -859,11 +859,11 @@ export default function EnrichedStrategicDemonstratorPage() {
                       </div>
 
                       {/* Funding & Recommended actions */}
-                      <div className="space-y-4">
+                      <div className="space-y-4 font-bold">
                         <div className="p-4 bg-glass border border-muted/15 rounded-xl space-y-2">
                           <span className="text-[9px] font-black text-muted uppercase block border-b border-muted/10 pb-1">Instruments Financiers Mobilisés</span>
                           {data.proposed_funding.map((f, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-[10px] font-bold text-text">
+                            <div key={idx} className="flex items-center gap-2 text-[10px] text-text">
                               <Coins className="h-3.5 w-3.5 text-emerald-500" />
                               <span>{f}</span>
                             </div>
@@ -871,7 +871,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         <div className="p-4 bg-teal-500/5 border border-teal-500/20 rounded-xl space-y-1.5">
-                          <span className="text-[9px] font-black text-teal-655 uppercase block">Arbitrage Métier / Avis de la PIT :</span>
+                          <span className="text-[9px] font-black text-teal-605 uppercase block">Arbitrage Métier / Avis de la PIT :</span>
                           <p className="text-[10px] text-text font-semibold leading-relaxed">
                             {data.recommended_action}
                           </p>
@@ -936,7 +936,7 @@ export default function EnrichedStrategicDemonstratorPage() {
                     </h5>
                     <button
                       onClick={() => setShowTraceability(!showTraceability)}
-                      className="text-[9px] font-black text-teal-655 hover:underline border-0 bg-transparent cursor-pointer"
+                      className="text-[9px] font-black text-teal-655 hover:underline border-0 bg-transparent cursor-pointer font-bold"
                     >
                       {showTraceability ? "Masquer" : "Afficher"}
                     </button>
@@ -947,12 +947,12 @@ export default function EnrichedStrategicDemonstratorPage() {
                   </p>
 
                   {showTraceability && (
-                    <div className="space-y-3.5 pt-2 animate-fadeIn">
+                    <div className="space-y-3.5 pt-2 animate-fadeIn font-semibold">
                       <div className="space-y-2.5">
                         
                         {/* Box 1 */}
-                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] font-bold text-text">
-                          <span className="text-muted block text-[8px] uppercase">1. Question Cabinets</span>
+                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] text-text">
+                          <span className="text-muted block text-[8px] uppercase font-black">1. Question Cabinets</span>
                           <span className="block leading-tight mt-0.5">Estimer l'impact de la crise : {data.title}</span>
                         </div>
 
@@ -961,12 +961,12 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         {/* Box 2 */}
-                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] font-bold text-text">
-                          <span className="text-muted block text-[8px] uppercase">2. Jeux de données (DCAT-AP)</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px] font-mono">BCE</span>
-                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px] font-mono">ONSS</span>
-                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px] font-mono">BNB</span>
+                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] text-text font-bold">
+                          <span className="text-muted block text-[8px] uppercase font-black">2. Jeux de données (DCAT-AP)</span>
+                          <div className="flex flex-wrap gap-1 mt-1 font-mono font-black">
+                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px]">BCE</span>
+                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px]">ONSS</span>
+                            <span className="bg-muted/10 border border-muted/15 px-1.5 py-0.2 rounded text-[8px]">BNB</span>
                           </div>
                         </div>
 
@@ -975,8 +975,8 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         {/* Box 3 */}
-                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] font-bold text-text">
-                          <span className="text-muted block text-[8px] uppercase">3. Indicateurs de structure</span>
+                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] text-text">
+                          <span className="text-muted block text-[8px] uppercase font-black">3. Indicateurs de structure</span>
                           <span className="block leading-tight mt-0.5">Effectifs ETP / Secteur NACE</span>
                         </div>
 
@@ -985,8 +985,8 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         {/* Box 4 */}
-                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] font-bold text-text">
-                          <span className="text-muted block text-[8px] uppercase">4. Hypothèses actives</span>
+                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] text-text">
+                          <span className="text-muted block text-[8px] uppercase font-black">4. Hypothèses actives</span>
                           <span className="block leading-tight mt-0.5">
                             {data.assumptions.find(a => a.type === "HYPOTHÈSE")?.value || "Baisse de 20%"}
                           </span>
@@ -997,9 +997,9 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         {/* Box 5 */}
-                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] font-bold text-text">
-                          <span className="text-muted block text-[8px] uppercase">5. Algorithme de calcul</span>
-                          <span className="block font-mono text-[8px] bg-muted/10 p-1 rounded mt-0.5">SOMME (ETP * Coef_secteur)</span>
+                        <div className="p-2.5 bg-glass border border-muted/15 rounded-xl text-[10px] text-text">
+                          <span className="text-muted block text-[8px] uppercase font-black">5. Algorithme de calcul</span>
+                          <span className="block font-mono text-[8px] bg-muted/10 p-1 rounded mt-0.5 font-bold">SOMME (ETP * Coef_secteur)</span>
                         </div>
 
                         <div className="flex justify-center">
@@ -1007,9 +1007,9 @@ export default function EnrichedStrategicDemonstratorPage() {
                         </div>
 
                         {/* Box 6 */}
-                        <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-xl text-[10px] font-bold text-text flex justify-between items-center">
+                        <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-xl text-[10px] text-text flex justify-between items-center">
                           <div>
-                            <span className="text-teal-655 block text-[8px] uppercase">6. Résultat et Confiance</span>
+                            <span className="text-teal-655 block text-[8px] uppercase font-black font-semibold">6. Résultat et Confiance</span>
                             <span className="block font-black mt-0.5 text-teal-650">{data.metrics.exposed_etp.value}</span>
                           </div>
                           <span className="bg-amber-500/10 text-amber-700 px-1.5 py-0.5 rounded text-[8px] font-black uppercase">
@@ -1041,4 +1041,3 @@ export default function EnrichedStrategicDemonstratorPage() {
     </PITLayout>
   );
 }
-

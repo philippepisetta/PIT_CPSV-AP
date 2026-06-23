@@ -46,77 +46,77 @@ interface NavBlock {
 
 const navBlocks: NavBlock[] = [
   {
-    title: "Workspace Animation",
-    allowedWorkspaces: ["animateur"],
+    title: "Accompagnement",
+    allowedWorkspaces: ["accompaniment"],
     items: [
-      { name: "Activités & événements", href: "/activities", icon: Compass },
-      { name: "Communautés", href: "/communities", icon: Share2 },
-      { name: "Défis d’écosystème", href: "/ecosystem-challenges", icon: Target },
-      { name: "Consortiums", href: "/consortia", icon: Network },
-      { name: "Projets", href: "/projects", icon: Activity },
-      { name: "Justificatifs & preuves d’impact", href: "/evidences", icon: ClipboardCheck },
+      { name: "Parcours", href: "/accompaniment/journeys", icon: Compass },
+      { name: "Bénéficiaires (Vue 360°)", href: "/accompaniment/beneficiaries", icon: Users },
+      { name: "Services & Matchmaking", href: "/accompaniment/services", icon: Sparkles },
+      { name: "Activités", href: "/accompaniment/activities", icon: Compass },
+      { name: "Communautés & Affiliations", href: "/accompaniment/communities", icon: Share2 },
+      { name: "Consortiums", href: "/accompaniment/consortia", icon: Network },
     ]
   },
   {
-    title: "Gestion de l’écosystème",
-    allowedWorkspaces: ["animateur", "conseiller"],
+    title: "Défis & Programmes",
+    allowedWorkspaces: ["accompaniment", "pilotage"],
     items: [
-      { name: "Acteurs territoriaux", href: "/organizations", icon: Building },
-      { name: "Bénéficiaires", href: "/beneficiaries", icon: Users },
-      { name: "Contacts", href: "/contacts", icon: Users },
-      { name: "Affiliations & membres", href: "/members", icon: Share2 },
+      { name: "Défis territoriaux", href: "/challenges", icon: Target },
+      { name: "Programmes & Initiatives", href: "/accompaniment/funding?tab=programs", icon: Layers },
+      { name: "Projets", href: "/projects", icon: FileText },
+      { name: "Financements", href: "/accompaniment/funding?tab=awards", icon: Zap },
     ]
   },
   {
-    title: "Catalogue territorial",
-    allowedWorkspaces: ["animateur", "conseiller", "steward"],
+    title: "Résilience",
+    allowedWorkspaces: ["pilotage"],
     items: [
-      { name: "Services CPSV", href: "/services", icon: FileText },
-      { name: "Parcours d’accompagnement", href: "/journeys", icon: Compass },
-      { name: "Opportunités d’innovation", href: "/opportunities", icon: FileCode },
-      { name: "Filières S3", href: "/filieres", icon: Layers },
-      { name: "Explorateur de chaînes", href: "/value-chain-explorer", icon: Network },
-      { name: "Vues d’analyse", href: "/analysis-views", icon: Layers },
+      { name: "Risques", href: "/resilience?tab=risks", icon: Shield },
+      { name: "Scénarios", href: "/resilience?tab=scenarios", icon: Play },
+      { name: "Impacts", href: "/resilience?tab=impacts", icon: LineChart },
+      { name: "Résilience territoriale", href: "/resilience", icon: Shield },
+      { name: "Démonstrateur Cabinet", href: "/resilience/demonstrator", icon: Play },
     ]
   },
   {
-    title: "Données & interopérabilité",
-    allowedWorkspaces: ["steward"],
+    title: "Pilotage",
+    allowedWorkspaces: ["pilotage"],
     items: [
-      { name: "Sources de données", href: "/interoperability", icon: Settings },
-      { name: "Datasets", href: "/marketplace", icon: Database },
-      { name: "Mappings", href: "/interoperability?tab=mappings", icon: FileCode },
-      { name: "Qualité des données", href: "/interoperability/quality", icon: CheckCircle2 },
-      { name: "API & exports", href: "/interoperability/api-exports", icon: Zap },
+      { name: "KPIs d'impact", href: "/pilotage", icon: LineChart },
+      { name: "ROI territorial", href: "/pilotage?tab=roi", icon: LineChart },
+      { name: "Alignement S3", href: "/pilotage?tab=s3", icon: Shield },
+      { name: "Gap Analysis", href: "/gap-analysis", icon: Shield },
+      { name: "Registre des Preuves", href: "/pilotage/evidences", icon: ClipboardCheck },
+    ]
+  },
+  {
+    title: "Intelligence Territoriale",
+    allowedWorkspaces: ["accompaniment", "pilotage"],
+    items: [
+      { name: "Territoires", href: "/territories", icon: Compass },
+      { name: "Filières", href: "/filieres", icon: Layers },
+      { name: "Chaînes de valeur", href: "/value-chain-explorer", icon: Network },
+      { name: "Écosystèmes", href: "/organizations", icon: Building },
+      { name: "Graph Explorer", href: "/intelligence/graph", icon: BarChart2 },
+    ]
+  },
+  {
+    title: "Données",
+    allowedWorkspaces: ["data"],
+    items: [
+      { name: "Datasets", href: "/data/marketplace", icon: Database },
+      { name: "Sources", href: "/data", icon: Settings },
+      { name: "Qualité des données", href: "/data/quality", icon: CheckCircle2 },
+      { name: "Mappings & API", href: "/data/api-exports", icon: Zap },
     ]
   },
   {
     title: "Gouvernance",
-    allowedWorkspaces: ["animateur", "conseiller", "steward", "dg"],
+    allowedWorkspaces: ["accompaniment", "pilotage", "data"],
     items: [
       { name: "Référentiels", href: "/governance/referentiels", icon: Database },
-      { name: "Rôles & droits", href: "/governance/roles", icon: Shield },
-      { name: "Audit technique", href: "/governance/audit-technical", icon: ClipboardCheck },
+      { name: "Audit technique", href: "/governance/audit-technical", icon: Shield },
       { name: "Documentation", href: "/guide", icon: BookOpen },
-    ]
-  },
-  {
-    title: "Recommandations",
-    allowedWorkspaces: ["conseiller", "entreprise"],
-    items: [
-      { name: "Moteur de Match", href: "/recommender", icon: Sparkles },
-      { name: "Mode Histoire PIT", href: "/demo-mode", icon: Play },
-    ]
-  },
-  {
-    title: "Pilotage Stratégique",
-    allowedWorkspaces: ["dg"],
-    items: [
-      { name: "Missions & Roadmaps", href: "/strategic", icon: LineChart },
-      { name: "Démonstrateur Cabinet", href: "/strategic/demonstrator", icon: Play },
-      { name: "Politiques Publiques", href: "/strategic-frameworks", icon: Shield },
-      { name: "Gap Analysis", href: "/gap-analysis", icon: Shield },
-      { name: "Graph Explorer", href: "/graph-explorer", icon: BarChart2 },
     ]
   }
 ];
@@ -146,11 +146,9 @@ export default function Sidebar() {
         <div className="px-3 py-2 mb-4 rounded-xl bg-glass border border-muted/10 flex items-center gap-2">
           <div className={cn(
             "w-2.5 h-2.5 rounded-full animate-pulse",
-            activeWorkspace === "animateur" && "bg-teal-500",
-            activeWorkspace === "conseiller" && "bg-indigo-500",
-            activeWorkspace === "entreprise" && "bg-emerald-500",
-            activeWorkspace === "dg" && "bg-amber-500",
-            activeWorkspace === "steward" && "bg-purple-500"
+            activeWorkspace === "accompaniment" && "bg-teal-500",
+            activeWorkspace === "pilotage" && "bg-amber-500",
+            activeWorkspace === "data" && "bg-purple-500"
           )} />
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-wider text-text">

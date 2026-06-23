@@ -1,0 +1,316 @@
+{
+  "scenarios": [
+    {
+      "id": "energy",
+      "title": "Crise Énergétique",
+      "decisionQuestion": "Quelles filières S3 sont les plus exposées à la dépendance au gaz naturel importé ?",
+      "vulnerabilityCode": "VULN-GAS-NET",
+      "description": "Simulation d'une hausse tarifaire extrême et prolongée subie par les industries wallonnes fortement dépendantes du gaz de process thermique.",
+      "territory": "Wallonie (Région)",
+      "affectedSectors": "Sidérurgie (NACE 24), Chimie (NACE 20), Ciment (NACE 23)",
+      "horizon": "Moyen Terme (6 mois)",
+      "severity": "Critique (4/5)",
+      "assumptions": [
+        { "name": "Prix du gaz de marché", "value": "Multiplié par 3.0", "type": "CHOC" },
+        { "name": "Durée de la crise", "value": "6 mois consécutifs", "type": "PARAMÈTRE" },
+        { "name": "Baisse de production industrielle", "value": "-20% pour les secteurs ciblés", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Impact si surcoût > 15% du CA annuel", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "142 structures",
+        "exposed_etp": "18 500 ETP",
+        "exposed_revenue": "4.2 Mrds €",
+        "required_budget": "120 M €"
+      },
+      "data_gaps": [
+        { "name": "Consommation réelle de gaz par entreprise", "status": "MISSING", "impact": "CRITICAL" },
+        { "name": "Caractéristiques des contrats d'énergie (fixe/variable, durée)", "status": "MISSING", "impact": "HIGH" },
+        { "name": "Niveaux de stocks d'intrants critiques", "status": "TO_BE_NEGOTIATED", "impact": "MEDIUM" },
+        { "name": "Relations de sous-traitance régionales", "status": "PARTIAL", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Codes NACE sectoriels des PME (sidérurgie, ciment, chimie)",
+        "Adresses et localisations géographiques BCE",
+        "Effectifs déclarés (ONSS)"
+      ],
+      "missingData": [
+        "Consommation mensuelle réelle de gaz par site",
+        "Type de contrat d'énergie (fixe ou indexé, date d'échéance)",
+        "Couverture de hedging d'énergie sur site"
+      ],
+      "potentialSources": [
+        "Gestionnaires de Réseaux de Distribution (ORES / RESA)",
+        "Gestionnaire de Réseau de Transport de Gaz (Fluxys)",
+        "Direction Générale Énergie du SPF Économie"
+      ],
+      "proposed_services": [
+        { "name": "Diagnostic Efficacité Énergétique Express", "provider": "EDIH WallonIA / AdN", "type": "Service Technique" },
+        { "name": "Optimisation Énergétique des Procédés", "provider": "Sirris", "type": "Service Technique" },
+        { "name": "Recherche Financement Transition", "provider": "Wallonie Entreprendre", "type": "Service Conseil" }
+      ],
+      "proposed_programs": ["Plan de Transition Énergétique Industrielle", "Chèques Entreprises - Volet Transition"],
+      "proposed_funding": ["Garantie publique de crise", "Subvention de transition énergétique de Wallonie Entreprendre", "Subvention conjoncturelle gaz/électricité"],
+      "recommended_action": "Activer en urgence le guichet de subvention de transition, prioriser l'enrôlement des 142 structures sidérurgiques ciblées dans le diagnostic d'efficacité de l'EDIH, et initier la négociation de données avec les GRD (ORES/RESA) pour affiner les prochaines estimations."
+    },
+    {
+      "id": "cyber",
+      "title": "Résilience Cyber",
+      "decisionQuestion": "Quelles organisations critiques dépendent d'un unique fournisseur Cloud ?",
+      "vulnerabilityCode": "VULN-CLOUD-SINGLE",
+      "description": "Attaque par ransomware à grande échelle ciblant un fournisseur cloud majeur utilisé par les PME wallonnes.",
+      "territory": "Province du Brabant Wallon (ZAE Wavre)",
+      "affectedSectors": "Services Numériques (NACE 62), Logistique (NACE 52), Sous-traitance stratégique",
+      "horizon": "Court Terme (72 heures)",
+      "severity": "Majeure (4/5)",
+      "assumptions": [
+        { "name": "Indisponibilité du Cloud principal", "value": "72 heures consécutives", "type": "CHOC" },
+        { "name": "Taux de PME affectées", "value": "45% dans les zones industrielles", "type": "PARAMÈTRE" },
+        { "name": "Perte de données définitive", "value": "5% (défaut de sauvegarde)", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Dépendance à une infrastructure unique", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "58 structures",
+        "exposed_etp": "3 400 ETP",
+        "exposed_revenue": "185 M €",
+        "required_budget": "15 M €"
+      },
+      "data_gaps": [
+        { "name": "Cartographie réelle des hébergeurs par entreprise", "status": "MISSING", "impact": "CRITICAL" },
+        { "name": "Niveau effectif de sauvegarde décentralisée (backup DRP)", "status": "MISSING", "impact": "HIGH" },
+        { "name": "Taux d'assurance cyber souscrit par les PME", "status": "PARTIAL", "impact": "MEDIUM" },
+        { "name": "Segmentation réseau interne des sous-traitants", "status": "MISSING", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Infrastructures logiques déclarées de la PIT",
+        "Coordonnées de sécurité des délégués NIS2",
+        "Chiffre d'affaires sectoriel exposé"
+      ],
+      "missingData": [
+        "Emplacement et architecture des sauvegardes de données",
+        "Présence d'un plan de reprise d'activité (DRP) testé",
+        "Contrats de niveau de service (SLA) effectifs des hébergeurs"
+      ],
+      "potentialSources": [
+        "Audits réglementaires NIS2 de l'administration wallonne",
+        "Évaluations de vulnérabilités CORTEX",
+        "Enquêtes de cybersécurité de l'Agence du Numérique"
+      ],
+      "proposed_services": [
+        { "name": "Diagnostic Cybersécurité PME", "provider": "CETIC", "type": "Service Technique" },
+        { "name": "AI Cyber Assessment", "provider": "CETIC", "type": "Service Technique" },
+        { "name": "Support Réponse sur Incident Cyber", "provider": "CETIC / AdN", "type": "Service d'Urgence" }
+      ],
+      "proposed_programs": ["Programme Cyber Résilience Wallonie", "Chèques Cybersécurité"],
+      "proposed_funding": ["Co-financement DRP de Wallonie Entreprendre", "Subventions chèques cybersécurité SPW"],
+      "recommended_action": "Lancer en priorité le guichet de cofinancement DRP, initier des audits cyber pour les 58 structures identifiées, et négocier l'accès aux fiches de conformité NIS2 avec les autorités fédérales."
+    },
+    {
+      "id": "skills",
+      "title": "AI Skills Shortage",
+      "decisionQuestion": "Où se situent les plus fortes pénuries de compétences en intelligence artificielle ?",
+      "vulnerabilityCode": "VULN-AI-SKILLS",
+      "description": "Pénurie sévère de profils qualifiés en intelligence artificielle limitant l'adoption technologique et l'innovation au sein des PME wallonnes.",
+      "territory": "Wallonie (Pôles universitaires LLN/Liège)",
+      "affectedSectors": "Programmation (NACE 62.01), R&D (NACE 72.19), Conseil informatique",
+      "horizon": "Long Terme (12 mois)",
+      "severity": "Modérée (3/5)",
+      "assumptions": [
+        { "name": "Taux de postes non pourvus en IA", "value": "35% pendant plus de 6 mois", "type": "CHOC" },
+        { "name": "Exode des data scientists", "value": "20% vers Bruxelles ou l'étranger", "type": "PARAMÈTRE" },
+        { "name": "Taux d'intégration IA PME", "value": "< 10% d'adoption réelle", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Pénurie de main d'œuvre spécialisée", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "420 structures",
+        "exposed_etp": "1 200 data scientists",
+        "exposed_revenue": "650 M €",
+        "required_budget": "8 M €"
+      },
+      "data_gaps": [
+        { "name": "Compétences techniques réelles des développeurs internes", "status": "MISSING", "impact": "HIGH" },
+        { "name": "Taux d'exode effectif des diplômés universitaires", "status": "PARTIAL", "impact": "MEDIUM" },
+        { "name": "Besoins futurs détaillés par sector d'activité", "status": "PARTIAL", "impact": "MEDIUM" },
+        { "name": "Dépenses effectives en formation IA des PME", "status": "MISSING", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Nombre d'offres d'emploi IA actives sur le portail du Forem",
+        "Nombre annuel de diplômés en Master Data Science/IA",
+        "Scores DMAT déclarés des entreprises"
+      ],
+      "missingData": [
+        "Niveau réel de compétences internes des développeurs wallons",
+        "Proportion exacte de diplômés quittant la Wallonie à l'embauche",
+        "Budget réel alloué à la formation continue en entreprise"
+      ],
+      "potentialSources": [
+        "Forem (Statistiques de recrutement et pénuries)",
+        "Bureaux de recrutement privés et portails d'emploi",
+        "Universités wallonnes (statistiques d'insertion des diplômés)"
+      ],
+      "proposed_services": [
+        { "name": "Diagnostic IA & Opportunités", "provider": "CETIC", "type": "Service Technique" },
+        { "name": "AI Readiness Diagnostic", "provider": "CETIC", "type": "Service Technique" },
+        { "name": "Test Before Invest - IA", "provider": "Sirris", "type": "Service Expérimentation" }
+      ],
+      "proposed_programs": ["EDIH Wallonia", "Digital Wallonia - Plan Talents"],
+      "proposed_funding": ["Chèque Formation Cyber/IA", "Financement de démonstrateurs de l'EDIH"],
+      "recommended_action": "Soutenir la création de bootcamps de requalification, renforcer la dotation du service 'Test Before Invest' de Sirris, et lier la PIT aux flux de diplômés des universités."
+    },
+    {
+      "id": "circular",
+      "title": "Circular Wallonia",
+      "decisionQuestion": "Quelles dépendances matières menacent la compétitivité de la manufacture ?",
+      "vulnerabilityCode": "VULN-RAW-MAT",
+      "description": "Rupture de la chaîne globale d'approvisionnement en métaux critiques requis pour les batteries et l'électronique verte.",
+      "territory": "Bassin de Charleroi (Hainaut)",
+      "affectedSectors": "Équipements Électriques (NACE 27), Recyclage (NACE 38.3), Métallurgie (NACE 24)",
+      "horizon": "Moyen Terme (6 mois)",
+      "severity": "Élevée (4/5)",
+      "assumptions": [
+        { "name": "Baisse d'importation de métaux critiques", "value": "-50% d'approvisionnement", "type": "CHOC" },
+        { "name": "Durée de la perturbation logistique", "value": "9 mois", "type": "PARAMÈTRE" },
+        { "name": "Taux de substitution locale", "value": "10% max (technologie figée)", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Dépendance aux importations critiques", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "62 structures",
+        "exposed_etp": "8 200 ETP",
+        "exposed_revenue": "2.1 Mrds €",
+        "required_budget": "35 M €"
+      },
+      "data_gaps": [
+        { "name": "Niveaux réels de stocks stratégiques sur site", "status": "MISSING", "impact": "CRITICAL" },
+        { "name": "Taux de recyclage effectif par composant", "status": "PARTIAL", "impact": "HIGH" },
+        { "name": "Origine précise des métaux importés (sous-traitants)", "status": "MISSING", "impact": "MEDIUM" },
+        { "name": "Disponibilité de substituts certifiés", "status": "PARTIAL", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Flux d'importation généraux des métaux et terres rares",
+        "Liste nominative des fabricants d'équipements électriques",
+        "Programmes d'aide à l'éco-conception actifs"
+      ],
+      "missingData: [": [
+        "Stocks physiques réels détenus dans les entrepôts privés",
+        "Origine exacte du métal brut utilisé par les sous-traitants",
+        "Capacité d'adaptation technique immédiate sans refonte de produit"
+      ],
+      "potentialSources": [
+        "AWEX (Fichiers import/export détaillés)",
+        "Douanes fédérales (Déclarations d'importation)",
+        "Études de cycle de vie et flux de matières de Sirris"
+      ],
+      "proposed_services": [
+        { "name": "Analyse des Flux de Matières critiques", "provider": "Sirris", "type": "Service Technique" },
+        { "name": "Coaching Éco-design & Substitution", "provider": "Sirris", "type": "Service Technique" },
+        { "name": "Diagnostic Économie Circulaire Global", "provider": "Wallonie Entreprendre", "type": "Service Conseil" }
+      ],
+      "proposed_programs": ["Circular Design & Materials", "Plan de Relance de la Wallonie"],
+      "proposed_funding": ["Subvention d'éco-conception", "Prêt d'innovation pour la relocalisation des intrants"],
+      "recommended_action": "Soutenir massivement la constitution de boucles de recyclage locales, déployer l'analyse de flux de Sirris pour les 62 structures, et négocier l'accès aux données douanières détaillées."
+    },
+    {
+      "id": "s3",
+      "title": "S3 Specialisation",
+      "decisionQuestion": "Quels programmes régionaux génèrent le plus fort impact stratégique ?",
+      "vulnerabilityCode": "VULN-S3-ALIGNMENT",
+      "description": "Évaluation de la performance, de l'impact socio-économique et de l'alignement des programmes de spécialisation intelligente S3 (BioWin, MecaTech).",
+      "territory": "Wallonie (Région)",
+      "affectedSectors": "Sciences du Vivant (NACE 21), Industrie du Futur (NACE 28), CleanTech",
+      "horizon": "Long Terme (2 ans)",
+      "severity": "Stratégique (3/5)",
+      "assumptions": [
+        { "name": "Indice d'impact S3 visé", "value": "Hausse de 15% d'innovation", "type": "CHOC" },
+        { "name": "Période d'évaluation", "value": "Bilan intermédiaire 2021-2026", "type": "PARAMÈTRE" },
+        { "name": "Taux de transfert technologique", "value": "Objectif de 25% de brevets licenciés", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Désalignement de la R&D régionale", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "850 structures",
+        "exposed_etp": "12 400 chercheurs",
+        "exposed_revenue": "3.5 Mrds €",
+        "required_budget": "140 M € / an"
+      },
+      "data_gaps": [
+        { "name": "Taux d'industrialisation réel (TRL) des prototypes", "status": "MISSING", "impact": "CRITICAL" },
+        { "name": "Emplois créés indirectement à 3 ans post-projet", "status": "PARTIAL", "impact": "HIGH" },
+        { "name": "Taux de transfert technologique vers le marché", "status": "MISSING", "impact": "HIGH" },
+        { "name": "Co-investissements privés effectifs", "status": "AVAILABLE", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Enveloppes de subventions allouées par projet",
+        "Consortia d'acteurs de recherche (centres, universités, PME)",
+        "Brevets et publications scientifiques générés"
+      ],
+      "missingData": [
+        "Niveau de maturité technologique (TRL) réel à la clôture",
+        "Chiffre d'affaires généré par la commercialisation du prototype",
+        "Nombre d'emplois indirects créés dans la chaîne de sous-traitance"
+      ],
+      "potentialSources": [
+        "Rapports d'activité annuels des pôles de compétitivité (BioWin/MecaTech)",
+        "SPW Économie Emploi Recherche (suivi des dossiers)",
+        "Enquêtes de valorisation de l'IWEPS"
+      ],
+      "proposed_services": [
+        { "name": "Prototype Médical IA", "provider": "CETIC", "type": "Service Expérimentation" },
+        { "name": "Validation Mécanique & Machine", "provider": "Sirris", "type": "Service Technique" },
+        { "name": "Financement Innovation Santé", "provider": "Wallonie Entreprendre", "type": "Service Conseil" }
+      ],
+      "proposed_programs": ["S3 Innovation Santé", "TART IA", "S3 Mobilité Logistique"],
+      "proposed_funding": ["Subvention R&D collaborative SPW", "Prêt d'amorçage de Wallonie Entreprendre"],
+      "recommended_action": "Améliorer le suivi du TRL en l'intégrant dans le cockpit de la PIT, financer en priorité les transferts technologiques certifiés, et structurer un canal de feedback avec les universités."
+    },
+    {
+      "id": "flood",
+      "title": "Inondations Vesdre",
+      "decisionQuestion": "Quel impact économique anticiper suite à une crue majeure et quel budget mobiliser ?",
+      "vulnerabilityCode": "VULN-FLOODPLAIN-EXP",
+      "description": "Épisode de précipitations extrêmes provoquant le débordement de la Vesdre et la paralysie mécanique et logistique des parcs industriels.",
+      "territory": "Vallée de la Vesdre (Chaudfontaine, Pepinster, Verviers)",
+      "affectedSectors": "Métallurgie (NACE 24), Logistique (NACE 52), Transport routier (NACE 49)",
+      "horizon": "Court Terme (15 jours)",
+      "severity": "Critique (5/5)",
+      "assumptions": [
+        { "name": "Hauteur de crue moyenne", "value": "+1.8m par rapport au lit majeur", "type": "CHOC" },
+        { "name": "Arrêt des infrastructures de transport", "value": "5 jours complets", "type": "PARAMÈTRE" },
+        { "name": "Délai de remise en état des sites", "value": "15 jours consécutifs", "type": "HYPOTHÈSE" },
+        { "name": "Seuil de vulnérabilité", "value": "Zone d'aléa de crue élevé", "type": "SEUIL" }
+      ],
+      "metrics": {
+        "exposed_structures": "32 structures",
+        "exposed_etp": "2 800 ETP",
+        "exposed_revenue": "450 M €",
+        "required_budget": "25 M €"
+      },
+      "data_gaps": [
+        { "name": "Niveau réel de couverture d'assurance", "status": "MISSING", "impact": "CRITICAL" },
+        { "name": "Présence de plans de continuité d'activité (PCA)", "status": "MISSING", "impact": "HIGH" },
+        { "name": "État des vannes de protection locales", "status": "TO_BE_NEGOTIATED", "impact": "MEDIUM" },
+        { "name": "Itinéraires de transport alternatifs", "status": "PARTIAL", "impact": "LOW" }
+      ],
+      "knownData": [
+        "Géolocalisation précise des PME wallonnes",
+        "Cartographie d'aléa de crue de la Région (SPW)",
+        "Effectifs ONSS déclarés par établissement"
+      ],
+      "missingData": [
+        "Niveau de couverture d'assurance contre les inondations",
+        "Plan de Continuité d'Activité (PCA) opérationnel sur site",
+        "Hauteur exacte d'installation des transformateurs électriques"
+      ],
+      "potentialSources": [
+        "Assureurs et courtiers de la Région Wallonne",
+        "Services d'urbanisme municipaux de Chaudfontaine, Pepinster et Verviers",
+        "Direction de la gestion des Voies Hydrauliques du SPW"
+      ],
+      "proposed_services": [
+        { "name": "Aide au Plan de Continuité (PCA)", "provider": "SPW Économie", "type": "Service Technique" },
+        { "name": "Conseil en Reconstruction Industrielle Résiliente", "provider": "Sirris", "type": "Service Technique" },
+        { "name": "Support Financement d'Urgence Calamités", "provider": "Wallonie Entreprendre", "type": "Service Financier" }
+      ],
+      "proposed_programs": ["Plan de Relance wallon - Résilience", "Fonds des Calamités de la Région"],
+      "proposed_funding": ["Prêt d'urgence de trésorerie WE", "Indemnité directe Fonds Calamités"],
+      "recommended_action": "Activer immédiatement le guichet de subvention d'urgence calamités, prioriser l'accompagnement des 32 structures de la Vesdre dans la mise en place de plans de continuité d'activité (PCA), et intégrer les données d'assurances."
+    }
+  ]
+}

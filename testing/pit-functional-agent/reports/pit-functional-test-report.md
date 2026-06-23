@@ -1,7 +1,7 @@
 # Rapport de Recette Fonctionnelle PIT vNext
 
-**Date de l'audit** : 23/06/2026 14:21:14  
-**Durée d'exécution** : **116.93 s**  
+**Date de l'audit** : 23/06/2026 15:11:00  
+**Durée d'exécution** : **115.23 s**  
 **Taux de réussite** : **100%** (33/33 tests PASS)  
 **Total des tests** : **33**  
 **Tests réussis** : **33**  

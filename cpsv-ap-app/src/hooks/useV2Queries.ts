@@ -290,8 +290,10 @@ export function useV2Contributions(
 // 15. Beneficiaries (v2)
 export function useV2Beneficiaries(params: PaginationParams = {}) {
   const queryParams = new URLSearchParams();
-  if (params.page) queryParams.append("page", params.page.toString());
-  if (params.pageSize) queryParams.append("pageSize", params.pageSize.toString());
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 1000;
+  queryParams.append("page", page.toString());
+  queryParams.append("pageSize", pageSize.toString());
   if (params.q) queryParams.append("q", params.q);
   if (params.drbest) queryParams.append("drbest", params.drbest);
   if (params.s3Domain) queryParams.append("s3Domain", params.s3Domain.toString());

@@ -9,6 +9,8 @@
     "dev": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
     "seed:demo": "ts-node prisma/seed-demo-pit-v1.ts",
+    "seed:demo:reset": "ts-node prisma/seed-demo-pit-v1.ts --reset",
+    "seed:demo:append": "ts-node prisma/seed-demo-pit-v1.ts --append",
     "seed:ecosystem": "ts-node prisma/seed-ecosystem.ts",
     "seed:edih": "ts-node prisma/seed-edih-services.ts",
     "postinstall": "prisma generate",

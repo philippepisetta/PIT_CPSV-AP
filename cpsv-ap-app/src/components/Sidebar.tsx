@@ -51,6 +51,7 @@ const navBlocks: NavBlock[] = [
     items: [
       { name: "Parcours", href: "/accompaniment/journeys", icon: Compass },
       { name: "Bénéficiaires (Vue 360°)", href: "/accompaniment/beneficiaries", icon: Users },
+      { name: "Prestations réalisées", href: "/accompaniment/prestations", icon: ClipboardCheck },
       { name: "Services & Matchmaking", href: "/accompaniment/services", icon: Sparkles },
       { name: "Activités", href: "/accompaniment/activities", icon: Compass },
       { name: "Communautés & Affiliations", href: "/accompaniment/communities", icon: Share2 },

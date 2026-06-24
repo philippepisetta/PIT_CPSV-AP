@@ -146,6 +146,54 @@ Le schéma comprend des tables additives clés pour persister la Phase 0 :
 * `ServiceDelivery` : Table enregistrant les prestations réelles fournies individuellement, liant un `Beneficiary`, un `PublicService`, et un `JourneyStage`.
 * `Outcome`, `Evidence`, `Impact` & `OutcomeIndicator` : Tables assurant le suivi qualitatif, quantitatif et physique (fichiers) du ROI territorial.
 
+### 4.3 Distinction Conceptuelle et Technique : Service CPSV-AP (Théorique) vs Prestation Réalisée (ServiceDelivery - Opérationnel)
+
+Afin d'assurer la rigueur méthodologique et de s'aligner sur les meilleures pratiques de plateformes de suivi d'accompagnement d'entreprises (comme **ASTRIDE**), la plateforme opère une distinction nette entre l'offre de service catalogue (théorique) et sa délivrance réelle sur le terrain (opérationnelle).
+
+```mermaid
+graph TD
+    subgraph Catalogue Theorique (Standard CPSV-AP)
+        PS[PublicService]
+        PS -->|Description| Code[Code Identifiant unique]
+        PS -->|Filiere| S3[DIS / Axes S3]
+        PS -->|Secteurs| NACE[Secteurs NACE cibles]
+        PS -->|Attendu| OutT[Outputs & Outcomes attendus]
+    end
+
+    subgraph Suivi Operationnel (Benchmark ASTRIDE)
+        SD[ServiceDelivery]
+        SD -->|Instancie| PS
+        SD -->|Beneficiaire| B[Beneficiary]
+        SD -->|Operateur| O[Organization / Conseiller]
+        SD -->|Suivi de cycle| Status[Statuts de cycle de vie]
+        SD -->|Livrables reels| OutR[Outputs & Satisfaction reelle]
+        SD -->|Mise a jour| Mat[Maturite DR-BEST de l'entreprise]
+    end
+```
+
+#### A. Le Service CPSV-AP (`PublicService`)
+Le modèle `PublicService` décrit l'offre de service théorique inscrite dans le catalogue de la PIT. Il est conforme au profil d'application européen **CPSV-AP** :
+* **Propriétés stables** : Titre générique, description textuelle, public cible, coût théorique, canal de diffusion théorique, opérateurs habilités.
+* **Qualification transverse** : Associé à des codes NACE et à des priorités DIS/S3 par la table `EntityClassification`.
+* **Rôle** : Servir de référentiel structuré d'aide à la décision et de point d'ancrage pour les recommandations algorithmiques.
+
+#### B. La Prestation Réalisée (`ServiceDelivery`)
+Le modèle `ServiceDelivery` (exposé aux utilisateurs sous les libellés de **"Prestation réalisée"** ou **"Accompagnement réalisé"** en français pour éviter le jargon technique) représente l'exécution réelle d'un service d'accompagnement auprès d'une entreprise bénéficiaire :
+* **Informations de contexte réel** : Le bénéficiaire concerné, le conseiller ayant réalisé la prestation, l'opérateur prestataire réel, le canal réel d'accès (`téléphone`, `mail`, `plateforme`, `rendez-vous`, `événement`, `API`, `autre`), le mode de délivrance (`individuel`, `collectif`, `hybride`), le lieu physique ou en ligne.
+* **Champs temporaires d'alignement** : `establishmentId` (identifiant temporaire d'établissement local, en attente de la création d'une vraie entité `Establishment` / `LocalUnit` liée à la BCE) et `providerPersonId` (identifiant temporaire du conseiller prestataire, en attente d'une relation formelle avec la table `User`/`Person`). Ces champs feront l'objet d'une migration relationnelle complète lors d'une prochaine itération (voir TODO dans le schéma Prisma et les contrôleurs API de l'application).
+* **Cycle de vie de la prestation** : Restreint strictement aux valeurs de suivi opérationnel :
+  1. `requested` (demandé par l'entreprise)
+  2. `accepted` (validé par l'opérateur)
+  3. `planned` (date et ressources planifiées)
+  4. `in_progress` (accompagnement en cours)
+  5. `delivered` (délivré et finalisé)
+  6. `closed` (clôturé administrativement)
+  7. `cancelled` (annulé)
+  8. `rejected` (refusé)
+* **Mesure de valeur réelle** : Livrables réels produits (`outputs`), fichiers justificatifs joints (`evidenceFiles` / `evidences`), note de satisfaction attribuée par l'entreprise (note de 0 à 5), et impacts constatés (`impactSummary`).
+* **Mise à jour transactionnelle de maturité** : Lors du passage de la prestation aux statuts de finalisation (`delivered` ou `closed`), le système met à jour de façon transactionnelle les scores de maturité sémantique de l'entreprise (axes Numérique, IA, Cyber, Export, Durabilité) en appliquant les différentiels (`maturityBefore` ➔ `maturityAfter`).
+* **Double-Écriture Historique (Transactionnelle & Idempotente)** : Pour assurer la compatibilité avec les rapports d'activités historiques de l'ancien modèle de la PIT, toute modification ou création de `ServiceDelivery` déclenche une double-écriture synchronisée vers la table `Activity` (de type `INDIVIDUAL` avec type source `ServiceDelivery`). Cette synchronisation est encapsulée dans une transaction Prisma unique (`prisma.$transaction`), assurant que l'échec de l'écriture de l'activité annule la création de la prestation. De plus, elle est idempotente : elle recherche d'abord une activité existante via les métadonnées de traçabilité (`sourceType` et `sourceId` équivalents à `delivery.id`) pour la mettre à jour, ou la crée en cas d'absence. Cela garantit une traçabilité totale et préserve l'historique sans doublons.
+
 ---
 
 ## 🔮 5. Couche d'Intelligence Territoriale (Matchmaking & RAG)

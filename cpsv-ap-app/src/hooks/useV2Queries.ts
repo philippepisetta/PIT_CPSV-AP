@@ -989,6 +989,7 @@ export function useV2SemanticProfiles() {
   return useQuery({
     queryKey: ["v2-semantic-profiles"],
     queryFn: () => fetcher("/api/v2/semantic-profiles"),
+
     staleTime: 30 * 1000,
   });
 }
@@ -1009,3 +1010,121 @@ export function useV2SourceDocumentMappings() {
   });
 }
 
+// --------------------------------------------------
+// --- 23. SERVICE DELIVERY / ACCOMPAGNEMENT HOOKS ---
+// --------------------------------------------------
+
+export interface ServiceDeliveryFilters {
+  beneficiaryId?: number;
+  providerOrganizationId?: number;
+  operatorId?: number;
+  serviceId?: number;
+  programId?: number;
+  projectId?: number;
+  actionId?: number;
+  status?: string;
+  channel?: string;
+  territoryId?: number;
+}
+
+export function useV2ServiceDeliveriesQuery(filters: ServiceDeliveryFilters = {}, options: any = {}) {
+  const queryParams = new URLSearchParams();
+  if (filters.beneficiaryId) queryParams.append("beneficiaryId", filters.beneficiaryId.toString());
+  if (filters.providerOrganizationId) queryParams.append("providerOrganizationId", filters.providerOrganizationId.toString());
+  if (filters.operatorId) queryParams.append("operatorId", filters.operatorId.toString());
+  if (filters.serviceId) queryParams.append("serviceId", filters.serviceId.toString());
+  if (filters.programId) queryParams.append("programId", filters.programId.toString());
+  if (filters.projectId) queryParams.append("projectId", filters.projectId.toString());
+  if (filters.actionId) queryParams.append("actionId", filters.actionId.toString());
+  if (filters.status) queryParams.append("status", filters.status);
+  if (filters.channel) queryParams.append("channel", filters.channel);
+  if (filters.territoryId) queryParams.append("territoryId", filters.territoryId.toString());
+
+  const url = `/api/v2/service-deliveries?${queryParams.toString()}`;
+  return useQuery({
+    queryKey: ["v2-service-deliveries", filters],
+    queryFn: () => fetcher(url),
+    staleTime: 30 * 1000,
+    ...options
+  });
+}
+
+export function useV2ServiceDeliveryDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["v2-service-delivery-detail", id],
+    queryFn: () => fetcher(`/api/v2/service-deliveries/${id}`),
+    enabled: id !== null && !isNaN(id),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateServiceDeliveryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/service-deliveries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Erreur de création de l'accompagnement.");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-service-deliveries"] });
+      if (variables.beneficiaryId) {
+        queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.beneficiaryId] });
+      }
+    },
+  });
+}
+
+export function useV2UpdateServiceDeliveryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/v2/service-deliveries/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Erreur de modification de l'accompagnement.");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-service-deliveries"] });
+      queryClient.invalidateQueries({ queryKey: ["v2-service-delivery-detail", data.id] });
+      if (data.beneficiaryId) {
+        queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", data.beneficiaryId] });
+      }
+    },
+  });
+}
+
+export function useV2DeleteServiceDeliveryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, beneficiaryId }: { id: number; beneficiaryId?: number }) => {
+      const res = await fetch(`/api/v2/service-deliveries/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Erreur de suppression de l'accompagnement.");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["v2-service-deliveries"] });
+      if (variables.beneficiaryId) {
+        queryClient.invalidateQueries({ queryKey: ["v2-beneficiary-detail", variables.beneficiaryId] });
+      }
+    },
+  });
+}

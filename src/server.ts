@@ -635,181 +635,6 @@ app.post('/api/ecosystems', async (req, res) => {
 });
 
 
-// --- REALISATIONS DE SERVICES (SERVICE DELIVERIES) ---
-app.get('/api/service-deliveries', async (req, res) => {
-  const beneficiaryId = req.query.beneficiaryId ? parseInt(req.query.beneficiaryId as string) : undefined;
-  
-  const now = Date.now();
-  if (!beneficiaryId && cachedDeliveries && (now - cachedDeliveriesTime < CACHE_TTL_MS)) {
-    return res.json(cachedDeliveries);
-  }
-  
-  try {
-    const data = await prisma.serviceDelivery.findMany({
-      where: beneficiaryId ? { beneficiaryId } : undefined,
-      include: { beneficiary: true, service: true, operator: true },
-      orderBy: { date: 'desc' }
-    });
-    
-    if (!beneficiaryId) {
-      cachedDeliveries = data;
-      cachedDeliveriesTime = now;
-    }
-    
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/service-deliveries', async (req, res) => {
-  try {
-    const {
-      beneficiaryId, serviceId, journeyId, journeyStageId,
-      status, date, operatorId, outputReal, outcomeReal, impact,
-      maturityBefore, maturityAfter, maturityDelta, evidenceFiles
-    } = req.body;
-
-    const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
-                         : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
-                         : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
-                         : 'CANCELLED';
-
-    const item = await prisma.serviceDelivery.create({
-      data: {
-        beneficiaryId: parseInt(beneficiaryId),
-        serviceId: parseInt(serviceId),
-        journeyId: journeyId ? parseInt(journeyId) : null,
-        journeyStageId: journeyStageId ? parseInt(journeyStageId) : null,
-        status: mappedStatus,
-        date: date ? new Date(date) : new Date(),
-        operatorId: parseInt(operatorId),
-        outputReal,
-        outcomeReal,
-        impact,
-        maturityBefore,
-        maturityAfter,
-        maturityDelta,
-        evidenceFiles
-      },
-      include: { beneficiary: true, service: true, operator: true }
-    });
-
-    // Si le statut est Terminé, mettre à jour dynamiquement la maturité du bénéficiaire !
-    if (mappedStatus === 'COMPLETED' && maturityAfter) {
-      const bUpdateData: any = {};
-      if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
-      if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
-      if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
-      if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
-      if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
-
-      await prisma.beneficiary.update({
-        where: { id: parseInt(beneficiaryId) },
-        data: bUpdateData
-      });
-    }
-
-    // DUAL WRITE: Création dans la table vNext 'Activity' (Type: INDIVIDUAL)
-    try {
-      await prisma.activity.create({
-        data: {
-          activityType: 'INDIVIDUAL',
-          serviceId: parseInt(serviceId),
-          status: mappedStatus,
-          date: date ? new Date(date) : new Date(),
-          operatorId: parseInt(operatorId),
-          beneficiaryId: parseInt(beneficiaryId),
-          journeyId: journeyId ? parseInt(journeyId) : null,
-          journeyStageId: journeyStageId ? parseInt(journeyStageId) : null,
-          outputReal,
-          outcomeReal,
-          impact,
-          maturityBefore: maturityBefore || undefined,
-          maturityAfter: maturityAfter || undefined,
-          maturityDelta: maturityDelta || undefined,
-          evidenceFiles: evidenceFiles || undefined
-        }
-      });
-      console.log(`[Dual-Write] Activité individuelle créée pour le service ${serviceId}`);
-    } catch (dwError) {
-      console.error('[Dual-Write Error] Échec de la double-écriture de l\'activité:', dwError);
-    }
-
-    res.status(201).json(item);
-  } catch (error: any) {
-    console.error('Erreur lors de la création de la livraison de service:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.patch('/api/service-deliveries/:id', async (req, res) => {
-  try {
-    const { status, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles } = req.body;
-    const deliveryId = parseInt(req.params.id);
-
-    const original = await prisma.serviceDelivery.findUnique({ where: { id: deliveryId } });
-    if (!original) return res.status(404).json({ error: 'Réalisation de service non trouvée' });
-
-    const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
-                         : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
-                         : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
-                         : status === 'Annulé' || status === 'CANCELLED' ? 'CANCELLED'
-                         : undefined;
-
-    const updated = await prisma.serviceDelivery.update({
-      where: { id: deliveryId },
-      data: {
-        status: mappedStatus, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles
-      }
-    });
-
-    // Si statut passe à Terminé, appliquer la maturité
-    if (mappedStatus === 'COMPLETED' && maturityAfter) {
-      const bUpdateData: any = {};
-      if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
-      if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
-      if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
-      if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
-      if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
-
-      await prisma.beneficiary.update({
-        where: { id: original.beneficiaryId },
-        data: bUpdateData
-      });
-    }
-
-    // DUAL WRITE: Mise à jour de l'activité correspondante
-    try {
-      await prisma.activity.updateMany({
-        where: {
-          activityType: 'INDIVIDUAL',
-          serviceId: original.serviceId,
-          beneficiaryId: original.beneficiaryId,
-          operatorId: original.operatorId
-        },
-        data: {
-          status: mappedStatus || undefined,
-          outputReal,
-          outcomeReal,
-          impact,
-          maturityAfter: maturityAfter || undefined,
-          maturityDelta: maturityDelta || undefined,
-          evidenceFiles: evidenceFiles || undefined
-        }
-      });
-      console.log(`[Dual-Write] Activité individuelle mise à jour pour le service ${original.serviceId}`);
-    } catch (dwError) {
-      console.error('[Dual-Write Error] Échec de la mise à jour de l\'activité:', dwError);
-    }
-
-    res.json(updated);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
 // --- LIVRAISONS COLLECTIVES (COLLECTIVE DELIVERIES) ---
 app.get('/api/collective-deliveries', async (req, res) => {
   try {
@@ -2936,7 +2761,8 @@ v2Router.use((req, res, next) => {
     path.startsWith('/activities') ||
     path.startsWith('/outcomes') ||
     path.startsWith('/participations') ||
-    path.startsWith('/attendances')
+    path.startsWith('/attendances') ||
+    path.startsWith('/service-deliveries')
   ) {
     if (role === 'CONSEILLER') {
       return next();
@@ -3051,6 +2877,434 @@ const buildFilters = (req: express.Request, type: 'service' | 'journey' | 'progr
 };
 
 // ==========================================
+// --- 0. SERVICE DELIVERY APIs ---
+v2Router.get('/service-deliveries', async (req, res) => {
+  const beneficiaryId = req.query.beneficiaryId ? parseInt(req.query.beneficiaryId as string) : undefined;
+  const providerOrganizationId = req.query.providerOrganizationId ? parseInt(req.query.providerOrganizationId as string) : undefined;
+  const operatorId = req.query.operatorId ? parseInt(req.query.operatorId as string) : undefined;
+  const serviceId = req.query.serviceId ? parseInt(req.query.serviceId as string) : undefined;
+  const programId = req.query.programId ? parseInt(req.query.programId as string) : undefined;
+  const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
+  const actionId = req.query.actionId ? parseInt(req.query.actionId as string) : undefined;
+  const status = req.query.status ? (req.query.status as string) : undefined;
+  const channel = req.query.channel ? (req.query.channel as string) : undefined;
+  const territoryId = req.query.territoryId ? parseInt(req.query.territoryId as string) : undefined;
+
+  const now = Date.now();
+  if (!beneficiaryId && !providerOrganizationId && !operatorId && !serviceId && !programId && !projectId && !actionId && !status && !channel && !territoryId && cachedDeliveries && (now - cachedDeliveriesTime < CACHE_TTL_MS)) {
+    return res.json(cachedDeliveries);
+  }
+  
+  try {
+    const where: any = {};
+    if (beneficiaryId) where.beneficiaryId = beneficiaryId;
+    if (serviceId) where.serviceId = serviceId;
+    if (programId) where.programId = programId;
+    if (projectId) where.projectId = projectId;
+    if (actionId) where.actionId = actionId;
+    if (status) where.status = status.toLowerCase();
+    if (channel) where.channel = channel;
+    
+    if (providerOrganizationId || operatorId) {
+      where.OR = [];
+      if (providerOrganizationId) where.OR.push({ providerOrganizationId });
+      if (operatorId) where.OR.push({ operatorId });
+    }
+    
+    if (territoryId) {
+      where.beneficiary = { territoryId: territoryId };
+    }
+
+    const data = await prisma.serviceDelivery.findMany({
+      where,
+      include: {
+        beneficiary: { include: { primaryNaceSector: true } },
+        service: { include: { organization: true } },
+        operator: true,
+        providerOrganization: true,
+        contact: true,
+        program: true,
+        project: true,
+        action: true,
+        journeyStep: true,
+        funding: true,
+        nextRecommendedService: true,
+        evidences: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    if (!beneficiaryId && !providerOrganizationId && !operatorId && !serviceId && !programId && !projectId && !actionId && !status && !channel && !territoryId) {
+      cachedDeliveries = data;
+      cachedDeliveriesTime = now;
+    }
+    
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.get('/service-deliveries/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.serviceDelivery.findUnique({
+      where: { id },
+      include: {
+        beneficiary: { include: { primaryNaceSector: true } },
+        service: { include: { organization: true } },
+        operator: true,
+        providerOrganization: true,
+        contact: true,
+        program: true,
+        project: true,
+        action: true,
+        journeyStep: true,
+        funding: true,
+        nextRecommendedService: true,
+        evidences: true
+      }
+    });
+    if (!item) return res.status(404).json({ error: 'Prestation non trouvée' });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/service-deliveries', async (req, res) => {
+  try {
+    const {
+      title, description, serviceId, beneficiaryId, establishmentId, contactId,
+      operatorId, providerOrganizationId, providerPersonId, programId, projectId, actionId,
+      journeyId, journeyStageId, journeyStepId, businessEventId, status,
+      requestDate, plannedStartDate, actualStartDate, actualEndDate,
+      channel, deliveryMode, location, outputs, outputReal, outcomeReal,
+      evidenceFiles, fundingId, maturityBefore, maturityAfter, maturityDelta,
+      satisfactionScore, impactSummary, impact, nextRecommendedServiceId, nextStepComment,
+      confidentialityLevel, dataQualityStatus, createdBy, updatedBy
+    } = req.body;
+
+    // TODO: establishmentId et providerPersonId restent temporairement sous forme de champs simples (Int). 
+    // Prévoir des relations vers de vraies entités (ex: BCE LocalUnit, User/Adviser) dans une prochaine itération.
+
+    // 1. Normalisation et contrôle du statut
+    const ALLOWED_STATUSES = ['requested', 'accepted', 'planned', 'in_progress', 'delivered', 'closed', 'cancelled', 'rejected'];
+    let normalizedStatus = (status || 'planned').toLowerCase();
+    if (normalizedStatus === 'completed') normalizedStatus = 'closed';
+    if (normalizedStatus === 'en cours') normalizedStatus = 'in_progress';
+    if (normalizedStatus === 'planifié') normalizedStatus = 'planned';
+    if (normalizedStatus === 'terminé') normalizedStatus = 'closed';
+    if (normalizedStatus === 'annulé') normalizedStatus = 'cancelled';
+    
+    if (!ALLOWED_STATUSES.includes(normalizedStatus)) {
+      return res.status(400).json({ error: `Statut invalide. Statuts autorisés : ${ALLOWED_STATUSES.join(', ')}` });
+    }
+
+    // 2. Duplication historique / compatibilité descendante
+    let activeOperatorId = operatorId ? parseInt(operatorId) : null;
+    let activeProviderOrgId = providerOrganizationId ? parseInt(providerOrganizationId) : null;
+    if (activeProviderOrgId && !activeOperatorId) activeOperatorId = activeProviderOrgId;
+    if (activeOperatorId && !activeProviderOrgId) activeProviderOrgId = activeOperatorId;
+
+    let activeJourneyStageId = journeyStageId ? parseInt(journeyStageId) : null;
+    let activeJourneyStepId = journeyStepId ? parseInt(journeyStepId) : null;
+    if (activeJourneyStepId && !activeJourneyStageId) activeJourneyStageId = activeJourneyStepId;
+    if (activeJourneyStageId && !activeJourneyStepId) activeJourneyStepId = activeJourneyStageId;
+
+    // 3. Exécution transactionnelle
+    const result = await prisma.$transaction(async (tx) => {
+      // Créer la prestation
+      const delivery = await tx.serviceDelivery.create({
+        data: {
+          title: title || "Accompagnement réalisé",
+          description,
+          serviceId: parseInt(serviceId),
+          beneficiaryId: parseInt(beneficiaryId),
+          establishmentId: establishmentId ? parseInt(establishmentId) : null,
+          contactId: contactId ? parseInt(contactId) : null,
+          operatorId: activeOperatorId,
+          providerOrganizationId: activeProviderOrgId,
+          providerPersonId: providerPersonId ? parseInt(providerPersonId) : null,
+          programId: programId ? parseInt(programId) : null,
+          projectId: projectId ? parseInt(projectId) : null,
+          actionId: actionId ? parseInt(actionId) : null,
+          journeyId: journeyId ? parseInt(journeyId) : null,
+          journeyStageId: activeJourneyStageId,
+          journeyStepId: activeJourneyStepId,
+          businessEventId: businessEventId ? parseInt(businessEventId) : null,
+          status: normalizedStatus,
+          requestDate: requestDate ? new Date(requestDate) : null,
+          plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : null,
+          actualStartDate: actualStartDate ? new Date(actualStartDate) : null,
+          actualEndDate: actualEndDate ? new Date(actualEndDate) : null,
+          channel,
+          deliveryMode,
+          location,
+          outputs,
+          outputReal: outputReal || outputs,
+          outcomeReal,
+          evidenceFiles: evidenceFiles || undefined,
+          fundingId: fundingId ? parseInt(fundingId) : null,
+          maturityBefore: maturityBefore || undefined,
+          maturityAfter: maturityAfter || undefined,
+          maturityDelta: maturityDelta || undefined,
+          satisfactionScore: satisfactionScore ? parseFloat(satisfactionScore) : null,
+          impactSummary,
+          impact: impact || impactSummary,
+          nextRecommendedServiceId: nextRecommendedServiceId ? parseInt(nextRecommendedServiceId) : null,
+          nextStepComment,
+          confidentialityLevel: confidentialityLevel || 'PUBLIC',
+          dataQualityStatus: dataQualityStatus || 'DRAFT',
+          createdBy,
+          updatedBy
+        },
+        include: { beneficiary: true, service: true, operator: true }
+      });
+
+      // Si statut est delivered ou closed, mettre à jour dynamiquement la maturité du bénéficiaire !
+      if (['delivered', 'closed'].includes(normalizedStatus) && maturityAfter) {
+        const bUpdateData: any = {};
+        if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
+        if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
+        if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
+        if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
+        if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
+
+        await tx.beneficiary.update({
+          where: { id: parseInt(beneficiaryId) },
+          data: bUpdateData
+        });
+      }
+
+      // DUAL WRITE: Création dans la table vNext 'Activity' (Type: INDIVIDUAL)
+      const actStatus = normalizedStatus === 'closed' || normalizedStatus === 'delivered' ? 'COMPLETED'
+                        : normalizedStatus === 'in_progress' ? 'IN_PROGRESS'
+                        : normalizedStatus === 'planned' ? 'PLANNED' : 'CANCELLED';
+
+      try {
+        await tx.activity.create({
+          data: {
+            activityType: 'INDIVIDUAL',
+            serviceId: parseInt(serviceId),
+            status: actStatus,
+            date: actualStartDate ? new Date(actualStartDate) : (plannedStartDate ? new Date(plannedStartDate) : new Date()),
+            operatorId: activeOperatorId || 1,
+            beneficiaryId: parseInt(beneficiaryId),
+            journeyId: journeyId ? parseInt(journeyId) : null,
+            journeyStageId: activeJourneyStageId,
+            outputReal: outputs || outputReal,
+            outcomeReal,
+            impact: impactSummary || impact,
+            maturityBefore: maturityBefore || undefined,
+            maturityAfter: maturityAfter || undefined,
+            maturityDelta: maturityDelta || undefined,
+            evidenceFiles: evidenceFiles || undefined,
+            actionId: actionId ? parseInt(actionId) : null,
+            sourceType: "ServiceDelivery",
+            sourceId: delivery.id
+          }
+        });
+        console.log(`[Dual-Write] Activité individuelle créée pour la prestation ${delivery.id}`);
+      } catch (dwError) {
+        console.error('[Dual-Write Error] Échec de la double-écriture de l\'activité:', dwError);
+      }
+
+      return delivery;
+    });
+
+    res.status(201).json(result);
+  } catch (error: any) {
+    console.error('Erreur lors de la création de la livraison de service:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+v2Router.patch('/service-deliveries/:id', async (req, res) => {
+  try {
+    const deliveryId = parseInt(req.params.id);
+    const {
+      title, description, status, requestDate, plannedStartDate, actualStartDate, actualEndDate,
+      channel, deliveryMode, location, outputs, outputReal, outcomeReal, evidenceFiles, fundingId,
+      maturityBefore, maturityAfter, maturityDelta, satisfactionScore, impactSummary, impact,
+      nextRecommendedServiceId, nextStepComment, confidentialityLevel, dataQualityStatus, updatedBy
+    } = req.body;
+
+    // TODO: establishmentId et providerPersonId restent temporairement sous forme de champs simples (Int). 
+    // Prévoir des relations vers de vraies entités (ex: BCE LocalUnit, User/Adviser) dans une prochaine itération.
+
+    const original = await prisma.serviceDelivery.findUnique({ where: { id: deliveryId } });
+    if (!original) return res.status(404).json({ error: 'Réalisation de service non trouvée' });
+
+    // 1. Normalisation et contrôle du statut
+    const ALLOWED_STATUSES = ['requested', 'accepted', 'planned', 'in_progress', 'delivered', 'closed', 'cancelled', 'rejected'];
+    let normalizedStatus = undefined;
+    if (status !== undefined) {
+      normalizedStatus = (status || 'planned').toLowerCase().trim();
+      if (normalizedStatus === 'completed') normalizedStatus = 'closed';
+      if (normalizedStatus === 'en cours') normalizedStatus = 'in_progress';
+      if (normalizedStatus === 'planifié') normalizedStatus = 'planned';
+      if (normalizedStatus === 'terminé') normalizedStatus = 'closed';
+      if (normalizedStatus === 'annulé') normalizedStatus = 'cancelled';
+      if (normalizedStatus === 'refusé') normalizedStatus = 'rejected';
+      if (normalizedStatus === 'demandé') normalizedStatus = 'requested';
+      if (normalizedStatus === 'accepté') normalizedStatus = 'accepted';
+
+      if (!ALLOWED_STATUSES.includes(normalizedStatus)) {
+        return res.status(400).json({ error: `Statut invalide. Statuts autorisés : ${ALLOWED_STATUSES.join(', ')}` });
+      }
+    }
+
+    // 2. Exécution transactionnelle
+    const result = await prisma.$transaction(async (tx) => {
+      // Mettre à jour la prestation
+      const updatedDelivery = await tx.serviceDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          title: title !== undefined ? title : undefined,
+          description: description !== undefined ? description : undefined,
+          status: normalizedStatus,
+          requestDate: requestDate ? new Date(requestDate) : undefined,
+          plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : undefined,
+          actualStartDate: actualStartDate ? new Date(actualStartDate) : undefined,
+          actualEndDate: actualEndDate ? new Date(actualEndDate) : undefined,
+          channel: channel !== undefined ? channel : undefined,
+          deliveryMode: deliveryMode !== undefined ? deliveryMode : undefined,
+          location: location !== undefined ? location : undefined,
+          outputs: outputs !== undefined ? outputs : undefined,
+          outputReal: outputReal !== undefined ? outputReal : (outputs !== undefined ? outputs : undefined),
+          outcomeReal: outcomeReal !== undefined ? outcomeReal : undefined,
+          evidenceFiles: evidenceFiles !== undefined ? evidenceFiles : undefined,
+          fundingId: fundingId !== undefined ? (fundingId ? parseInt(fundingId) : null) : undefined,
+          maturityBefore: maturityBefore !== undefined ? maturityBefore : undefined,
+          maturityAfter: maturityAfter !== undefined ? maturityAfter : undefined,
+          maturityDelta: maturityDelta !== undefined ? maturityDelta : undefined,
+          satisfactionScore: satisfactionScore !== undefined ? (satisfactionScore ? parseFloat(satisfactionScore) : null) : undefined,
+          impactSummary: impactSummary !== undefined ? impactSummary : undefined,
+          impact: impact !== undefined ? impact : (impactSummary !== undefined ? impactSummary : undefined),
+          nextRecommendedServiceId: nextRecommendedServiceId !== undefined ? (nextRecommendedServiceId ? parseInt(nextRecommendedServiceId) : null) : undefined,
+          nextStepComment: nextStepComment !== undefined ? nextStepComment : undefined,
+          confidentialityLevel: confidentialityLevel !== undefined ? confidentialityLevel : undefined,
+          dataQualityStatus: dataQualityStatus !== undefined ? dataQualityStatus : undefined,
+          updatedBy
+        }
+      });
+
+      // Mettre à jour la maturité du bénéficiaire si le statut est delivered ou closed
+      const activeStatus = normalizedStatus || original.status;
+      const activeMaturityAfter = maturityAfter !== undefined ? maturityAfter : updatedDelivery.maturityAfter;
+
+      if (['delivered', 'closed'].includes(activeStatus) && activeMaturityAfter) {
+        const bUpdateData: any = {};
+        const matObj = activeMaturityAfter as any;
+        if (matObj.digital !== undefined) bUpdateData.maturityDigital = parseInt(matObj.digital);
+        if (matObj.ia !== undefined) bUpdateData.maturityIa = parseInt(matObj.ia);
+        if (matObj.cyber !== undefined) bUpdateData.maturityCyber = parseInt(matObj.cyber);
+        if (matObj.export !== undefined) bUpdateData.maturityExport = parseInt(matObj.export);
+        if (matObj.durability !== undefined) bUpdateData.maturityDurability = parseInt(matObj.durability);
+
+        await tx.beneficiary.update({
+          where: { id: updatedDelivery.beneficiaryId },
+          data: bUpdateData
+        });
+      }
+
+      // DUAL WRITE: Synchronisation idempotente avec Activity (Type: INDIVIDUAL)
+      const actStatus = activeStatus === 'closed' || activeStatus === 'delivered' ? 'COMPLETED'
+                        : activeStatus === 'in_progress' ? 'IN_PROGRESS'
+                        : activeStatus === 'planned' ? 'PLANNED' : 'CANCELLED';
+
+      const existingActivity = await tx.activity.findFirst({
+        where: {
+          sourceType: "ServiceDelivery",
+          sourceId: deliveryId
+        }
+      });
+
+      const activityData: any = {
+        status: actStatus,
+        date: updatedDelivery.actualStartDate || updatedDelivery.plannedStartDate || new Date(),
+        outputReal: updatedDelivery.outputs || updatedDelivery.outputReal,
+        outcomeReal: updatedDelivery.outcomeReal,
+        impact: updatedDelivery.impactSummary || updatedDelivery.impact,
+        maturityBefore: updatedDelivery.maturityBefore || undefined,
+        maturityAfter: updatedDelivery.maturityAfter || undefined,
+        maturityDelta: updatedDelivery.maturityDelta || undefined,
+        evidenceFiles: updatedDelivery.evidenceFiles || undefined
+      };
+
+      if (existingActivity) {
+        await tx.activity.update({
+          where: { id: existingActivity.id },
+          data: activityData
+        });
+        console.log(`[Dual-Write] Activité individuelle mise à jour pour la prestation ${deliveryId}`);
+      } else {
+        // Fallback idempotent
+        await tx.activity.create({
+          data: {
+            activityType: 'INDIVIDUAL',
+            serviceId: updatedDelivery.serviceId,
+            status: actStatus,
+            date: updatedDelivery.actualStartDate || updatedDelivery.plannedStartDate || new Date(),
+            operatorId: updatedDelivery.operatorId || 1,
+            beneficiaryId: updatedDelivery.beneficiaryId,
+            journeyId: updatedDelivery.journeyId,
+            journeyStageId: updatedDelivery.journeyStageId,
+            outputReal: updatedDelivery.outputs || updatedDelivery.outputReal,
+            outcomeReal: updatedDelivery.outcomeReal,
+            impact: updatedDelivery.impactSummary || updatedDelivery.impact,
+            maturityBefore: updatedDelivery.maturityBefore || undefined,
+            maturityAfter: updatedDelivery.maturityAfter || undefined,
+            maturityDelta: updatedDelivery.maturityDelta || undefined,
+            evidenceFiles: updatedDelivery.evidenceFiles || undefined,
+            sourceType: "ServiceDelivery",
+            sourceId: deliveryId
+          }
+        });
+        console.log(`[Dual-Write] Activité individuelle créée (fallback) pour la prestation ${deliveryId}`);
+      }
+
+      return updatedDelivery;
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    console.error('Erreur lors de la mise à jour de la prestation:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+v2Router.delete('/service-deliveries/:id', async (req, res) => {
+  try {
+    const deliveryId = parseInt(req.params.id);
+    const original = await prisma.serviceDelivery.findUnique({ where: { id: deliveryId } });
+    if (!original) return res.status(404).json({ error: 'Prestation non trouvée' });
+
+    await prisma.$transaction(async (tx) => {
+      // Supprimer la prestation
+      await tx.serviceDelivery.delete({ where: { id: deliveryId } });
+
+      // Supprimer l'activité correspondante
+      await tx.activity.deleteMany({
+        where: {
+          sourceType: "ServiceDelivery",
+          sourceId: deliveryId
+        }
+      });
+    });
+
+    console.log(`[Dual-Write] Prestation et activité correspondante supprimées pour l'ID: ${deliveryId}`);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Erreur lors de la suppression de la prestation:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 // --- 1. BENEFICIARY APIs ---
 // ==========================================
 v2Router.get('/beneficiaries', async (req, res) => {
@@ -3095,6 +3349,12 @@ v2Router.get('/beneficiaries/:id', async (req, res) => {
         secondaryNaceSectors: true,
         territory: true,
         contacts: true,
+        deliveries: {
+          include: {
+            service: true,
+            operator: true
+          }
+        },
         memberships: {
           include: {
             community: true
@@ -6160,6 +6420,29 @@ v2Router.get('/usecases/run-funnel', async (req, res) => {
 v2Router.get('/strategic/evidences', async (req, res) => {
   try {
     let items = await prisma.evidence.findMany({
+      include: {
+        serviceDelivery: {
+          include: {
+            service: true,
+            beneficiary: true
+          }
+        },
+        collectiveDelivery: {
+          include: {
+            service: true
+          }
+        },
+        secondLineMission: {
+          include: {
+            service: true
+          }
+        },
+        activity: {
+          include: {
+            beneficiary: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -6195,6 +6478,29 @@ v2Router.get('/strategic/evidences', async (req, res) => {
         ]
       });
       items = await prisma.evidence.findMany({
+        include: {
+          serviceDelivery: {
+            include: {
+              service: true,
+              beneficiary: true
+            }
+          },
+          collectiveDelivery: {
+            include: {
+              service: true
+            }
+          },
+          secondLineMission: {
+            include: {
+              service: true
+            }
+          },
+          activity: {
+            include: {
+              beneficiary: true
+            }
+          }
+        },
         orderBy: { createdAt: 'desc' }
       });
     }

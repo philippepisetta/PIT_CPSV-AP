@@ -37,6 +37,7 @@ import PITImpactPanel from "@/design-system/PITImpactPanel";
 import SplitLayout from "@/components/ui/SplitLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { 
   useV2Beneficiaries, 
@@ -1063,6 +1064,114 @@ function BeneficiaryDetailPanel({ id, onClose, onEdit, onArchive }: DetailPanelP
     </div>
   );
 
+  const deliveries = bene.deliveries || [];
+  const sortedDeliveries = [...deliveries].sort((a: any, b: any) => {
+    const dateA = a.actualStartDate || a.plannedStartDate || a.createdAt;
+    const dateB = b.actualStartDate || b.plannedStartDate || b.createdAt;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
+  const historyContent = (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center border-b border-muted/10 pb-2">
+        <h4 className="text-[10px] font-black uppercase text-muted tracking-wider">
+          Prestations et accompagnements réalisés
+        </h4>
+        <span className="text-[8px] font-black bg-teal-500/10 text-teal-650 px-2 py-0.5 rounded border border-teal-500/20">
+          Suivi Opérationnel (CPSV-AP)
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        {sortedDeliveries.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+            <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-xs text-muted italic">Aucune prestation ou accompagnement enregistré pour ce bénéficiaire.</p>
+          </div>
+        ) : (
+          sortedDeliveries.map((del: any) => {
+            const statusMap: Record<string, { label: string; bg: string; text: string }> = {
+              requested: { label: "Demandé", bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
+              accepted: { label: "Accepté", bg: "bg-sky-500/10", text: "text-sky-600 dark:text-sky-400" },
+              planned: { label: "Planifié", bg: "bg-indigo-500/10", text: "text-indigo-600 dark:text-indigo-400" },
+              in_progress: { label: "En cours", bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400" },
+              delivered: { label: "Délivré", bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
+              closed: { label: "Clôturé", bg: "bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
+              cancelled: { label: "Annulé", bg: "bg-gray-500/10", text: "text-gray-600 dark:text-gray-400" },
+              rejected: { label: "Refusé", bg: "bg-rose-500/10", text: "text-rose-600 dark:text-rose-400" },
+            };
+            const stat = statusMap[(del.status || "").toLowerCase()] || { label: del.status, bg: "bg-gray-500/10", text: "text-gray-600 dark:text-gray-400" };
+            const delDate = del.actualStartDate || del.plannedStartDate || del.createdAt;
+            
+            return (
+              <div key={del.id} className="p-4 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-850 rounded-2xl shadow-sm space-y-3 transition-all hover:shadow-md hover:border-teal-500/20">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-teal-650 bg-teal-500/5 px-2 py-0.5 rounded">
+                        {del.service?.code || "CPSV"}
+                      </span>
+                      <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded", stat.bg, stat.text)}>
+                        {stat.label}
+                      </span>
+                      {del.satisfactionScore && (
+                        <span className="text-[9px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          ⭐ {del.satisfactionScore}/5
+                        </span>
+                      )}
+                    </div>
+                    <h5 className="text-xs font-black text-gray-900 dark:text-white leading-tight">
+                      {del.title || del.service?.name}
+                    </h5>
+                  </div>
+                  <span className="text-[9px] font-mono text-muted whitespace-nowrap shrink-0">
+                    {delDate ? new Date(delDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                  </span>
+                </div>
+
+                {del.description && (
+                  <p className="text-[11px] text-muted leading-relaxed line-clamp-2 dark:text-gray-300">
+                    {del.description}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-2.5 border-t border-gray-50 dark:border-gray-850/50 text-[10px] font-semibold text-muted">
+                  {del.operator?.name && (
+                    <p>
+                      Opérateur : <span className="text-text font-bold">{del.operator.name}</span>
+                    </p>
+                  )}
+                  {del.channel && (
+                    <p>
+                      Canal : <span className="text-text font-bold">{del.channel}</span>
+                    </p>
+                  )}
+                  {del.deliveryMode && (
+                    <p>
+                      Format : <span className="text-text font-bold">{del.deliveryMode}</span>
+                    </p>
+                  )}
+                  {del.location && (
+                    <p>
+                      Lieu : <span className="text-text font-bold">{del.location}</span>
+                    </p>
+                  )}
+                </div>
+
+                {del.outputs && (
+                  <div className="bg-gray-50/50 dark:bg-gray-900/30 p-2.5 rounded-xl border border-gray-100 dark:border-gray-850/30 text-[10px]">
+                    <span className="font-bold text-text block mb-1">Livrables / Résultats</span>
+                    <p className="text-muted leading-relaxed whitespace-pre-wrap">{del.outputs}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <PITDetailLayout
@@ -1101,13 +1210,14 @@ function BeneficiaryDetailPanel({ id, onClose, onEdit, onArchive }: DetailPanelP
         impactTab={lineage360Content}
         contributionsTab={combinedContributionsContent}
         metadataTab={timelineContent}
+        historyTab={historyContent}
+        historyLabel="Historique des prestations"
         overviewLabel="Vue d'ensemble"
         relationsLabel="Taxonomies & NACE"
         impactLabel="Lignage 360°"
         contributionsLabel="Programmes, Projets & Impact"
         metadataLabel="Timeline 360°"
       />
-
       {/* Contact Modal Form */}
       {isContactModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

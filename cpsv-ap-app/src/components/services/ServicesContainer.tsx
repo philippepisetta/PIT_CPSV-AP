@@ -7,7 +7,7 @@ import Wizard from "@/components/encode/Wizard";
 import { Plus, List, Database, Layers, CheckCircle, BarChart3, ShieldAlert, ArrowRight, Activity, TrendingUp, Info, X, Copy, FileCode, Users, Building2, MapPin, Sparkles, RotateCcw, Check, AlertCircle, Search, Trash2, HelpCircle, Gauge, Route, Edit3, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import CraftEcosystem from "@/components/craft/CraftEcosystem";
-import { useV2Contributions } from "@/hooks/useV2Queries";
+import { useV2Contributions, useV2ServiceDeliveriesQuery } from "@/hooks/useV2Queries";
 import { useV2UpdateServiceMutation, useV2DeleteServiceMutation } from "@/hooks/usePITQueries";
 import PITImpactPanel from "@/design-system/PITImpactPanel";
 
@@ -774,7 +774,32 @@ export default function ServicesContainer() {
   const [selectedService, setSelectedService] = useState<any | null>(null);
   const serviceIdForQuery = selectedService ? parseInt(selectedService.id) : null;
   const { data: contributionsData } = useV2Contributions("services", (serviceIdForQuery && !isNaN(serviceIdForQuery)) ? serviceIdForQuery : null);
+  const { data: deliveriesData, isLoading: isDeliveriesLoading } = useV2ServiceDeliveriesQuery(
+    { serviceId: (serviceIdForQuery && !isNaN(serviceIdForQuery)) ? serviceIdForQuery : undefined },
+    { enabled: !!selectedService && serviceIdForQuery !== null && !isNaN(serviceIdForQuery) }
+  ) as any;
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const deliveriesList = Array.isArray(deliveriesData) ? deliveriesData : (deliveriesData?.data || []);
+  const totalDeliveries = deliveriesList.length;
+  const deliveriesWithSatisfaction = deliveriesList.filter((d: any) => d.satisfactionScore !== null && d.satisfactionScore !== undefined);
+  const avgSatisfaction = deliveriesWithSatisfaction.length > 0
+    ? (deliveriesWithSatisfaction.reduce((sum: number, d: any) => sum + d.satisfactionScore, 0) / deliveriesWithSatisfaction.length).toFixed(1)
+    : "N/A";
+  const activeOperators = Array.from(new Set(
+    deliveriesList
+      .map((d: any) => d.operator?.name || d.providerOrganization?.name)
+      .filter(Boolean)
+  ));
+  const uniqueBeneficiaries = (() => {
+    const beneficiariesMap = new Map();
+    deliveriesList.forEach((d: any) => {
+      if (d.beneficiary && !beneficiariesMap.has(d.beneficiary.id)) {
+        beneficiariesMap.set(d.beneficiary.id, d.beneficiary);
+      }
+    });
+    return Array.from(beneficiariesMap.values());
+  })();
 
   // Edit Service States & Mutations
   const [showServiceEditModal, setShowServiceEditModal] = useState(false);
@@ -1556,7 +1581,7 @@ export default function ServicesContainer() {
 
   // Calculating aggregate statistics
   const totalAccompanied = servicesList.reduce((sum, s) => sum + s.kpis.companiesAccompanied, 0);
-  const avgSatisfaction = servicesList.length ? Math.round(servicesList.reduce((sum, s) => sum + s.kpis.satisfactionRate, 0) / servicesList.length) : 0;
+  const catalogAvgSatisfaction = servicesList.length ? Math.round(servicesList.reduce((sum, s) => sum + s.kpis.satisfactionRate, 0) / servicesList.length) : 0;
   const avgSovereignty = servicesList.length ? Math.round(servicesList.reduce((sum, s) => sum + s.impacts.sovereignty, 0) / servicesList.length) : 0;
 
   const handleEnrollJourneyTemplate = (templateId: string) => {
@@ -1669,7 +1694,7 @@ export default function ServicesContainer() {
           <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-gray-400 uppercase">Satisfaction PME</span>
-              <h4 className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1">{avgSatisfaction}%</h4>
+              <h4 className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1">{catalogAvgSatisfaction}%</h4>
             </div>
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
               <CheckCircle className="w-4 h-4" />
@@ -4468,6 +4493,80 @@ export default function ServicesContainer() {
                     </div>
                   </div>
                 </div>
+
+                {/* Prestations réalisées (Suivi Terrain) */}
+                {selectedService && !isNaN(parseInt(selectedService.id)) && (
+                  <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                      Prestations réalisées (Suivi Terrain)
+                    </h4>
+                    
+                    {isDeliveriesLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-teal-600"></div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Stats Panel */}
+                        <div className="grid grid-cols-3 gap-2.5 text-center text-[10px] font-semibold">
+                          <div className="bg-teal-500/5 p-2.5 rounded-xl border border-teal-500/10">
+                            <span className="text-muted block mb-0.5">Accompagnements</span>
+                            <span className="text-sm font-black text-teal-600 dark:text-teal-400">{totalDeliveries}</span>
+                          </div>
+                          <div className="bg-amber-500/5 p-2.5 rounded-xl border border-amber-500/10">
+                            <span className="text-muted block mb-0.5">Satisfaction Moy.</span>
+                            <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                              {avgSatisfaction !== "N/A" ? `${avgSatisfaction} ⭐` : "N/A"}
+                            </span>
+                          </div>
+                          <div className="bg-indigo-500/5 p-2.5 rounded-xl border border-indigo-500/10">
+                            <span className="text-muted block mb-0.5">Opérateurs Actifs</span>
+                            <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{activeOperators.length}</span>
+                          </div>
+                        </div>
+
+                        {/* Operators active badges */}
+                        {activeOperators.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 items-center">
+                            <span className="text-[9px] text-muted font-bold">Opérateurs :</span>
+                            {activeOperators.map((op: any) => (
+                              <span key={op} className="px-2 py-0.5 text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-750 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900 rounded-md">
+                                {op}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Beneficiaries List */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] text-muted font-bold block">Entreprises bénéficiaires :</span>
+                          {uniqueBeneficiaries.length === 0 ? (
+                            <p className="text-[10px] text-muted italic pl-1">Aucune entreprise n'a encore reçu ce service.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {uniqueBeneficiaries.map((b: any) => (
+                                <div key={b.id} className="p-2.5 bg-gray-50/50 dark:bg-gray-950/20 border border-gray-100 dark:border-gray-850 rounded-xl flex items-center justify-between text-[10px]">
+                                  <div className="space-y-0.5 truncate pr-2">
+                                    <span className="font-bold text-text block truncate">{b.name}</span>
+                                    <span className="text-[8px] text-muted font-semibold block">{b.size} — {b.location}</span>
+                                  </div>
+                                  <a
+                                    href={`/beneficiaries?id=${b.id}`}
+                                    className="p-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-650 dark:text-teal-405 transition cursor-pointer"
+                                    title="Voir la fiche de l'entreprise"
+                                  >
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Linked Datasets, Evidence & Outputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

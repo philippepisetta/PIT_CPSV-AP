@@ -19,7 +19,8 @@ model Organization {
   updatedAt              DateTime              @updatedAt
   services               PublicService[]
   ecosystems             Ecosystem[]           @relation("EcosystemActors")
-  deliveries             ServiceDelivery[]
+  deliveries             ServiceDelivery[]         @relation("OperatorDeliveries")
+  providerDeliveries     ServiceDelivery[]         @relation("ProviderDeliveries")
   collectiveDeliveries   CollectiveDelivery[]
   leadMissions           SecondLineMission[]   @relation("SecondLineLead")
   participatingMissions  SecondLineMission[]   @relation("SecondLineOperators")
@@ -63,6 +64,8 @@ model Organization {
   buyerLinks           SupplyChainLink[]        @relation("BuyerLinks")
   eventImpacts         TerritorialEventImpact[] @relation("OrgEventImpacts")
 
+  s3Clusters           S3Cluster[]           @relation("ClusterOrganizations")
+  s3MarketApps         S3MarketApplication[] @relation("MarketOrganizations")
   @@map("organizations")
 }
 
@@ -103,7 +106,8 @@ model PublicService {
   stages            ValueChainStage[]     @relation("ServiceStages")
 
   journeyStages        JourneyStage[]       @relation("StageServices")
-  deliveries           ServiceDelivery[]
+  deliveries           ServiceDelivery[]         @relation("ServiceDeliveries")
+  nextRecommendedDeliveries ServiceDelivery[]    @relation("NextRecommendedService")
   collectiveDeliveries CollectiveDelivery[]
   secondLineMissions   SecondLineMission[]
   ecosystems           Ecosystem[]          @relation("EcosystemServices")
@@ -137,7 +141,10 @@ model PublicService {
   resilienceMeasures ResilienceMeasure[]     @relation("ResilienceServiceMeasures")
   observations      TerritorialObservation[] @relation("ServiceObservations")
   recommendations   PitRecommendation[]      @relation("ServiceRecommendations")
+  vulnerabilities   Vulnerability[]          @relation("VulnerabilityMitigations")
 
+  s3Clusters           S3Cluster[]           @relation("ClusterServices")
+  s3MarketApps         S3MarketApplication[] @relation("MarketServices")
   @@index([organizationId])
   @@map("public_services")
 }
@@ -247,6 +254,7 @@ model BusinessEvent {
   name           String
   description    String?         @db.Text
   code           String?
+  deliveries     ServiceDelivery[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   publicServices PublicService[] @relation("ServiceBusinessEvents")
@@ -419,12 +427,15 @@ model Beneficiary {
   contacts                Contact[]
   memberships             CommunityMembership[]
   fundingCalls            FundingCall[]
+  vulnerabilities         Vulnerability[] @relation("VulnerabilityBeneficiaries")
 
   roadmapLogs Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   Member      Member?
 
+  s3Clusters           S3Cluster[]           @relation("ClusterBeneficiaries")
+  s3MarketApps         S3MarketApplication[] @relation("MarketBeneficiaries")
   @@index([primaryNaceSectorId])
   @@index([territoryId])
   @@map("beneficiaries")
@@ -655,6 +666,8 @@ model Journey {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  s3Clusters           S3Cluster[]           @relation("ClusterJourneys")
+  s3MarketApps         S3MarketApplication[] @relation("MarketJourneys")
   @@map("journeys")
 }
 
@@ -669,7 +682,8 @@ model JourneyStage {
   journeyId          Int?
   journey            Journey?            @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   services           PublicService[]     @relation("StageServices")
-  deliveries         ServiceDelivery[]
+  deliveries         ServiceDelivery[]         @relation("JourneyStageOld")
+  journeyStepDeliveries ServiceDelivery[]      @relation("JourneyStepNew")
   journeyEnrollments JourneyEnrollment[]
   activitiesNew      Activity[]          @relation("JourneyStageActivitiesNew")
 
@@ -719,35 +733,97 @@ model InterventionLevel {
 }
 
 // 26. Réalisation réelle de service (ServiceDelivery - Nouveau)
-/// @deprecated
 model ServiceDelivery {
   id             Int           @id @default(autoincrement())
+  title          String        @default("Accompagnement réalisé")
+  description    String?       @db.Text
+  
+  serviceId      Int
+  service        PublicService @relation("ServiceDeliveries", fields: [serviceId], references: [id], onDelete: Cascade)
+  
   beneficiaryId  Int
   beneficiary    Beneficiary   @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
-  serviceId      Int
-  service        PublicService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  // TODO: Créer une entité Establishment / LocalUnit BCE et migrer ce champ en relation
+  establishmentId Int?
+  
+  contactId      Int?
+  contact        Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  
+  // Relations opérateur (rétrocompatibilité avec operatorId)
+  operatorId     Int?
+  operator       Organization? @relation("OperatorDeliveries", fields: [operatorId], references: [id], onDelete: SetNull)
+  
+  // Nouveau champ ciblé
+  providerOrganizationId Int?
+  providerOrganization   Organization? @relation("ProviderDeliveries", fields: [providerOrganizationId], references: [id], onDelete: SetNull)
+  
+  // TODO: Relier providerPersonId à un futur modèle User / Person
+  providerPersonId Int?
+  
+  programId      Int?
+  program        Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
+  
+  projectId      Int?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  
+  actionId       Int?
+  action         Action?       @relation(fields: [actionId], references: [id], onDelete: SetNull)
+  
   journeyId      Int?
   journey        Journey?      @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  
   journeyStageId Int?
-  journeyStage   JourneyStage? @relation(fields: [journeyStageId], references: [id], onDelete: SetNull)
-
-  status         ServiceDeliveryStatus @default(PLANNED)
-  date           DateTime              @default(now())
-  operatorId     Int
-  operator       Organization          @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  outputReal     String?               @db.Text
-  outcomeReal    String?               @db.Text
-  impact         String?               @db.Text
-  maturityBefore Json? // ex: {"digital": 1, "ia": 1}
-  maturityAfter  Json? // ex: {"digital": 1, "ia": 2}
-  maturityDelta  Json? // ex: {"ia": {"before": 1, "after": 2}}
-  evidenceFiles  Json? // Documents/preuves associés
-
+  journeyStage   JourneyStage? @relation("JourneyStageOld", fields: [journeyStageId], references: [id], onDelete: SetNull)
+  
+  journeyStepId  Int?
+  journeyStep    JourneyStage? @relation("JourneyStepNew", fields: [journeyStepId], references: [id], onDelete: SetNull)
+  
+  businessEventId Int?
+  businessEvent   BusinessEvent? @relation(fields: [businessEventId], references: [id], onDelete: SetNull)
+  
+  status         String        @default("planned") // requested / accepted / planned / in_progress / delivered / closed / cancelled / rejected
+  
+  requestDate      DateTime?
+  plannedStartDate DateTime?
+  actualStartDate  DateTime?
+  actualEndDate    DateTime?
+  
+  channel      String? // téléphone / mail / plateforme / rendez-vous / événement / API / autre
+  deliveryMode String? // individuel / collectif / hybride
+  location     String?
+  
+  outputs      String?       @db.Text
+  outputReal   String?       @db.Text // compatibilité
+  outcomeReal  String?       @db.Text // compatibilité
+  evidenceFiles Json?        // compatibilité
+  
+  evidences    Evidence[]
+  
+  fundingId    Int?
+  funding      FundingInstrument? @relation(fields: [fundingId], references: [id], onDelete: SetNull)
+  
+  maturityBefore Json?
+  maturityAfter  Json?
+  maturityDelta  Json? // compatibilité
+  
+  satisfactionScore Float?
+  impactSummary     String?   @db.Text
+  impact            String?   @db.Text // compatibilité
+  
+  nextRecommendedServiceId Int?
+  nextRecommendedService   PublicService? @relation("NextRecommendedService", fields: [nextRecommendedServiceId], references: [id], onDelete: SetNull)
+  
+  nextStepComment     String?   @db.Text
+  confidentialityLevel String?   @default("PUBLIC")
+  dataQualityStatus    String?   @default("DRAFT")
+  
+  createdBy      String?
+  updatedBy      String?
+  
+  // Relations stratégiques existantes (pour la rétrocompatibilité)
   actionInstanceId Int?
   actionInstance   ActionInstance? @relation(fields: [actionInstanceId], references: [id], onDelete: SetNull)
-  evidences        Evidence[]
-
-  // Nouvelles relations Strategic Governance
   initiativeId        Int?
   initiative          Initiative?            @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
   engagementId        Int?
@@ -1023,6 +1099,9 @@ model Dataset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  s3Clusters           S3Cluster[]           @relation("ClusterDatasets")
+  s3MarketApps         S3MarketApplication[] @relation("MarketDatasets")
+  dataSpaces           DataSpace[]           @relation("DatasetToDataSpace")
   @@map("datasets")
 }
 
@@ -1223,14 +1302,18 @@ model Program {
   impacts                  ImpactDimension[]          @relation("ProgramImpacts")
   knowledges               KnowledgeDimension[]       @relation("ProgramKnowledges")
 
+  deliveries ServiceDelivery[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ecosystemChallenges EcosystemChallenge[]
+  mitigatedVulnerabilities Vulnerability[] @relation("ProgramMitigatedVulnerabilities")
 
   // vNext back-references
   policyMeasures PolicyMeasure[]          @relation("PolicyMeasurePrograms")
   observations   TerritorialObservation[] @relation("ProgramObservations")
 
+  s3Clusters           S3Cluster[]           @relation("ClusterPrograms")
+  s3MarketApps         S3MarketApplication[] @relation("MarketPrograms")
   @@map("programs")
 }
 
@@ -1415,9 +1498,12 @@ model FundingInstrument {
   callId        Int?
   call          FundingCall?            @relation(fields: [callId], references: [id], onDelete: Cascade)
   awards        FundingAward[]
+  deliveries    ServiceDelivery[]
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
 
+  s3Clusters           S3Cluster[]           @relation("ClusterFunding")
+  s3MarketApps         S3MarketApplication[] @relation("MarketFunding")
   @@map("funding_instruments")
 }
 
@@ -1461,6 +1547,7 @@ model Project {
   portfolios     Portfolio[]
   portfolioItems PortfolioItem[]
 
+  deliveries       ServiceDelivery[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   ProjectCommunity ProjectCommunity[]
@@ -1468,6 +1555,8 @@ model Project {
   ecosystemChallenges EcosystemChallenge[]
   fundingCalls        FundingCall[]
 
+  s3Clusters           S3Cluster[]           @relation("ClusterProjects")
+  s3MarketApps         S3MarketApplication[] @relation("MarketProjects")
   @@map("projects")
 }
 
@@ -1672,9 +1761,12 @@ model Action {
   project    Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
   activities Activity[]
 
+  deliveries ServiceDelivery[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  s3Clusters           S3Cluster[]           @relation("ClusterActions")
+  s3MarketApps         S3MarketApplication[] @relation("MarketActions")
   @@map("actions")
 }
 
@@ -1750,6 +1842,8 @@ model Activity {
 
   transformationDimensions TransformationDimension[] @relation("ActivityTransformationsNew")
 
+  sourceType String?
+  sourceId   Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1816,6 +1910,8 @@ model Capability {
 
   members Member[]
 
+  s3Clusters           S3Cluster[]           @relation("ClusterCapabilities")
+  s3MarketApps         S3MarketApplication[] @relation("MarketCapabilities")
   @@map("capabilities")
 }
 
@@ -1861,7 +1957,10 @@ model ValueChain {
   criticalMaterials CriticalMaterial[]      @relation("ValueChainMaterials")
   criticalResources CriticalResource[]      @relation("ValueChainResources")
   supplyChainLinks  SupplyChainLink[]       @relation("ValueChainLinks")
+  vulnerabilities    Vulnerability[]         @relation("VulnerabilityValueChains")
 
+  s3Clusters           S3Cluster[]           @relation("ClusterValueChains")
+  s3MarketApps         S3MarketApplication[] @relation("MarketValueChains")
   @@map("value_chains")
 }
 
@@ -2122,6 +2221,8 @@ model Filiere {
   observations    TerritorialObservation[] @relation("FiliereObservations")
   challenges      TerritorialChallenge[]   @relation("FiliereChallenges")
 
+  s3Clusters           S3Cluster[]           @relation("ClusterFilieres")
+  s3MarketApps         S3MarketApplication[] @relation("MarketFilieres")
   @@map("filieres")
 }
 
@@ -2404,6 +2505,7 @@ model Contact {
   isPrimaryContact Boolean     @default(false)
   beneficiaryId    Int
   beneficiary      Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  deliveries       ServiceDelivery[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -2506,6 +2608,7 @@ model Risk {
   ecosystems           Ecosystem[]       @relation("EcosystemRisks")
   assets               TerritorialAsset[] @relation("AssetRisks")
   territorialChallenges TerritorialChallenge[] @relation("ChallengeRisks")
+  vulnerabilities      Vulnerability[]   @relation("VulnerabilityRisks")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2663,6 +2766,10 @@ model Dependency {
   substitutability   String  @default("POSSIBLE") // EASY|POSSIBLE|DIFFICULT|IMPOSSIBLE
   uri                String? @unique
 
+  parentDependencyId Int?
+  parentDependency   Dependency?  @relation("DependencyHierarchy", fields: [parentDependencyId], references: [id], onDelete: SetNull)
+  childDependencies  Dependency[] @relation("DependencyHierarchy")
+
   criticalInfrastructureId Int?
   criticalInfrastructure   CriticalInfrastructure? @relation(fields: [criticalInfrastructureId], references: [id], onDelete: SetNull)
 
@@ -2670,6 +2777,7 @@ model Dependency {
   filieres      Filiere[]      @relation("FiliereDependencies")
   valueChains   ValueChain[]   @relation("ValueChainDependencies")
   assets        TerritorialAsset[] @relation("AssetDependencies")
+  vulnerabilities    Vulnerability[] @relation("VulnerabilityDependencies")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2697,22 +2805,36 @@ model CriticalInfrastructure {
 }
 
 model Vulnerability {
-  id          Int     @id @default(autoincrement())
-  name        String
-  description String? @db.Text
-  category    String  // ENERGY|SUPPLY|FINANCIAL|HUMAN|DIGITAL|ENVIRONMENTAL|GEOGRAPHIC
-  severity    String  @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
-  indicator   String? // Indicateur mesurable associé
+  id                    Int                @id @default(autoincrement())
+  code                  String?            @unique
+  name                  String
+  description           String?            @db.Text
+  category              String             // ENERGY|SUPPLY|FINANCIAL|HUMAN|DIGITAL|ENVIRONMENTAL|GEOGRAPHIC
+  severity              String             @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  indicator             String?            // Indicateur mesurable associé
+  criticalityScore      Int                @default(50) // Score de 0 à 100
+  territorialImportance String?            // Description textuelle des zones exposées
+  strategicImportance   String?            // Importance stratégique régionale
+  confidenceLevel       String             @default("MEDIUM") // LOW|MEDIUM|HIGH
+  remediationPlan       String?            @db.Text
 
-  organizations Organization[] @relation("OrgVulnerabilities")
-  filieres      Filiere[]      @relation("FiliereVulnerabilities")
-  assets        TerritorialAsset[] @relation("AssetVulnerabilities")
+  organizations         Organization[]     @relation("OrgVulnerabilities")
+  filieres              Filiere[]          @relation("FiliereVulnerabilities")
+  assets                TerritorialAsset[] @relation("AssetVulnerabilities")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dependencies          Dependency[]       @relation("VulnerabilityDependencies")
+  valueChains           ValueChain[]       @relation("VulnerabilityValueChains")
+  beneficiaries         Beneficiary[]      @relation("VulnerabilityBeneficiaries")
+  risks                 Risk[]             @relation("VulnerabilityRisks")
+  mitigations           PublicService[]    @relation("VulnerabilityMitigations")
+  programs              Program[]          @relation("ProgramMitigatedVulnerabilities")
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   @@map("vulnerabilities")
 }
+
 
 model ResilienceImpact {
   id          Int     @id @default(autoincrement())
@@ -3570,4 +3692,609 @@ model ResilienceAuditLog {
   afterValue   Json?
 
   @@map("resilience_audit_logs")
+}
+
+
+// =========================================================================
+// PHASE 6: STABLE REFERENCE FRAMEWORKS, S3/DIS & DATA SPACES NEW MODELS
+// =========================================================================
+
+enum ReferenceSourceType {
+  EU_OFFICIAL
+  JRC
+  SEMIC
+  ETSI
+  IDSA
+  DSSC
+  WALLONIA
+  INTERNAL
+  OTHER
+}
+
+enum ReferenceStabilityLevel {
+  STABLE
+  EVOLVING
+  DRAFT
+  INTERNAL_WORKING_SOURCE
+}
+
+enum ReferenceLegalOrMethodologicalStatus {
+  REGULATION
+  RECOMMENDATION
+  GUIDE
+  STANDARD
+  TAXONOMY
+  METHODOLOGY
+  INTERNAL_NOTE
+}
+
+enum ReferenceApplicability {
+  S3
+  DIS
+  DATA_SPACE
+  DATASET
+  SERVICE
+  VALUE_CHAIN
+  BENEFICIARY
+  GOVERNANCE
+  AI
+  CYBER
+  DATA
+}
+
+enum ClusterRole {
+  MARKET_CLUSTER
+  TRANSVERSAL_CLUSTER
+  NOISY_CLUSTER
+  RESIDUAL_CLUSTER
+  TO_BE_ARBITRATED
+}
+
+enum ClusterValidationStatus {
+  DRAFT
+  PROXIED
+  VALIDATED
+}
+
+model ReferenceFramework {
+  id                          Int                                  @id @default(autoincrement())
+  code                        String                               @unique
+  labelFr                     String
+  labelEn                     String
+  description                 String?                              @db.Text
+  sourceName                  String?
+  sourceType                  ReferenceSourceType                  @default(EU_OFFICIAL)
+  sourceUrl                   String?
+  version                     String?
+  publicationDate             DateTime?
+  lastCheckedAt               DateTime?
+  stabilityLevel              ReferenceStabilityLevel              @default(STABLE)
+  legalOrMethodologicalStatus ReferenceLegalOrMethodologicalStatus @default(STANDARD)
+  applicableTo                ReferenceApplicability               @default(S3)
+  confidenceLevel             String?                              // HIGH, MEDIUM, LOW
+  notes                       String?                              @db.Text
+  limitations                 String?                              @db.Text
+  isOfficial                  Boolean                              @default(true)
+  isDeprecated                Boolean                              @default(false)
+  
+  replacementSourceId         Int?
+  replacementSource           ReferenceFramework?                  @relation("ReplacementFramework", fields: [replacementSourceId], references: [id])
+  replacedFrameworks          ReferenceFramework[]                 @relation("ReplacementFramework")
+  
+  sources                     ReferenceSource[]
+  taxonomies                  ReferenceTaxonomy[]
+  sourceDocuments             SourceDocument[]
+  interopStandards            InteroperabilityStandard[]
+  
+  potentialDis                PotentialDIS[]
+  s3Clusters                  S3Cluster[]
+  marketApps                  S3MarketApplication[]
+  dataSpaces                  DataSpace[]
+  
+  createdAt                   DateTime                             @default(now())
+  updatedAt                   DateTime                             @updatedAt
+
+  @@map("ref_frameworks")
+}
+
+model ReferenceSource {
+  id           Int                @id @default(autoincrement())
+  code         String?            @unique
+  name         String
+  description  String?            @db.Text
+  url          String?
+  frameworkId  Int
+  framework    ReferenceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@map("ref_sources")
+}
+
+model ReferenceTaxonomy {
+  id          Int                      @id @default(autoincrement())
+  code        String                   @unique
+  name        String
+  description String?                  @db.Text
+  frameworkId Int
+  framework   ReferenceFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  versions    ReferenceTaxonomyVersion[]
+  concepts    ReferenceConcept[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@map("ref_taxonomies")
+}
+
+model ReferenceTaxonomyVersion {
+  id          Int               @id @default(autoincrement())
+  version     String
+  releaseDate DateTime?
+  taxonomyId  Int
+  taxonomy    ReferenceTaxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("ref_taxonomy_versions")
+}
+
+model ReferenceConcept {
+  id              Int                       @id @default(autoincrement())
+  code            String                    @unique
+  labelFr         String
+  labelEn         String
+  description     String?                   @db.Text
+  taxonomyId      Int?
+  taxonomy        ReferenceTaxonomy?        @relation(fields: [taxonomyId], references: [id], onDelete: SetNull)
+  parentConceptId Int?
+  parentConcept   ReferenceConcept?         @relation("ConceptHierarchy", fields: [parentConceptId], references: [id])
+  childConcepts   ReferenceConcept[]        @relation("ConceptHierarchy")
+  mappingsFrom    ReferenceConceptMapping[] @relation("SourceConcept")
+  mappingsTo      ReferenceConceptMapping[] @relation("TargetConcept")
+  
+  potentialDis    PotentialDIS[]            @relation("DisConcepts")
+  s3Clusters      S3Cluster[]               @relation("ClusterConcepts")
+  marketApps      S3MarketApplication[]     @relation("MarketConcepts")
+  dataSpaces      DataSpace[]               @relation("DataSpaceConcepts")
+  
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@map("ref_concepts")
+}
+
+model ReferenceConceptMapping {
+  id              Int              @id @default(autoincrement())
+  sourceConceptId Int
+  sourceConcept   ReferenceConcept @relation("SourceConcept", fields: [sourceConceptId], references: [id], onDelete: Cascade)
+  targetConceptId Int
+  targetConcept   ReferenceConcept @relation("TargetConcept", fields: [targetConceptId], references: [id], onDelete: Cascade)
+  mappingType     String           // EXACT_MATCH, BROADER_THAN, NARROWER_THAN, RELATED
+  description     String?          @db.Text
+  confidenceLevel String           @default("HIGH") // HIGH, MEDIUM, LOW
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("ref_concept_mappings")
+}
+
+model SourceDocument {
+  id                Int                               @id @default(autoincrement())
+  title             String
+  author            String?
+  url               String?
+  status            String                            @default("OFFICIAL_PUBLIC_REFERENCE") // INTERNAL_WORKING_NOTE, INTERNAL_PRESENTATION, OFFICIAL_PUBLIC_REFERENCE, EUROPEAN_STANDARD, LEGAL_REFERENCE, METHODOLOGICAL_REFERENCE
+  topic             String?
+  description       String?                           @db.Text
+  frameworkId       Int?
+  framework         ReferenceFramework?               @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  extracts          SourceDocumentExtract[]
+  referenceMappings SourceDocumentReferenceMapping[]
+  
+  potentialDis      PotentialDIS[]
+  s3Clusters        S3Cluster[]
+  marketApps        S3MarketApplication[]
+  dataSpaces        DataSpace[]
+  
+  createdAt         DateTime                          @default(now())
+  updatedAt         DateTime                          @updatedAt
+
+  @@map("ref_source_documents")
+}
+
+model SourceDocumentExtract {
+  id          Int            @id @default(autoincrement())
+  keyQuote    String         @db.Text
+  pageNumber  Int?
+  contextNote String?        @db.Text
+  documentId  Int
+  document    SourceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("ref_source_document_extracts")
+}
+
+model SourceDocumentReferenceMapping {
+  id               Int            @id @default(autoincrement())
+  sourceDocumentId Int
+  sourceDocument   SourceDocument @relation(fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  targetTable      String
+  targetId         Int
+  mappingType      String         // SOURCE_OF_TRUTH, Triangulated, Arbitrated, DraftHypothesis
+  notes            String?        @db.Text
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("ref_source_document_ref_mappings")
+}
+
+model ReferenceGovernanceNote {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String   @db.Text
+  author      String?
+  targetTable String?
+  targetId    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ref_governance_notes")
+}
+
+model InteroperabilityStandard {
+  id               Int                @id @default(autoincrement())
+  code             String             @unique
+  name             String
+  description      String?            @db.Text
+  url              String?
+  frameworkId      Int?
+  framework        ReferenceFramework? @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  semanticProfiles SemanticProfile[]
+  vocabularies     Vocabulary[]
+  dataSpaces       DataSpace[]
+  s3Clusters       S3Cluster[]
+  marketApps       S3MarketApplication[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@map("interop_standards")
+}
+
+model SemanticProfile {
+  id          Int                      @id @default(autoincrement())
+  name        String
+  description String?                  @db.Text
+  jsonSchema  String?                  @db.Text
+  standardId  Int
+  standard    InteroperabilityStandard @relation(fields: [standardId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@map("interop_semantic_profiles")
+}
+
+model Vocabulary {
+  id           Int                      @id @default(autoincrement())
+  prefix       String
+  namespaceUri String                   @unique
+  standardId   Int?
+  standard     InteroperabilityStandard? @relation(fields: [standardId], references: [id], onDelete: SetNull)
+  conceptSchemes ConceptScheme[]
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@map("interop_vocabularies")
+}
+
+model ConceptScheme {
+  id           Int        @id @default(autoincrement())
+  uri          String     @unique
+  title        String
+  vocabularyId Int
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("interop_concept_schemes")
+}
+
+model CommonEuropeanDataSpaceDomain {
+  id          Int          @id @default(autoincrement())
+  code        String       @unique
+  name        String
+  description String?      @db.Text
+  dataSpaces  DataSpace[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("common_eu_data_space_domains")
+}
+
+model NaceCode {
+  id          Int                   @id @default(autoincrement())
+  code        String                @unique
+  labelFr     String
+  labelEn     String?
+  description String?               @db.Text
+  clusters    S3Cluster[]           @relation("ClusterNaceCodes")
+  marketApps  S3MarketApplication[] @relation("MarketNaceCodes")
+  potentialDis PotentialDIS[]        @relation("DisNaceCodes")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("ref_nace_codes")
+}
+
+model NabsCode {
+  id          Int                   @id @default(autoincrement())
+  code        String                @unique
+  labelFr     String
+  labelEn     String?
+  description String?               @db.Text
+  clusters    S3Cluster[]           @relation("ClusterNabsCodes")
+  marketApps  S3MarketApplication[] @relation("MarketNabsCodes")
+  potentialDis PotentialDIS[]        @relation("DisNabsCodes")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("ref_nabs_codes")
+}
+
+model PotentialDIS {
+  id               Int                      @id @default(autoincrement())
+  code             String?                  @unique
+  name             String
+  description      String?                  @db.Text
+  validationStatus ClusterValidationStatus  @default(PROXIED)
+  arbitrationStatus String                  @default("TO_BE_ARBITRATED")
+  version          String                   @default("S3 2026")
+  isProxy          Boolean                  @default(true)
+  limitationNote   String?                  @db.Text
+  triangulationNeeded Boolean               @default(true)
+  
+  frameworkId      Int?
+  framework        ReferenceFramework?      @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  sourceDocumentId Int?
+  sourceDocument   SourceDocument?          @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  
+  clusters         S3Cluster[]
+  marketApps       S3MarketApplication[]
+  groupings        DISGrouping[]
+  referenceConcepts ReferenceConcept[]      @relation("DisConcepts")
+  naceCodes        NaceCode[]               @relation("DisNaceCodes")
+  nabsCodes        NabsCode[]               @relation("DisNabsCodes")
+  
+  dataSpaces       DataSpace[]
+  
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@map("s3_potential_dis")
+}
+
+model S3Cluster {
+  id                     Int                      @id @default(autoincrement())
+  code                   Int                      @unique
+  name                   String
+  description            String?                  @db.Text
+  role                   ClusterRole              @default(MARKET_CLUSTER)
+  validationStatus       ClusterValidationStatus  @default(PROXIED)
+  arbitrationStatus      String                   @default("TO_BE_ARBITRATED")
+  version                String                   @default("GTS3 2026")
+  isProxy                Boolean                  @default(true)
+  limitationNote         String?                  @db.Text
+  triangulationNeeded    Boolean                  @default(true)
+  
+  potentialDisId         Int?
+  potentialDis           PotentialDIS?            @relation(fields: [potentialDisId], references: [id], onDelete: SetNull)
+  frameworkId            Int?
+  framework              ReferenceFramework?      @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  sourceDocumentId       Int?
+  sourceDocument         SourceDocument?          @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  standardId             Int?
+  standard               InteroperabilityStandard? @relation(fields: [standardId], references: [id], onDelete: SetNull)
+  
+  marketApps             S3MarketApplication[]
+  groupings              DISGrouping[]
+  scoringCriteria        S3ScoringCriterion[]     @relation("ClusterCriteria")
+  indicatorBlocks        S3IndicatorBlock[]
+  methodologyNotes       ClusterMethodologyNote[]
+  dataSources            ClusterDataSource[]
+  referenceConcepts      ReferenceConcept[]       @relation("ClusterConcepts")
+  naceCodes              NaceCode[]               @relation("ClusterNaceCodes")
+  nabsCodes              NabsCode[]               @relation("ClusterNabsCodes")
+  
+  beneficiaries          Beneficiary[]            @relation("ClusterBeneficiaries")
+  organizations          Organization[]           @relation("ClusterOrganizations")
+  projects               Project[]                @relation("ClusterProjects")
+  programs               Program[]                @relation("ClusterPrograms")
+  actions                Action[]                 @relation("ClusterActions")
+  publicServices         PublicService[]          @relation("ClusterServices")
+  journeys               Journey[]                @relation("ClusterJourneys")
+  valueChains            ValueChain[]             @relation("ClusterValueChains")
+  filieres               Filiere[]                @relation("ClusterFilieres")
+  fundingInstruments     FundingInstrument[]      @relation("ClusterFunding")
+  datasets               Dataset[]                @relation("ClusterDatasets")
+  dataSpaces             DataSpace[]              @relation("ClusterDataSpaces")
+  capabilities           Capability[]             @relation("ClusterCapabilities")
+  
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@map("s3_clusters")
+}
+
+model S3MarketApplication {
+  id                     Int                      @id @default(autoincrement())
+  code                   String?                  @unique
+  name                   String
+  description            String?                  @db.Text
+  validationStatus       ClusterValidationStatus  @default(PROXIED)
+  arbitrationStatus      String                   @default("TO_BE_ARBITRATED")
+  version                String                   @default("GTS3 2026")
+  isProxy                Boolean                  @default(true)
+  limitationNote         String?                  @db.Text
+  triangulationNeeded    Boolean                  @default(true)
+  
+  clusterId              Int?
+  cluster                S3Cluster?               @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  potentialDisId         Int?
+  potentialDis           PotentialDIS?            @relation(fields: [potentialDisId], references: [id], onDelete: SetNull)
+  frameworkId            Int?
+  framework              ReferenceFramework?      @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  sourceDocumentId       Int?
+  sourceDocument         SourceDocument?          @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  standardId             Int?
+  standard               InteroperabilityStandard? @relation(fields: [standardId], references: [id], onDelete: SetNull)
+  
+  groupings              DISGrouping[]
+  scoringCriteria        S3ScoringCriterion[]     @relation("MarketCriteria")
+  indicatorBlocks        S3IndicatorBlock[]
+  methodologyNotes       ClusterMethodologyNote[]
+  dataSources            ClusterDataSource[]
+  referenceConcepts      ReferenceConcept[]       @relation("MarketConcepts")
+  naceCodes              NaceCode[]               @relation("MarketNaceCodes")
+  nabsCodes              NabsCode[]               @relation("MarketNabsCodes")
+  
+  beneficiaries          Beneficiary[]            @relation("MarketBeneficiaries")
+  organizations          Organization[]           @relation("MarketOrganizations")
+  projects               Project[]                @relation("MarketProjects")
+  programs               Program[]                @relation("MarketPrograms")
+  actions                Action[]                 @relation("MarketActions")
+  publicServices         PublicService[]          @relation("MarketServices")
+  journeys               Journey[]                @relation("MarketJourneys")
+  valueChains            ValueChain[]             @relation("MarketValueChains")
+  filieres               Filiere[]                @relation("MarketFilieres")
+  fundingInstruments     FundingInstrument[]      @relation("MarketFunding")
+  datasets               Dataset[]                @relation("MarketDatasets")
+  dataSpaces             DataSpace[]              @relation("MarketDataSpaces")
+  capabilities           Capability[]             @relation("MarketCapabilities")
+  
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@map("s3_market_applications")
+}
+
+model DISGrouping {
+  id               Int                  @id @default(autoincrement())
+  name             String
+  description      String?              @db.Text
+  
+  potentialDisId   Int
+  potentialDis     PotentialDIS         @relation(fields: [potentialDisId], references: [id], onDelete: Cascade)
+  clusterId        Int?
+  cluster          S3Cluster?           @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  marketAppId      Int?
+  marketApp        S3MarketApplication? @relation(fields: [marketAppId], references: [id], onDelete: SetNull)
+  
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@map("s3_dis_groupings")
+}
+
+model S3ScoringCriterion {
+  id          Int                   @id @default(autoincrement())
+  name        String
+  description String?               @db.Text
+  category    String?               
+  weight      Float                 @default(1.0)
+  
+  clusters    S3Cluster[]           @relation("ClusterCriteria")
+  marketApps  S3MarketApplication[] @relation("MarketCriteria")
+  
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("s3_scoring_criteria")
+}
+
+model S3IndicatorBlock {
+  id          Int                  @id @default(autoincrement())
+  category    String               
+  name        String
+  value       Float?
+  unit        String?
+  
+  s3ClusterId Int?
+  s3Cluster   S3Cluster?           @relation(fields: [s3ClusterId], references: [id], onDelete: Cascade)
+  marketAppId Int?
+  marketApp   S3MarketApplication? @relation(fields: [marketAppId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("s3_indicator_blocks")
+}
+
+model ClusterMethodologyNote {
+  id              Int                  @id @default(autoincrement())
+  title           String
+  content         String               @db.Text
+  limitations     String?              @db.Text
+  confidenceLevel String               @default("MEDIUM")
+  
+  s3ClusterId     Int?
+  s3Cluster       S3Cluster?           @relation(fields: [s3ClusterId], references: [id], onDelete: Cascade)
+  marketAppId     Int?
+  marketApp       S3MarketApplication? @relation(fields: [marketAppId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@map("s3_cluster_methodology_notes")
+}
+
+model ClusterDataSource {
+  id          Int                  @id @default(autoincrement())
+  name        String
+  recordCount Int?
+  description String?              @db.Text
+  
+  s3ClusterId Int?
+  s3Cluster   S3Cluster?           @relation(fields: [s3ClusterId], references: [id], onDelete: Cascade)
+  marketAppId Int?
+  marketApp   S3MarketApplication? @relation(fields: [marketAppId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("s3_cluster_data_sources")
+}
+
+model DataSpace {
+  id               Int                            @id @default(autoincrement())
+  name             String
+  description      String?                        @db.Text
+  uri              String?                        @unique
+  validationStatus ClusterValidationStatus        @default(PROXIED)
+  arbitrationStatus String                        @default("TO_BE_ARBITRATED")
+  version          String                         @default("PwC 2026")
+  isProxy          Boolean                        @default(true)
+  limitationNote   String?                        @db.Text
+  triangulationNeeded Boolean                     @default(true)
+  
+  domainId         Int?
+  domain           CommonEuropeanDataSpaceDomain? @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  standardId       Int?
+  standard         InteroperabilityStandard?      @relation(fields: [standardId], references: [id], onDelete: SetNull)
+  sourceDocumentId Int?
+  sourceDocument   SourceDocument?                @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  frameworkId      Int?
+  framework        ReferenceFramework?            @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  
+  potentialDisId   Int?
+  potentialDis     PotentialDIS?                  @relation(fields: [potentialDisId], references: [id], onDelete: SetNull)
+  
+  datasets         Dataset[]                      @relation("DatasetToDataSpace")
+  s3Clusters       S3Cluster[]                    @relation("ClusterDataSpaces")
+  marketApps       S3MarketApplication[]          @relation("MarketDataSpaces")
+  referenceConcepts ReferenceConcept[]            @relation("DataSpaceConcepts")
+  
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+
+  @@map("data_spaces")
 }

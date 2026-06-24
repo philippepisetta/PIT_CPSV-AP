@@ -1,5 +1,12 @@
-import { PrismaClient, TerritoryType, KnowledgeAssetType, ProgramStatus, InitiativeStatus, ParticipationRole, ServiceDeliveryStatus, CollectiveDeliveryStatus, SecondLineMissionStatus, ActivityType } from '@prisma/client';
+import { PrismaClient, TerritoryType, KnowledgeAssetType, ProgramStatus, InitiativeStatus, ParticipationRole, CollectiveDeliveryStatus, SecondLineMissionStatus, ActivityType } from '@prisma/client';
 import { cleanVNext, seedVNext } from './seed-vnext';
+
+enum ServiceDeliveryStatus {
+  PLANNED = 'planned',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'delivered',
+  CANCELLED = 'cancelled'
+}
 
 const prisma = new PrismaClient();
 
@@ -1715,7 +1722,8 @@ async function main() {
       initiativeId: initDiagIa.id,
       engagementId: engIaDupont.id,
       status: ServiceDeliveryStatus.COMPLETED,
-      date: new Date('2026-06-12T10:00:00Z'),
+      actualStartDate: new Date('2026-06-12T10:00:00Z'),
+      plannedStartDate: new Date('2026-06-12T10:00:00Z'),
       operatorId: orgAdn.id,
       outputReal: 'Rapport PDF de diagnostic IA validé (Audit final)',
       outcomeReal: '3 cas d’usage IA identifiés + PoC recommandé en ligne de cuisson',

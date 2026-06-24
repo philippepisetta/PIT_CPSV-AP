@@ -23,6 +23,7 @@ interface PITDetailLayoutProps {
   impactLabel?: string;
   contributionsLabel?: string;
   metadataLabel?: string;
+  historyLabel?: string;
 }
 
 export default function PITDetailLayout({
@@ -42,6 +43,7 @@ export default function PITDetailLayout({
   impactLabel,
   contributionsLabel,
   metadataLabel,
+  historyLabel,
 }: PITDetailLayoutProps) {
   const [activeSubTab, setActiveSubTab] = useState<string>("overview");
 
@@ -54,9 +56,9 @@ export default function PITDetailLayout({
     if (impactTab) list.push({ id: "impact", label: impactLabel || "Parcours actifs", icon: TrendingUp });
     if (contributionsTab) list.push({ id: "contributions", label: contributionsLabel || "Contributions", icon: TrendingUp });
     list.push({ id: "metadata", label: metadataLabel || "Métadonnées", icon: Database });
-    if (historyTab) list.push({ id: "history", label: "Historique", icon: Clock });
+    if (historyTab) list.push({ id: "history", label: historyLabel || "Historique des prestations", icon: Clock });
     return list;
-  }, [relationsTab, impactTab, contributionsTab, historyTab, overviewLabel, relationsLabel, impactLabel, contributionsLabel, metadataLabel]);
+  }, [relationsTab, impactTab, contributionsTab, historyTab, overviewLabel, relationsLabel, impactLabel, contributionsLabel, metadataLabel, historyLabel]);
 
   return (
     <div

@@ -664,16 +664,86 @@ export async function GET(
 
     // 5. Service deliveries
     if (segment1 === "service-deliveries") {
+      if (segment2) {
+        const id = parseInt(segment2);
+        if (isNaN(id)) return NextResponse.json({ error: "ID invalide" }, { status: 400 });
+        const item = await prisma.serviceDelivery.findUnique({
+          where: { id },
+          include: {
+            beneficiary: { include: { primaryNaceSector: true } },
+            service: { include: { organization: true } },
+            operator: true,
+            providerOrganization: true,
+            contact: true,
+            program: true,
+            project: true,
+            action: true,
+            journeyStep: true,
+            funding: true,
+            nextRecommendedService: true,
+            evidences: true
+          }
+        });
+        if (!item) return NextResponse.json({ error: "Prestation non trouvée" }, { status: 404 });
+        return NextResponse.json(item);
+      }
+
       const beneficiaryId = searchParams.get("beneficiaryId") ? parseInt(searchParams.get("beneficiaryId")!) : undefined;
-      if (!beneficiaryId && cachedDeliveries && (now - cachedDeliveriesTime < CACHE_TTL_MS)) {
+      const providerOrganizationId = searchParams.get("providerOrganizationId") ? parseInt(searchParams.get("providerOrganizationId")!) : undefined;
+      const operatorId = searchParams.get("operatorId") ? parseInt(searchParams.get("operatorId")!) : undefined;
+      const serviceId = searchParams.get("serviceId") ? parseInt(searchParams.get("serviceId")!) : undefined;
+      const programId = searchParams.get("programId") ? parseInt(searchParams.get("programId")!) : undefined;
+      const projectId = searchParams.get("projectId") ? parseInt(searchParams.get("projectId")!) : undefined;
+      const actionId = searchParams.get("actionId") ? parseInt(searchParams.get("actionId")!) : undefined;
+      const status = searchParams.get("status") ? searchParams.get("status")! : undefined;
+      const channel = searchParams.get("channel") ? searchParams.get("channel")! : undefined;
+      const territoryId = searchParams.get("territoryId") ? parseInt(searchParams.get("territoryId")!) : undefined;
+
+      const hasFilters = beneficiaryId || providerOrganizationId || operatorId || serviceId || programId || projectId || actionId || status || channel || territoryId;
+
+      if (!hasFilters && cachedDeliveries && (now - cachedDeliveriesTime < CACHE_TTL_MS)) {
         return NextResponse.json(cachedDeliveries);
       }
+
+      const where: any = {};
+      if (beneficiaryId) where.beneficiaryId = beneficiaryId;
+      if (serviceId) where.serviceId = serviceId;
+      if (programId) where.programId = programId;
+      if (projectId) where.projectId = projectId;
+      if (actionId) where.actionId = actionId;
+      if (status) where.status = status.toLowerCase();
+      if (channel) where.channel = channel;
+      
+      if (providerOrganizationId || operatorId) {
+        where.OR = [];
+        if (providerOrganizationId) where.OR.push({ providerOrganizationId });
+        if (operatorId) where.OR.push({ operatorId });
+      }
+      
+      if (territoryId) {
+        where.beneficiary = { territoryId: territoryId };
+      }
+
       const data = await prisma.serviceDelivery.findMany({
-        where: beneficiaryId ? { beneficiaryId } : undefined,
-        include: { beneficiary: true, service: true, operator: true },
-        orderBy: { date: "desc" }
+        where,
+        include: {
+          beneficiary: { include: { primaryNaceSector: true } },
+          service: { include: { organization: true } },
+          operator: true,
+          providerOrganization: true,
+          contact: true,
+          program: true,
+          project: true,
+          action: true,
+          journeyStep: true,
+          funding: true,
+          nextRecommendedService: true,
+          evidences: true
+        },
+        orderBy: { createdAt: "desc" }
       });
-      if (!beneficiaryId) {
+
+      if (!hasFilters) {
         cachedDeliveries = data;
         cachedDeliveriesTime = now;
       }
@@ -1263,44 +1333,148 @@ export async function POST(
 
     if (segment1 === "service-deliveries") {
       const {
-        beneficiaryId, serviceId, journeyId, journeyStageId, status, date,
-        operatorId, outputReal, outcomeReal, impact, maturityBefore, maturityAfter,
-        maturityDelta, evidenceFiles
+        title, description, serviceId, beneficiaryId, establishmentId, contactId,
+        operatorId, providerOrganizationId, providerPersonId, programId, projectId, actionId,
+        journeyId, journeyStageId, journeyStepId, businessEventId, status,
+        requestDate, plannedStartDate, actualStartDate, actualEndDate,
+        channel, deliveryMode, location, outputs, outputReal, outcomeReal,
+        evidenceFiles, fundingId, maturityBefore, maturityAfter, maturityDelta,
+        satisfactionScore, impactSummary, impact, nextRecommendedServiceId, nextStepComment,
+        confidentialityLevel, dataQualityStatus, createdBy, updatedBy
       } = body;
 
-      const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
-                           : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
-                           : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
-                           : 'CANCELLED';
+      // TODO: establishmentId et providerPersonId restent temporairement sous forme de champs simples (Int). 
+      // Prévoir des relations vers de vraies entités (ex: BCE LocalUnit, User/Adviser) dans une prochaine itération.
 
-      const item = await prisma.serviceDelivery.create({
-        data: {
-          beneficiaryId: parseInt(beneficiaryId),
-          serviceId: parseInt(serviceId),
-          journeyId: journeyId ? parseInt(journeyId) : null,
-          journeyStageId: journeyStageId ? parseInt(journeyStageId) : null,
-          status: mappedStatus,
-          date: date ? new Date(date) : new Date(),
-          operatorId: parseInt(operatorId),
-          outputReal, outcomeReal, impact, maturityBefore, maturityAfter, maturityDelta, evidenceFiles
-        },
-        include: { beneficiary: true, service: true, operator: true }
+      // 1. Normalisation et contrôle du statut
+      const ALLOWED_STATUSES = ['requested', 'accepted', 'planned', 'in_progress', 'delivered', 'closed', 'cancelled', 'rejected'];
+      let normalizedStatus = (status || 'planned').toLowerCase().trim();
+      if (normalizedStatus === 'completed') normalizedStatus = 'closed';
+      if (normalizedStatus === 'en cours') normalizedStatus = 'in_progress';
+      if (normalizedStatus === 'planifié') normalizedStatus = 'planned';
+      if (normalizedStatus === 'terminé') normalizedStatus = 'closed';
+      if (normalizedStatus === 'annulé') normalizedStatus = 'cancelled';
+      if (normalizedStatus === 'refusé') normalizedStatus = 'rejected';
+      if (normalizedStatus === 'demandé') normalizedStatus = 'requested';
+      if (normalizedStatus === 'accepté') normalizedStatus = 'accepted';
+      
+      if (!ALLOWED_STATUSES.includes(normalizedStatus)) {
+        return NextResponse.json({ error: `Statut invalide. Statuts autorisés : ${ALLOWED_STATUSES.join(', ')}` }, { status: 400 });
+      }
+
+      // 2. Duplication historique / compatibilité descendante
+      let activeOperatorId = operatorId ? parseInt(operatorId) : null;
+      let activeProviderOrgId = providerOrganizationId ? parseInt(providerOrganizationId) : null;
+      if (activeProviderOrgId && !activeOperatorId) activeOperatorId = activeProviderOrgId;
+      if (activeOperatorId && !activeProviderOrgId) activeProviderOrgId = activeOperatorId;
+
+      let activeJourneyStageId = journeyStageId ? parseInt(journeyStageId) : null;
+      let activeJourneyStepId = journeyStepId ? parseInt(journeyStepId) : null;
+      if (activeJourneyStepId && !activeJourneyStageId) activeJourneyStageId = activeJourneyStepId;
+      if (activeJourneyStageId && !activeJourneyStepId) activeJourneyStepId = activeJourneyStageId;
+
+      // 3. Exécution transactionnelle
+      const result = await prisma.$transaction(async (tx) => {
+        // Créer la prestation
+        const delivery = await tx.serviceDelivery.create({
+          data: {
+            title: title || "Accompagnement réalisé",
+            description,
+            serviceId: parseInt(serviceId),
+            beneficiaryId: parseInt(beneficiaryId),
+            establishmentId: establishmentId ? parseInt(establishmentId) : null,
+            contactId: contactId ? parseInt(contactId) : null,
+            operatorId: activeOperatorId,
+            providerOrganizationId: activeProviderOrgId,
+            providerPersonId: providerPersonId ? parseInt(providerPersonId) : null,
+            programId: programId ? parseInt(programId) : null,
+            projectId: projectId ? parseInt(projectId) : null,
+            actionId: actionId ? parseInt(actionId) : null,
+            journeyId: journeyId ? parseInt(journeyId) : null,
+            journeyStageId: activeJourneyStageId,
+            journeyStepId: activeJourneyStepId,
+            businessEventId: businessEventId ? parseInt(businessEventId) : null,
+            status: normalizedStatus,
+            requestDate: requestDate ? new Date(requestDate) : null,
+            plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : null,
+            actualStartDate: actualStartDate ? new Date(actualStartDate) : null,
+            actualEndDate: actualEndDate ? new Date(actualEndDate) : null,
+            channel,
+            deliveryMode,
+            location,
+            outputs,
+            outputReal: outputReal || outputs,
+            outcomeReal,
+            evidenceFiles: evidenceFiles || undefined,
+            fundingId: fundingId ? parseInt(fundingId) : null,
+            maturityBefore: maturityBefore || undefined,
+            maturityAfter: maturityAfter || undefined,
+            maturityDelta: maturityDelta || undefined,
+            satisfactionScore: satisfactionScore ? parseFloat(satisfactionScore) : null,
+            impactSummary,
+            impact: impact || impactSummary,
+            nextRecommendedServiceId: nextRecommendedServiceId ? parseInt(nextRecommendedServiceId) : null,
+            nextStepComment,
+            confidentialityLevel: confidentialityLevel || 'PUBLIC',
+            dataQualityStatus: dataQualityStatus || 'DRAFT',
+            createdBy,
+            updatedBy
+          },
+          include: { beneficiary: true, service: true, operator: true }
+        });
+
+        // Si statut est delivered ou closed, mettre à jour dynamiquement la maturité du bénéficiaire !
+        if (['delivered', 'closed'].includes(normalizedStatus) && maturityAfter) {
+          const bUpdateData: any = {};
+          if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
+          if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
+          if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
+          if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
+          if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
+
+          await tx.beneficiary.update({
+            where: { id: parseInt(beneficiaryId) },
+            data: bUpdateData
+          });
+        }
+
+        // DUAL WRITE: Création dans la table vNext 'Activity' (Type: INDIVIDUAL)
+        const actStatus = normalizedStatus === 'closed' || normalizedStatus === 'delivered' ? 'COMPLETED'
+                          : normalizedStatus === 'in_progress' ? 'IN_PROGRESS'
+                          : normalizedStatus === 'planned' ? 'PLANNED' : 'CANCELLED';
+
+        try {
+          await tx.activity.create({
+            data: {
+              activityType: 'INDIVIDUAL',
+              serviceId: parseInt(serviceId),
+              status: actStatus,
+              date: actualStartDate ? new Date(actualStartDate) : (plannedStartDate ? new Date(plannedStartDate) : new Date()),
+              operatorId: activeOperatorId || 1,
+              beneficiaryId: parseInt(beneficiaryId),
+              journeyId: journeyId ? parseInt(journeyId) : null,
+              journeyStageId: activeJourneyStageId,
+              outputReal: outputs || outputReal,
+              outcomeReal,
+              impact: impactSummary || impact,
+              maturityBefore: maturityBefore || undefined,
+              maturityAfter: maturityAfter || undefined,
+              maturityDelta: maturityDelta || undefined,
+              evidenceFiles: evidenceFiles || undefined,
+              actionId: actionId ? parseInt(actionId) : null,
+              sourceType: "ServiceDelivery",
+              sourceId: delivery.id
+            }
+          });
+          console.log(`[Dual-Write] Activité individuelle créée pour la prestation ${delivery.id}`);
+        } catch (dwError) {
+          console.error('[Dual-Write Error] Échec de la double-écriture de l\'activité:', dwError);
+        }
+
+        return delivery;
       });
 
-      if (mappedStatus === 'COMPLETED' && maturityAfter) {
-        const bUpdateData: any = {};
-        if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
-        if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
-        if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
-        if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
-        if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
-
-        await prisma.beneficiary.update({
-          where: { id: parseInt(beneficiaryId) },
-          data: bUpdateData
-        });
-      }
-      return NextResponse.json(item, { status: 201 });
+      return NextResponse.json(result, { status: 201 });
     }
 
     if (segment1 === "collective-deliveries") {
@@ -1730,35 +1904,152 @@ export async function PATCH(
     }
 
     if (segment1 === "service-deliveries") {
-      const { status, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles } = body;
+      const {
+        title, description, status, requestDate, plannedStartDate, actualStartDate, actualEndDate,
+        channel, deliveryMode, location, outputs, outputReal, outcomeReal, evidenceFiles, fundingId,
+        maturityBefore, maturityAfter, maturityDelta, satisfactionScore, impactSummary, impact,
+        nextRecommendedServiceId, nextStepComment, confidentialityLevel, dataQualityStatus, updatedBy
+      } = body;
+
+      // TODO: establishmentId et providerPersonId restent temporairement sous forme de champs simples (Int). 
+      // Prévoir des relations vers de vraies entités (ex: BCE LocalUnit, User/Adviser) dans une prochaine itération.
+
       const original = await prisma.serviceDelivery.findUnique({ where: { id } });
-      if (!original) return NextResponse.json({ error: "Réalisation non trouvée" }, { status: 404 });
+      if (!original) return NextResponse.json({ error: "Prestation non trouvée" }, { status: 404 });
 
-      const mappedStatus = status === 'Terminé' || status === 'COMPLETED' ? 'COMPLETED'
-                           : status === 'En cours' || status === 'IN_PROGRESS' ? 'IN_PROGRESS'
-                           : status === 'Planifié' || status === 'PLANNED' ? 'PLANNED'
-                           : status === 'Annulé' || status === 'CANCELLED' ? 'CANCELLED'
-                           : undefined;
+      // 1. Normalisation et contrôle du statut
+      const ALLOWED_STATUSES = ['requested', 'accepted', 'planned', 'in_progress', 'delivered', 'closed', 'cancelled', 'rejected'];
+      let normalizedStatus = undefined;
+      if (status !== undefined) {
+        normalizedStatus = (status || 'planned').toLowerCase().trim();
+        if (normalizedStatus === 'completed') normalizedStatus = 'closed';
+        if (normalizedStatus === 'en cours') normalizedStatus = 'in_progress';
+        if (normalizedStatus === 'planifié') normalizedStatus = 'planned';
+        if (normalizedStatus === 'terminé') normalizedStatus = 'closed';
+        if (normalizedStatus === 'annulé') normalizedStatus = 'cancelled';
+        if (normalizedStatus === 'refusé') normalizedStatus = 'rejected';
+        if (normalizedStatus === 'demandé') normalizedStatus = 'requested';
+        if (normalizedStatus === 'accepté') normalizedStatus = 'accepted';
 
-      const updated = await prisma.serviceDelivery.update({
-        where: { id },
-        data: { status: mappedStatus, outputReal, outcomeReal, impact, maturityAfter, maturityDelta, evidenceFiles }
+        if (!ALLOWED_STATUSES.includes(normalizedStatus)) {
+          return NextResponse.json({ error: `Statut invalide. Statuts autorisés : ${ALLOWED_STATUSES.join(', ')}` }, { status: 400 });
+        }
+      }
+
+      // 2. Exécution transactionnelle
+      const result = await prisma.$transaction(async (tx) => {
+        // Mettre à jour la prestation
+        const updatedDelivery = await tx.serviceDelivery.update({
+          where: { id },
+          data: {
+            title: title !== undefined ? title : undefined,
+            description: description !== undefined ? description : undefined,
+            status: normalizedStatus,
+            requestDate: requestDate ? new Date(requestDate) : undefined,
+            plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : undefined,
+            actualStartDate: actualStartDate ? new Date(actualStartDate) : undefined,
+            actualEndDate: actualEndDate ? new Date(actualEndDate) : undefined,
+            channel: channel !== undefined ? channel : undefined,
+            deliveryMode: deliveryMode !== undefined ? deliveryMode : undefined,
+            location: location !== undefined ? location : undefined,
+            outputs: outputs !== undefined ? outputs : undefined,
+            outputReal: outputReal !== undefined ? outputReal : (outputs !== undefined ? outputs : undefined),
+            outcomeReal: outcomeReal !== undefined ? outcomeReal : undefined,
+            evidenceFiles: evidenceFiles !== undefined ? evidenceFiles : undefined,
+            fundingId: fundingId !== undefined ? (fundingId ? parseInt(fundingId) : null) : undefined,
+            maturityBefore: maturityBefore !== undefined ? maturityBefore : undefined,
+            maturityAfter: maturityAfter !== undefined ? maturityAfter : undefined,
+            maturityDelta: maturityDelta !== undefined ? maturityDelta : undefined,
+            satisfactionScore: satisfactionScore !== undefined ? (satisfactionScore ? parseFloat(satisfactionScore) : null) : undefined,
+            impactSummary: impactSummary !== undefined ? impactSummary : undefined,
+            impact: impact !== undefined ? impact : (impactSummary !== undefined ? impactSummary : undefined),
+            nextRecommendedServiceId: nextRecommendedServiceId !== undefined ? (nextRecommendedServiceId ? parseInt(nextRecommendedServiceId) : null) : undefined,
+            nextStepComment: nextStepComment !== undefined ? nextStepComment : undefined,
+            confidentialityLevel: confidentialityLevel !== undefined ? confidentialityLevel : undefined,
+            dataQualityStatus: dataQualityStatus !== undefined ? dataQualityStatus : undefined,
+            updatedBy
+          }
+        });
+
+        // Mettre à jour la maturité du bénéficiaire si le statut est delivered ou closed
+        const activeStatus = normalizedStatus || original.status;
+        const activeMaturityAfter = maturityAfter !== undefined ? maturityAfter : updatedDelivery.maturityAfter;
+
+        if (['delivered', 'closed'].includes(activeStatus) && activeMaturityAfter) {
+          const bUpdateData: any = {};
+          const matObj = activeMaturityAfter as any;
+          if (matObj.digital !== undefined) bUpdateData.maturityDigital = parseInt(matObj.digital);
+          if (matObj.ia !== undefined) bUpdateData.maturityIa = parseInt(matObj.ia);
+          if (matObj.cyber !== undefined) bUpdateData.maturityCyber = parseInt(matObj.cyber);
+          if (matObj.export !== undefined) bUpdateData.maturityExport = parseInt(matObj.export);
+          if (matObj.durability !== undefined) bUpdateData.maturityDurability = parseInt(matObj.durability);
+
+          await tx.beneficiary.update({
+            where: { id: updatedDelivery.beneficiaryId },
+            data: bUpdateData
+          });
+        }
+
+        // DUAL WRITE: Synchronisation idempotente avec Activity (Type: INDIVIDUAL)
+        const actStatus = activeStatus === 'closed' || activeStatus === 'delivered' ? 'COMPLETED'
+                          : activeStatus === 'in_progress' ? 'IN_PROGRESS'
+                          : activeStatus === 'planned' ? 'PLANNED' : 'CANCELLED';
+
+        const existingActivity = await tx.activity.findFirst({
+          where: {
+            sourceType: "ServiceDelivery",
+            sourceId: id
+          }
+        });
+
+        const activityData: any = {
+          status: actStatus,
+          date: updatedDelivery.actualStartDate || updatedDelivery.plannedStartDate || new Date(),
+          outputReal: updatedDelivery.outputs || updatedDelivery.outputReal,
+          outcomeReal: updatedDelivery.outcomeReal,
+          impact: updatedDelivery.impactSummary || updatedDelivery.impact,
+          maturityBefore: updatedDelivery.maturityBefore || undefined,
+          maturityAfter: updatedDelivery.maturityAfter || undefined,
+          maturityDelta: updatedDelivery.maturityDelta || undefined,
+          evidenceFiles: updatedDelivery.evidenceFiles || undefined
+        };
+
+        if (existingActivity) {
+          await tx.activity.update({
+            where: { id: existingActivity.id },
+            data: activityData
+          });
+          console.log(`[Dual-Write] Activité individuelle mise à jour pour la prestation ${id}`);
+        } else {
+          // Fallback idempotent
+          await tx.activity.create({
+            data: {
+              activityType: 'INDIVIDUAL',
+              serviceId: updatedDelivery.serviceId,
+              status: actStatus,
+              date: updatedDelivery.actualStartDate || updatedDelivery.plannedStartDate || new Date(),
+              operatorId: updatedDelivery.operatorId || 1,
+              beneficiaryId: updatedDelivery.beneficiaryId,
+              journeyId: updatedDelivery.journeyId,
+              journeyStageId: updatedDelivery.journeyStageId,
+              outputReal: updatedDelivery.outputs || updatedDelivery.outputReal,
+              outcomeReal: updatedDelivery.outcomeReal,
+              impact: updatedDelivery.impactSummary || updatedDelivery.impact,
+              maturityBefore: updatedDelivery.maturityBefore || undefined,
+              maturityAfter: updatedDelivery.maturityAfter || undefined,
+              maturityDelta: updatedDelivery.maturityDelta || undefined,
+              evidenceFiles: updatedDelivery.evidenceFiles || undefined,
+              sourceType: "ServiceDelivery",
+              sourceId: id
+            }
+          });
+          console.log(`[Dual-Write] Activité individuelle créée (fallback) pour la prestation ${id}`);
+        }
+
+        return updatedDelivery;
       });
 
-      if (mappedStatus === 'COMPLETED' && maturityAfter) {
-        const bUpdateData: any = {};
-        if (maturityAfter.digital !== undefined) bUpdateData.maturityDigital = parseInt(maturityAfter.digital);
-        if (maturityAfter.ia !== undefined) bUpdateData.maturityIa = parseInt(maturityAfter.ia);
-        if (maturityAfter.cyber !== undefined) bUpdateData.maturityCyber = parseInt(maturityAfter.cyber);
-        if (maturityAfter.export !== undefined) bUpdateData.maturityExport = parseInt(maturityAfter.export);
-        if (maturityAfter.durability !== undefined) bUpdateData.maturityDurability = parseInt(maturityAfter.durability);
-
-        await prisma.beneficiary.update({
-          where: { id: original.beneficiaryId },
-          data: bUpdateData
-        });
-      }
-      return NextResponse.json(updated);
+      return NextResponse.json(result);
     }
 
     if (segment1 === "beneficiaries" || segment1 === "companies") {
@@ -2010,6 +2301,23 @@ export async function DELETE(
   if (isNaN(id)) return NextResponse.json({ error: "ID invalide" }, { status: 400 });
 
   try {
+    if (segment1 === "service-deliveries") {
+      await prisma.$transaction(async (tx) => {
+        // Supprimer la prestation
+        await tx.serviceDelivery.delete({ where: { id } });
+
+        // Supprimer l'activité correspondante
+        await tx.activity.deleteMany({
+          where: {
+            sourceType: "ServiceDelivery",
+            sourceId: id
+          }
+        });
+      });
+      console.log(`[Dual-Write] Prestation et activité correspondante supprimées pour l'ID: ${id}`);
+      return NextResponse.json({ success: true });
+    }
+
     if (segment1 === "journeys") {
       // stages are automatically deleted due to onDelete: Cascade on JourneyStage
       await prisma.journey.delete({

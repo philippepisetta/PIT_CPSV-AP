@@ -1,4 +1,11 @@
-import { PrismaClient, TerritoryType, ProgramStatus, ServiceDeliveryStatus } from '@prisma/client';
+import { PrismaClient, TerritoryType, ProgramStatus } from '@prisma/client';
+
+enum ServiceDeliveryStatus {
+  PLANNED = 'planned',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'delivered',
+  CANCELLED = 'cancelled'
+}
 
 const prisma = new PrismaClient();
 
@@ -674,7 +681,7 @@ async function main() {
     
     // Find or create delivery to prevent duplicate items
     let delivery = await prisma.serviceDelivery.findFirst({
-      where: { beneficiaryId: beneficiaries[d.ben].id, serviceId: services[d.sCode].id, date: new Date(d.date) }
+      where: { beneficiaryId: beneficiaries[d.ben].id, serviceId: services[d.sCode].id, actualStartDate: new Date(d.date) }
     });
     if (!delivery) {
       delivery = await prisma.serviceDelivery.create({
@@ -684,7 +691,8 @@ async function main() {
           journeyId: journeys[d.jCode].id,
           journeyStageId: stage.id,
           status: d.status,
-          date: new Date(d.date),
+          actualStartDate: new Date(d.date),
+          plannedStartDate: new Date(d.date),
           operatorId: d.op.id,
           outputReal: d.out,
           journeyEnrollmentId: enrollments[d.ben] ? enrollments[d.ben].id : null,

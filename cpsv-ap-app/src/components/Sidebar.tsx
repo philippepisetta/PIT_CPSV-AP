@@ -84,7 +84,7 @@ const navBlocks: NavBlock[] = [
     items: [
       { name: "KPIs d'impact", href: "/pilotage", icon: LineChart },
       { name: "ROI territorial", href: "/pilotage?tab=roi", icon: LineChart },
-      { name: "Alignement S3", href: "/pilotage?tab=s3", icon: Shield },
+      { name: "Alignement S3", href: "/s3", icon: Shield },
       { name: "Gap Analysis", href: "/gap-analysis", icon: Shield },
       { name: "Registre des Preuves", href: "/pilotage/evidences", icon: ClipboardCheck },
     ]
@@ -112,10 +112,23 @@ const navBlocks: NavBlock[] = [
     ]
   },
   {
+    title: "Référentiels",
+    allowedWorkspaces: ["accompaniment", "pilotage", "data"],
+    items: [
+      { name: "Référentiels S3 / DIS", href: "/governance/referentiels?tab=s3-dis", icon: Database },
+      { name: "Taxonomies S3", href: "/governance/referentiels?tab=taxonomies-s3", icon: BookOpen },
+      { name: "Référentiels Data Spaces", href: "/governance/referentiels?tab=dataspaces", icon: Network },
+      { name: "Standards d'interopérabilité", href: "/governance/referentiels?tab=interop", icon: Share2 },
+      { name: "Référentiels sectoriels", href: "/governance/referentiels?tab=sectors", icon: Layers },
+      { name: "Référentiels RDI / Juridiques", href: "/governance/referentiels?tab=legal", icon: Shield },
+      { name: "Sources internes", href: "/governance/referentiels?tab=internal", icon: FileText },
+      { name: "Mappings", href: "/governance/referentiels?tab=mappings", icon: Network },
+    ]
+  },
+  {
     title: "Gouvernance",
     allowedWorkspaces: ["accompaniment", "pilotage", "data"],
     items: [
-      { name: "Référentiels", href: "/governance/referentiels", icon: Database },
       { name: "Audit technique", href: "/governance/audit-technical", icon: Shield },
       { name: "Documentation", href: "/guide", icon: BookOpen },
     ]

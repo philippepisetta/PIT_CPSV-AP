@@ -159,3 +159,25 @@ $$S(B, S_{vc}) = w_1 \cdot \text{MatchChallenges}(B, S_{vc}) + w_2 \cdot \text{G
 
 ### 5.2 Préparation aux Agents RAG (Retrieval-Augmented Generation)
 Chaque entité du graphe de connaissances stockant ses relations logiques en base de données, la PIT vNext fournit des points de terminaison d'APIs structurées. Un modèle LLM externe peut interroger ces APIs pour récupérer un contexte sémantique propre et sans bruit (ex: *"Récupère les services d'accompagnement cyber de niveau individuel disponibles à Liège"*), éliminant ainsi tout risque d'hallucination lors de l'interaction avec le conseiller ou la PME.
+
+---
+
+## 🌐 6. Référentiels stables mobilisés par la PIT
+
+La Plateforme d'Intelligence Territoriale s'appuie sur une couche de référentiels stables et d'alignement normatifs pour structurer ses connaissances et garantir l'interopérabilité des données régionales avec l'écosystème européen.
+
+### 6.1 Cadre S3 / RIS3 & DIS
+- **S3 / RIS3** : Cadre stratégique européen pour la spécialisation intelligente. La PIT intègre les taxonomies Eye@RIS3 et les guides de construction des priorités territoriales.
+- **DIS Wallons (Domaines d'Innovation Stratégique)** : Déclinaisons opérationnelles wallonnes des priorités S3 (ex: Industrie du Futur, Circular Wallonia). Les DIS structurent l'arborescence des portefeuilles régionaux.
+- **Marchés Applicatifs & Clusters Technopolis** : Issus de l'étude GTS3 Technopolis du 11 mai 2026, ces objets sont qualifiés comme des **proxys méthodologiques** dotés de limites (ex: contrainte KMeans de mono-positionnement). Ils requièrent une validation / triangulation par le Cabinet avant d'être promus comme référentiels définitifs.
+
+### 6.2 Cadre Sémantique des Data Spaces
+- **Common European Data Spaces** : Liste des 14 domaines sectoriels européens de référence (Agriculture, Health, Manufacturing, etc.) pour positionner les initiatives de partage de données.
+- **DSSC Blueprint & IDSA RAM** : Fournissent les briques conceptuelles stables pour la gouvernance et l'interopérabilité technique des espaces de données (Connector, DataProduct, ClearingHouse, MetadataBroker, AccessPolicy, UsagePolicy).
+- **Réglementation (Data Act, Data Governance Act)** : Modélisation des règles de confiance, d'altruisme des données et des intermédiaires certifiés.
+
+### 6.3 Standards d'Interopérabilité & Vocabulaires
+- **DCAT-AP** : Profil sémantique pour la description harmonisée des catalogues, datasets et data services, utilisé comme socle de la place de marché des données.
+- **CPSV-AP** : Standard sémantique de description des services publics d'accompagnement et de financement (EDIH, aides de Wallonie Entreprendre, etc.).
+- **NGSI-LD** : API et modèle sémantique de représentation de contexte dynamique territoriale.
+- **SKOS & RDF / OWL** : Modèles du W3C pour formaliser et lier les concepts sémantiques entre référentiels (mappings EXACT_MATCH, RELATED, BROADER).

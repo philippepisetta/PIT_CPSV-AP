@@ -826,3 +826,186 @@ export function useV2VulnerabilityDetail(id: number | null) {
     staleTime: 30 * 1000,
   });
 }
+
+// --------------------------------------------------
+// PHASE 6: STABLE REFERENCE FRAMEWORKS, S3/DIS & DATA SPACES HOOKS
+// --------------------------------------------------
+
+export function useV2S3Clusters() {
+  return useQuery({
+    queryKey: ["v2-s3-clusters"],
+    queryFn: () => fetcher("/api/v2/s3-clusters"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2S3MarketApplications() {
+  return useQuery({
+    queryKey: ["v2-s3-market-applications"],
+    queryFn: () => fetcher("/api/v2/s3-market-applications"),
+    staleTime: 30 * 1000,
+  });
+}
+
+
+export function useV2ReferenceFrameworks() {
+  return useQuery({
+    queryKey: ["v2-reference-frameworks"],
+    queryFn: () => fetcher("/api/v2/reference-frameworks"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2ReferenceFrameworkDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["v2-reference-framework-detail", id],
+    queryFn: () => fetcher(`/api/v2/reference-frameworks/${id}`),
+    enabled: id !== null && !isNaN(id),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2ReferenceSources() {
+  return useQuery({
+    queryKey: ["v2-reference-sources"],
+    queryFn: () => fetcher("/api/v2/reference-sources"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2ReferenceTaxonomies() {
+  return useQuery({
+    queryKey: ["v2-reference-taxonomies"],
+    queryFn: () => fetcher("/api/v2/reference-taxonomies"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2ReferenceConcepts() {
+  return useQuery({
+    queryKey: ["v2-reference-concepts"],
+    queryFn: () => fetcher("/api/v2/reference-concepts"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2ReferenceMappings() {
+  return useQuery({
+    queryKey: ["v2-reference-mappings"],
+    queryFn: () => fetcher("/api/v2/reference-mappings"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2S3ReferenceTaxonomies() {
+  return useQuery({
+    queryKey: ["v2-s3-reference-taxonomies"],
+    queryFn: () => fetcher("/api/v2/s3-reference-taxonomies"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2S3Priorities() {
+  return useQuery({
+    queryKey: ["v2-s3-priorities"],
+    queryFn: () => fetcher("/api/v2/s3-priorities"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2DIS() {
+  return useQuery({
+    queryKey: ["v2-dis"],
+    queryFn: () => fetcher("/api/v2/dis"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2S3Methodology() {
+  return useQuery({
+    queryKey: ["v2-s3-methodology"],
+    queryFn: () => fetcher("/api/v2/s3-methodology"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2S3Indicators() {
+  return useQuery({
+    queryKey: ["v2-s3-indicators"],
+    queryFn: () => fetcher("/api/v2/s3-indicators"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2NaceCodes() {
+  return useQuery({
+    queryKey: ["v2-nace-codes"],
+    queryFn: () => fetcher("/api/v2/nace-codes"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2NabsCodes() {
+  return useQuery({
+    queryKey: ["v2-nabs-codes"],
+    queryFn: () => fetcher("/api/v2/nabs-codes"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2DataSpaceReferenceFrameworks() {
+  return useQuery({
+    queryKey: ["v2-data-space-reference-frameworks"],
+    queryFn: () => fetcher("/api/v2/data-space-reference-frameworks"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CommonEuropeanDataSpaceDomains() {
+  return useQuery({
+    queryKey: ["v2-common-european-data-space-domains"],
+    queryFn: () => fetcher("/api/v2/common-european-data-space-domains"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2DataSpaceBuildingBlocks() {
+  return useQuery({
+    queryKey: ["v2-data-space-building-blocks"],
+    queryFn: () => fetcher("/api/v2/data-space-building-blocks"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2InteroperabilityStandards() {
+  return useQuery({
+    queryKey: ["v2-interoperability-standards"],
+    queryFn: () => fetcher("/api/v2/interoperability-standards"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2SemanticProfiles() {
+  return useQuery({
+    queryKey: ["v2-semantic-profiles"],
+    queryFn: () => fetcher("/api/v2/semantic-profiles"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2SourceDocuments() {
+  return useQuery({
+    queryKey: ["v2-source-documents"],
+    queryFn: () => fetcher("/api/v2/source-documents"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2SourceDocumentMappings() {
+  return useQuery({
+    queryKey: ["v2-source-document-mappings"],
+    queryFn: () => fetcher("/api/v2/source-document-mappings"),
+    staleTime: 30 * 1000,
+  });
+}
+

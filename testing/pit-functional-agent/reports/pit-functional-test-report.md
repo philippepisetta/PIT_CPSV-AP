@@ -1,10 +1,10 @@
 # Rapport de Recette Fonctionnelle PIT vNext
 
-**Date de l'audit** : 23/06/2026 15:11:00  
-**Durée d'exécution** : **115.23 s**  
-**Taux de réussite** : **100%** (33/33 tests PASS)  
-**Total des tests** : **33**  
-**Tests réussis** : **33**  
+**Date de l'audit** : 23/06/2026 19:42:06  
+**Durée d'exécution** : **132.64 s**  
+**Taux de réussite** : **100%** (35/35 tests PASS)  
+**Total des tests** : **35**  
+**Tests réussis** : **35**  
 **Tests échoués** : **0**  
 **Avertissements** : **0**  
 **Anomalies bloquantes** : **0**  
@@ -35,18 +35,20 @@
 | PIT-TS-019 | Validate CAS-15 - Transversal - Customer Journey territorial | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
 | PIT-TS-020 | Verify Espace Résilience contains 6 OECD Dimensions & crises selection | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
 | PIT-TS-021 | Verify Caroline Demonstrator Wizard Step-by-Step Flow | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-022 | Verify Espace Pilotage contains exactly the 4 structured tabs | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-023 | Verify Registre des Preuves is in read-only mode for Pilotage user | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-024 | Verify Strategic Lineage Trace Visualizer in Demonstrator | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-025 | Verify Territoires page loads regional data and maps | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-026 | Verify Filières S3 page shows industrial sectors | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-027 | Verify Value Chain Explorer allows drill-down | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-028 | Verify Écosystèmes (Organizations) lists actors and hubs | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-029 | Verify Graph Explorer visualizes the ssemantic network | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-030 | Verify default workspace is Espace Accompagnement | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-031 | Switch workspace to Espace Pilotage (Décideur role) and verify isolation | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-032 | Switch workspace to Espace Données (Data Steward role) and verify isolation | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
-| PIT-TS-033 | Check routing redirections from Next.js config | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-022 | Verify Référentiels navigation and tabs | 🟢 PASS | Bloquant | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-023 | Verify S3 Observatory Cockpit & Clusters | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-024 | Verify Espace Pilotage contains exactly the 4 structured tabs | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-025 | Verify Registre des Preuves is in read-only mode for Pilotage user | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-026 | Verify Strategic Lineage Trace Visualizer in Demonstrator | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-027 | Verify Territoires page loads regional data and maps | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-028 | Verify Filières S3 page shows industrial sectors | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-029 | Verify Value Chain Explorer allows drill-down | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-030 | Verify Écosystèmes (Organizations) lists actors and hubs | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-031 | Verify Graph Explorer visualizes the ssemantic network | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-032 | Verify default workspace is Espace Accompagnement | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-033 | Switch workspace to Espace Pilotage (Décideur role) and verify isolation | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-034 | Switch workspace to Espace Données (Data Steward role) and verify isolation | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
+| PIT-TS-035 | Check routing redirections from Next.js config | 🟢 PASS | Majeur | Comportement conforme aux spécifications | Succès | — | — |
 
 ## 🛠️ Corrections Appliquées (Hardening)
 

@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type WorkspaceType = "accompaniment" | "pilotage" | "data";
+export type WorkspaceType = "accompaniment" | "pilotage" | "data" | "resilience";
 
 export interface Workspace {
   id: WorkspaceType;
@@ -30,6 +30,12 @@ export const WORKSPACES: Workspace[] = [
     label: "Espace Données",
     description: "Gérer les connecteurs de systèmes SoR, le catalogue DCAT-AP, et évaluer la qualité.",
     themeColor: "purple",
+  },
+  {
+    id: "resilience",
+    label: "Espace Résilience",
+    description: "Cas d'usage liés aux crises, résilience économique territoriale, chaînes de valeur critiques et plans d'action.",
+    themeColor: "red",
   },
 ];
 

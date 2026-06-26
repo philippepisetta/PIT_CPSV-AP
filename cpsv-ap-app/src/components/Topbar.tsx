@@ -19,7 +19,8 @@ export default function Topbar() {
             "h-4 w-4",
             activeWorkspace === "accompaniment" && "text-teal-600 dark:text-teal-400",
             activeWorkspace === "pilotage" && "text-amber-600 dark:text-amber-400",
-            activeWorkspace === "data" && "text-purple-600 dark:text-purple-400"
+            activeWorkspace === "data" && "text-purple-600 dark:text-purple-400",
+            activeWorkspace === "resilience" && "text-red-650 dark:text-red-405"
           )} />
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted hidden sm:inline select-none">
             Espace :
@@ -31,7 +32,8 @@ export default function Topbar() {
               "border rounded-xl px-3 py-1.5 text-xs font-black focus:outline-none transition-colors cursor-pointer",
               activeWorkspace === "accompaniment" && "bg-teal-500/10 border-teal-500/30 text-teal-700 dark:text-teal-400 focus:border-teal-600",
               activeWorkspace === "pilotage" && "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 focus:border-amber-600",
-              activeWorkspace === "data" && "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-400 focus:border-purple-600"
+              activeWorkspace === "data" && "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-400 focus:border-purple-600",
+              activeWorkspace === "resilience" && "bg-red-500/10 border-red-500/30 text-red-750 dark:text-red-400 focus:border-red-600"
             )}
           >
             {WORKSPACES.map((w) => (

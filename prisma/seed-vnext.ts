@@ -4,6 +4,13 @@ export async function cleanVNext(prisma: PrismaClient) {
   console.log('🧹 Nettoyage des anciennes données vNext...');
   
   // Deletion in cascade-safe order
+  await prisma.referenceModel.deleteMany({});
+  await prisma.dataQualityRule.deleteMany({});
+  await prisma.semanticMapping.deleteMany({});
+  await prisma.apiRoute.deleteMany({});
+  await prisma.api.deleteMany({});
+  await prisma.pitDataSource.deleteMany({});
+  
   await prisma.pitRecommendation.deleteMany({});
   await prisma.lessonLearned.deleteMany({});
   await prisma.territorialEventImpact.deleteMany({});
@@ -866,6 +873,410 @@ export async function seedVNext(prisma: PrismaClient, ctx: SeedContext) {
       status: 'DRAFT',
       relevanceScore: 0.9,
       policyMeasures: { connect: [{ id: measureCyberAct.id }] }
+    }
+  });
+
+  // =========================================================================
+  // 9. NOUVEAUTÉ: 15 RÉFÉRENTIELS / TAXONOMIES INCONTOURNABLES (ReferenceModel)
+  // =========================================================================
+  console.log('  -> Création des 15 Référentiels / Taxonomies (ReferenceModel)...');
+  const refModelsData = [
+    {
+      type: "Taxonomie",
+      name: "NACE Rév. 2",
+      description: "Nomenclature officielle des activités économiques dans la Communauté européenne.",
+      issuingOrganization: "Eurostat",
+      version: "2",
+      status: "utilisé dans la PIT",
+      domain: "Activités Économiques"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "RIS3 / S3",
+      description: "Méthodologie et cadre de spécialisation intelligente régionale de la Commission Européenne.",
+      issuingOrganization: "European Commission",
+      version: "2021-2027",
+      status: "utilisé dans la PIT",
+      domain: "Stratégie Régionale"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "Eye@RIS3 JRC",
+      description: "Base de données européenne de cartographie des priorités de recherche et d'innovation régionales.",
+      issuingOrganization: "Joint Research Centre (JRC)",
+      version: "1.0",
+      status: "utilisé dans la PIT",
+      domain: "Innovation"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "D4WTA-AP",
+      description: "Profil d'application de métadonnées touristiques pour la Wallonie (Digital for Wallonia Tourism Application Profile).",
+      issuingOrganization: "Agence du Numérique",
+      version: "1.0.0",
+      status: "utilisé dans la PIT",
+      domain: "Tourisme"
+    },
+    {
+      type: "Taxonomie",
+      name: "European AI Taxonomy",
+      description: "Classification européenne des systèmes et applications d'intelligence artificielle par niveau de risque.",
+      issuingOrganization: "European Commission / AI Office",
+      version: "2024",
+      status: "actif",
+      domain: "Intelligence Artificielle"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "CPSV-AP",
+      description: "Standard sémantique de description harmonisée des services publics européens (Core Public Service Vocabulary).",
+      issuingOrganization: "SEMIC",
+      version: "3.2.0",
+      status: "utilisé dans la PIT",
+      domain: "Services Publics"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "DCAT-AP",
+      description: "Profil d'application sémantique de description de catalogues et jeux de données (Data Catalogue Vocabulary).",
+      issuingOrganization: "SEMIC",
+      version: "3.0.0",
+      status: "utilisé dans la PIT",
+      domain: "Jeux de Données"
+    },
+    {
+      type: "Framework d'évaluation / Maturité",
+      name: "DMAT",
+      description: "Référentiel d'évaluation de la maturité numérique des entreprises wallonnes (Digital Maturity Assessment Tool).",
+      issuingOrganization: "Agence du Numérique",
+      version: "2025",
+      status: "utilisé dans la PIT",
+      domain: "Maturité Numérique"
+    },
+    {
+      type: "Framework d'évaluation / Maturité",
+      name: "TRL (Technology Readiness Level)",
+      description: "Échelle de mesure du niveau de maturité d'une technologie.",
+      issuingOrganization: "NASA / Horizon Europe",
+      version: "1.0",
+      status: "utilisé dans la PIT",
+      domain: "R&D"
+    },
+    {
+      type: "Framework d'évaluation / Maturité",
+      name: "IRL (Investment Readiness Level)",
+      description: "Échelle d'évaluation de l'attractivité financière et de la préparation à l'investissement.",
+      issuingOrganization: "European Innovation Council",
+      version: "1.0",
+      status: "actif",
+      domain: "Financement"
+    },
+    {
+      type: "Framework d'évaluation / Maturité",
+      name: "MRL (Market Readiness Level)",
+      description: "Échelle de mesure de l'adéquation d'une innovation avec les besoins et contraintes du marché.",
+      issuingOrganization: "European Commission",
+      version: "1.0",
+      status: "actif",
+      domain: "Commerce"
+    },
+    {
+      type: "Référentiel de compétences",
+      name: "DigComp",
+      description: "Cadre européen pour le développement des compétences numériques des citoyens (European Digital Competence Framework).",
+      issuingOrganization: "Joint Research Centre (JRC)",
+      version: "2.2",
+      status: "actif",
+      domain: "Compétences"
+    },
+    {
+      type: "Référentiel de compétences",
+      name: "ESCO",
+      description: "Classification multilingue des aptitudes, compétences, certifications et professions européennes (European Skills, Competences, Qualifications and Occupations).",
+      issuingOrganization: "European Commission",
+      version: "1.2",
+      status: "actif",
+      domain: "Emploi & Métiers"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "W3C ORG",
+      description: "Ontologie du W3C pour la modélisation sémantique des structures organisationnelles (Organization Ontology).",
+      issuingOrganization: "W3C",
+      version: "1.0",
+      status: "utilisé dans la PIT",
+      domain: "Organisations"
+    },
+    {
+      type: "Modèle de données / Ontologie",
+      name: "W3C LOCN",
+      description: "Vocabulaire sémantique de description harmonisée des localisations géographiques (Core Location Vocabulary).",
+      issuingOrganization: "W3C / SEMIC",
+      version: "2.0.0",
+      status: "utilisé dans la PIT",
+      domain: "Localisation"
+    }
+  ];
+
+  for (const model of refModelsData) {
+    await prisma.referenceModel.create({ data: model });
+  }
+
+  // =========================================================================
+  // 10. SEEDING DEMO INTEROPERABILITY DATA (Sources, Datasets, Quality, Mappings, APIs, Routes)
+  // =========================================================================
+  console.log('  -> Création des données de démonstration d\'interoperabilité...');
+  
+  // A. Sources Systems
+  const srcBce = await prisma.pitDataSource.create({
+    data: {
+      name: "BCE Banque-Carrefour",
+      description: "Base d'autorité nationale pour l'identité légale et administrative des entreprises.",
+      owner: "SPF Économie",
+      steward: "SPF Eco Data Team",
+      frequency: "DAILY",
+      accessLevel: "RESTRICTED",
+      format: "JSON-LD",
+      endpoint: "https://api.bce.economie.fgov.be/v2",
+      type: "API REST",
+      environment: "production",
+      technology: "Microsoft SQL Server",
+      isPersonalData: false,
+      isSensitiveData: false,
+      qualityLevel: "98"
+    }
+  });
+
+  const srcDmat = await prisma.pitDataSource.create({
+    data: {
+      name: "DMAT Diagnostic Tool",
+      description: "Outil régional d'évaluation de la maturité digitale des entreprises.",
+      owner: "Agence du Numérique",
+      steward: "AdN Data Lab",
+      frequency: "REAL_TIME",
+      accessLevel: "RESTRICTED",
+      format: "JSON",
+      endpoint: "https://dmat.digitalwallonia.be/api",
+      type: "API REST",
+      environment: "production",
+      technology: "PostgreSQL",
+      isPersonalData: true,
+      isSensitiveData: false,
+      qualityLevel: "92"
+    }
+  });
+
+  const srcWe = await prisma.pitDataSource.create({
+    data: {
+      name: "CRM Wallonie Entreprendre",
+      description: "Registre interne des dossiers d'aides régionales octroyées.",
+      owner: "Wallonie Entreprendre",
+      steward: "WE IT Support",
+      frequency: "DAILY",
+      accessLevel: "CONFIDENTIAL",
+      format: "JSON",
+      endpoint: "https://crm.wallonie-entreprendre.be/api/v1",
+      type: "API REST",
+      environment: "production",
+      technology: "Salesforce Cloud",
+      isPersonalData: true,
+      isSensitiveData: true,
+      qualityLevel: "95"
+    }
+  });
+
+  // B. Datasets / Data Products
+  const dsBeneficiaries = await prisma.dataset.create({
+    data: {
+      title: "Registre harmonisé des bénéficiaires actifs",
+      description: "Data product consolidant l'identité BCE, la maturité DMAT et les aides WE reçues par les entreprises accompagnées.",
+      domain: "Économie & Entreprises",
+      type: "data_product",
+      status: "valide",
+      sensitivity: "restreint",
+      producer: "Wallonie Entreprendre / Agence du Numérique",
+      dataOwner: "SPW Économie",
+      dataSteward: "Steward PIT Wallonie",
+      exposableApi: true,
+      exposableCatalog: true,
+      dcatApAvailable: true,
+      semanticMappingAvailable: true,
+      accessRulesDefined: true,
+      usageRulesDefined: true,
+      accessRules: "Habilitation d'organisme partenaire requise.",
+      usageConditions: "Usage exclusif à des fins de pilotage et d'accompagnement. Interdiction de revente commerciale.",
+      license: "Convention d'échange inter-organisme",
+      format: "JSON-LD",
+      dataSpaceMaturityScore: 90,
+      availability: "99.9",
+      sla: "SLA Production 99.9% 7/7",
+      updateFrequency: "Quotidienne",
+      ownerOrganizationId: ctx.orgWe.id
+    }
+  });
+
+  const dsDmat = await prisma.dataset.create({
+    data: {
+      title: "Catalogue d'évaluation DMAT & Profils",
+      description: "Données de maturité numérique détaillées par dimensions d'évaluation (IA, Cyber, Stratégie, etc.).",
+      domain: "Numérique & Innovation",
+      type: "dataset_harmonise",
+      status: "valide",
+      sensitivity: "restreint",
+      producer: "Agence du Numérique",
+      dataOwner: "AdN Data Office",
+      dataSteward: "Data Steward AdN",
+      exposableApi: true,
+      exposableCatalog: true,
+      dcatApAvailable: true,
+      semanticMappingAvailable: true,
+      accessRulesDefined: true,
+      usageRulesDefined: true,
+      accessRules: "Réservé aux conseillers accrédités EDIH.",
+      usageConditions: "Confidentialité stricte des profils individuels d'entreprises.",
+      license: "Licence d'usage interne AdN",
+      format: "JSON",
+      dataSpaceMaturityScore: 85,
+      availability: "99.5",
+      updateFrequency: "Mensuelle",
+      ownerOrganizationId: ctx.orgAdn.id
+    }
+  });
+
+  // C. Quality Rules
+  await prisma.dataQualityRule.create({
+    data: {
+      name: "Non-vacuité du n° BCE",
+      description: "Vérifie que le numéro BCE est bien renseigné et respecte le format à 10 chiffres.",
+      dimension: "completude",
+      datasetId: dsBeneficiaries.id,
+      attribute: "bce_number",
+      controlRule: "VALUE IS NOT NULL AND LENGTH(VALUE) == 10",
+      threshold: "100%",
+      status: "conforme"
+    }
+  });
+
+  await prisma.dataQualityRule.create({
+    data: {
+      name: "Conformité du code postal",
+      description: "Vérifie que le code postal correspond à une commune wallonne existante.",
+      dimension: "conformite",
+      datasetId: dsBeneficiaries.id,
+      attribute: "postal_code",
+      controlRule: "VALUE IN SELECT CODE FROM TERRITORY WHERE TYPE == 'COMMUNE'",
+      threshold: "98%",
+      status: "conforme"
+    }
+  });
+
+  await prisma.dataQualityRule.create({
+    data: {
+      name: "Fraîcheur synchro DMAT",
+      description: "Vérifie que la synchronisation DMAT date de moins de 48 heures.",
+      dimension: "fraicheur",
+      datasetId: dsDmat.id,
+      attribute: "last_synced",
+      controlRule: "NOW() - VALUE <= 48 HOURS",
+      threshold: "95%",
+      status: "conforme"
+    }
+  });
+
+  // D. Semantic Mappings
+  await prisma.semanticMapping.create({
+    data: {
+      name: "BCE to CPSV Beneficiary Entity",
+      description: "Mapping du numéro d'entreprise BCE vers la classe Cible du Graphe d4wmo:Beneficiary.",
+      sourceId: srcBce.id,
+      datasetId: dsBeneficiaries.id,
+      targetModel: "CPSV-AP",
+      sourceEntity: "bce_entreprise",
+      sourceAttribute: "num_entreprise",
+      targetEntity: "d4wmo:Beneficiary",
+      targetAttribute: "dct:identifier",
+      status: "valide"
+    }
+  });
+
+  await prisma.semanticMapping.create({
+    data: {
+      name: "DMAT Score to Digital Maturity Predicate",
+      description: "Alignement du score composite DMAT vers le prédicat de maturité de la PIT.",
+      sourceId: srcDmat.id,
+      datasetId: dsDmat.id,
+      targetModel: "D4WTA-AP",
+      sourceEntity: "dmat_diagnostic",
+      sourceAttribute: "score_digital",
+      targetEntity: "d4wmo:Beneficiary",
+      targetAttribute: "d4wmo:maturityDigital",
+      status: "valide"
+    }
+  });
+
+  // E. APIs
+  const apiPub = await prisma.api.create({
+    data: {
+      name: "API Publique des Écosystèmes & Services",
+      description: "Point d'accès public normalisé pour interroger les écosystèmes et dispositifs d'aide wallons.",
+      domain: "Général",
+      status: "publiee",
+      type: "REST",
+      baseUrl: "https://api.wallonie.be/v2/pit",
+      authType: "API key",
+      exposureLevel: "public",
+      auditEnabled: true,
+      sla: "99.5%"
+    }
+  });
+
+  const apiGov = await prisma.api.create({
+    data: {
+      name: "API Interne Gouvernance des Acteurs",
+      description: "API sécurisée pour la synchronisation des données de profil des bénéficiaires entre partenaires.",
+      domain: "Gouvernance",
+      status: "publiee",
+      type: "REST",
+      baseUrl: "https://api-internal.wallonie.be/v2/governance",
+      authType: "OAuth2",
+      exposureLevel: "partenaires",
+      auditEnabled: true,
+      sla: "99.9%"
+    }
+  });
+
+  // F. API Routes
+  await prisma.apiRoute.create({
+    data: {
+      apiId: apiPub.id,
+      method: "GET",
+      path: "/services",
+      description: "Récupère la liste des services d'aides publics documentés.",
+      outputModel: "JSON-LD",
+      status: "active"
+    }
+  });
+
+  await prisma.apiRoute.create({
+    data: {
+      apiId: apiPub.id,
+      method: "GET",
+      path: "/ecosystems",
+      description: "Liste les pôles, clusters et hubs d'innovation régionaux.",
+      outputModel: "JSON-LD",
+      status: "active"
+    }
+  });
+
+  await prisma.apiRoute.create({
+    data: {
+      apiId: apiGov.id,
+      method: "GET",
+      path: "/beneficiaries",
+      description: "Récupère les fiches d'accompagnement des bénéficiaires.",
+      datasetId: dsBeneficiaries.id,
+      outputModel: "JSON-LD",
+      status: "active"
     }
   });
 

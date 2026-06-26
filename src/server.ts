@@ -7758,84 +7758,512 @@ v2Router.delete('/value-chain-segments/:id', async (req, res) => {
 // --- 17. SYSTEM OF RECORD & DATA PRODUCTS APIs (Data Steward) ---
 // ==========================================
 
-const getSourceSystemsFilePath = () => path.join(process.cwd(), 'cpsv-ap-app/src/data/source_systems.json');
-const getDataProductsFilePath = () => path.join(process.cwd(), 'cpsv-ap-app/src/data/data_products.json');
-
 // Source Systems GET
-v2Router.get('/interoperability/source-systems', (req, res) => {
+v2Router.get('/interoperability/source-systems', async (req, res) => {
   try {
-    const filePath = getSourceSystemsFilePath();
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      res.json({ data: JSON.parse(data) });
-    } else {
-      res.json({ data: [] });
-    }
+    const items = await prisma.pitDataSource.findMany({
+      include: { organization: true, qualityRules: true, semanticMappings: true }
+    });
+    res.json({ data: items });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Source Systems POST
-v2Router.post('/interoperability/source-systems', (req, res) => {
+v2Router.post('/interoperability/source-systems', async (req, res) => {
   try {
-    const filePath = getSourceSystemsFilePath();
-    let currentData: any[] = [];
-    if (fs.existsSync(filePath)) {
-      currentData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const body = req.body;
+    if (!body.name) {
+      return res.status(400).json({ error: "Le nom du système source est obligatoire." });
     }
-    const newSystem = req.body;
-    if (!newSystem.id) {
-      return res.status(400).json({ error: "L'identifiant du système source est obligatoire." });
+    
+    // Resolve organizationId if organization is provided
+    let orgId = body.organizationId ? parseInt(body.organizationId) : undefined;
+    if (!orgId && body.owner) {
+      const org = await prisma.organization.findFirst({
+        where: { name: { contains: body.owner, mode: 'insensitive' } }
+      });
+      if (org) orgId = org.id;
     }
-    const idx = currentData.findIndex(s => s.id === newSystem.id);
-    if (idx !== -1) {
-      currentData[idx] = { ...currentData[idx], ...newSystem };
+
+    const data: any = {
+      name: body.name,
+      description: body.description,
+      owner: body.owner,
+      steward: body.steward,
+      frequency: body.frequency || "ANNUAL",
+      accessLevel: body.accessLevel || "RESTRICTED",
+      legalBasis: body.legalBasis,
+      format: body.format || "JSON",
+      endpoint: body.endpoint || body.apiEndpoint,
+      uri: body.uri || `https://pit.wallonie.be/id/source-system/${body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      organizationId: orgId,
+      type: body.type,
+      environment: body.environment || "production",
+      ownerBusiness: body.ownerBusiness,
+      ownerTechnical: body.ownerTechnical,
+      dataOwner: body.dataOwner,
+      contactSupport: body.contactSupport,
+      technology: body.technology,
+      accessMode: body.accessMode,
+      authType: body.authType,
+      documentationUrl: body.documentationUrl,
+      availability: body.availability,
+      isPersonalData: body.isPersonalData === true || body.isPersonalData === 'true' || body.isPersonalData === 'oui',
+      isSensitiveData: body.isSensitiveData === true || body.isSensitiveData === 'true' || body.isSensitiveData === 'oui',
+      accessProtocolRequired: body.accessProtocolRequired === true || body.accessProtocolRequired === 'true' || body.accessProtocolRequired === 'oui',
+      conventionAvailable: body.conventionAvailable === true || body.conventionAvailable === 'true' || body.conventionAvailable === 'oui',
+      usageRestrictions: body.usageRestrictions,
+      qualityLevel: body.qualityLevel
+    };
+
+    let result;
+    if (body.id) {
+      const existing = await prisma.pitDataSource.findUnique({
+        where: { id: parseInt(body.id) }
+      });
+      if (existing) {
+        result = await prisma.pitDataSource.update({
+          where: { id: parseInt(body.id) },
+          data
+        });
+      } else {
+        result = await prisma.pitDataSource.create({ data });
+      }
     } else {
-      currentData.push(newSystem);
+      result = await prisma.pitDataSource.create({ data });
     }
-    fs.writeFileSync(filePath, JSON.stringify(currentData, null, 2), 'utf8');
-    res.status(201).json({ data: newSystem });
+
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    console.error("Error POST source-system:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Source Systems DELETE
+v2Router.delete('/interoperability/source-systems/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.pitDataSource.delete({ where: { id } });
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Data Products GET
-v2Router.get('/interoperability/data-products', (req, res) => {
+v2Router.get('/interoperability/data-products', async (req, res) => {
   try {
-    const filePath = getDataProductsFilePath();
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      res.json({ data: JSON.parse(data) });
-    } else {
-      res.json({ data: [] });
-    }
+    const items = await prisma.dataset.findMany({
+      include: { ownerOrganization: true, sources: true, qualityRules: true, semanticMappings: true, apiRoutes: true }
+    });
+    res.json({ data: items });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Data Products POST
-v2Router.post('/interoperability/data-products', (req, res) => {
+v2Router.post('/interoperability/data-products', async (req, res) => {
   try {
-    const filePath = getDataProductsFilePath();
-    let currentData: any[] = [];
-    if (fs.existsSync(filePath)) {
-      currentData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const body = req.body;
+    const title = body.title || body.name;
+    if (!title) {
+      return res.status(400).json({ error: "Le titre du dataset est obligatoire." });
     }
-    const newProduct = req.body;
-    if (!newProduct.id) {
-      return res.status(400).json({ error: "L'identifiant du produit de données est obligatoire." });
+
+    let orgId = body.ownerOrganizationId ? parseInt(body.ownerOrganizationId) : undefined;
+    if (!orgId) {
+      const firstOrg = await prisma.organization.findFirst();
+      orgId = firstOrg ? firstOrg.id : 1;
     }
-    const idx = currentData.findIndex(p => p.id === newProduct.id);
-    if (idx !== -1) {
-      currentData[idx] = { ...currentData[idx], ...newProduct };
+
+    const data: any = {
+      title: title,
+      description: body.description,
+      themes: body.themes || (body.theme ? [body.theme] : []),
+      keywords: body.keywords || [],
+      qualityScore: parseFloat(body.qualityScore) || 5.0,
+      updateFrequency: body.updateFrequency || "Annuel",
+      ownerOrganizationId: orgId,
+      domain: body.domain,
+      type: body.type,
+      status: body.status || "brouillon",
+      sensitivity: body.sensitivity || "public",
+      producer: body.producer,
+      dataOwner: body.dataOwner,
+      dataSteward: body.dataSteward,
+      contactTechnical: body.contactTechnical,
+      contactBusiness: body.contactBusiness,
+      exposableApi: body.exposableApi === true || body.exposableApi === 'true' || body.exposableApi === 'oui',
+      exposableCatalog: body.exposableCatalog === true || body.exposableCatalog === 'true' || body.exposableCatalog === 'oui',
+      dcatApAvailable: body.dcatApAvailable === true || body.dcatApAvailable === 'true' || body.dcatApAvailable === 'oui',
+      semanticMappingAvailable: body.semanticMappingAvailable === true || body.semanticMappingAvailable === 'true' || body.semanticMappingAvailable === 'oui',
+      accessRulesDefined: body.accessRulesDefined === true || body.accessRulesDefined === 'true' || body.accessRulesDefined === 'oui',
+      usageRulesDefined: body.usageRulesDefined === true || body.usageRulesDefined === 'true' || body.usageRulesDefined === 'oui',
+      license: body.license,
+      traceabilityAvailable: body.traceabilityAvailable === true || body.traceabilityAvailable === 'true' || body.traceabilityAvailable === 'oui',
+      qualityOkayForReuse: body.qualityOkayForReuse === true || body.qualityOkayForReuse === 'true' || body.qualityOkayForReuse === 'oui',
+      dataSpaceMaturityScore: parseFloat(body.dataSpaceMaturityScore) || 0.0,
+      authorizedPurpose: body.authorizedPurpose,
+      legalBasis: body.legalBasis,
+      accessRules: body.accessRules,
+      usageConditions: body.usageConditions,
+      gdprConstraints: body.gdprConstraints,
+      contractualConstraints: body.contractualConstraints,
+      sovereigntyConstraints: body.sovereigntyConstraints,
+      validationHistory: body.validationHistory,
+      format: body.format || "JSON",
+      apiEndpoint: body.apiEndpoint,
+      apiRoute: body.apiRoute,
+      apiDocumentation: body.apiDocumentation,
+      lastUpdate: body.lastUpdate ? new Date(body.lastUpdate) : new Date(),
+      availability: body.availability,
+      sla: body.sla
+    };
+
+    if (body.sourceIds && Array.isArray(body.sourceIds)) {
+      data.sources = {
+        connect: body.sourceIds.map((id: any) => ({ id: parseInt(id) }))
+      };
+    }
+
+    let result;
+    if (body.id) {
+      const existing = await prisma.dataset.findUnique({
+        where: { id: parseInt(body.id) }
+      });
+      if (existing) {
+        result = await prisma.dataset.update({
+          where: { id: parseInt(body.id) },
+          data
+        });
+      } else {
+        result = await prisma.dataset.create({ data });
+      }
     } else {
-      currentData.push(newProduct);
+      result = await prisma.dataset.create({ data });
     }
-    fs.writeFileSync(filePath, JSON.stringify(currentData, null, 2), 'utf8');
-    res.status(201).json({ data: newProduct });
+
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    console.error("Error POST data-product:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Data Products DELETE
+v2Router.delete('/interoperability/data-products/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.dataset.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Quality Rules CRUD
+v2Router.get('/interoperability/quality-rules', async (req, res) => {
+  try {
+    const items = await prisma.dataQualityRule.findMany({
+      include: { dataset: true, source: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/interoperability/quality-rules', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body.name || !body.dimension) {
+      return res.status(400).json({ error: "Le nom et la dimension sont obligatoires." });
+    }
+    const data: any = {
+      name: body.name,
+      description: body.description,
+      dimension: body.dimension,
+      datasetId: body.datasetId ? parseInt(body.datasetId) : null,
+      sourceId: body.sourceId ? parseInt(body.sourceId) : null,
+      attribute: body.attribute,
+      controlRule: body.controlRule,
+      threshold: body.threshold,
+      lastResult: body.lastResult,
+      status: body.status || "non_controle",
+      frequency: body.frequency,
+      owner: body.owner,
+      lastCheckedAt: body.lastCheckedAt ? new Date(body.lastCheckedAt) : null,
+      correctionPlan: body.correctionPlan,
+      priority: body.priority,
+      businessImpact: body.businessImpact
+    };
+
+    let result;
+    if (body.id) {
+      result = await prisma.dataQualityRule.update({
+        where: { id: parseInt(body.id) },
+        data
+      });
+    } else {
+      result = await prisma.dataQualityRule.create({ data });
+    }
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/interoperability/quality-rules/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.dataQualityRule.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Semantic Mappings CRUD
+v2Router.get('/interoperability/semantic-mappings', async (req, res) => {
+  try {
+    const items = await prisma.semanticMapping.findMany({
+      include: { source: true, dataset: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/interoperability/semantic-mappings', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body.name || !body.targetModel) {
+      return res.status(400).json({ error: "Le nom et le modèle cible sont obligatoires." });
+    }
+    const data: any = {
+      name: body.name,
+      description: body.description,
+      sourceId: body.sourceId ? parseInt(body.sourceId) : null,
+      datasetId: body.datasetId ? parseInt(body.datasetId) : null,
+      targetModel: body.targetModel,
+      sourceEntity: body.sourceEntity,
+      sourceAttribute: body.sourceAttribute,
+      targetEntity: body.targetEntity,
+      targetAttribute: body.targetAttribute,
+      transformRule: body.transformRule,
+      normRule: body.normRule,
+      taxonomyUsed: body.taxonomyUsed,
+      status: body.status || "a_faire",
+      ownerBusiness: body.ownerBusiness,
+      ownerTechnical: body.ownerTechnical,
+      validatedAt: body.validatedAt ? new Date(body.validatedAt) : null
+    };
+
+    let result;
+    if (body.id) {
+      result = await prisma.semanticMapping.update({
+        where: { id: parseInt(body.id) },
+        data
+      });
+    } else {
+      result = await prisma.semanticMapping.create({ data });
+    }
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/interoperability/semantic-mappings/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.semanticMapping.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// APIs CRUD
+v2Router.get('/interoperability/apis', async (req, res) => {
+  try {
+    const items = await prisma.api.findMany({
+      include: { routes: { include: { dataset: true, mapping: true } } }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/interoperability/apis', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body.name || !body.baseUrl || !body.type) {
+      return res.status(400).json({ error: "Le nom, l'URL de base et le type sont obligatoires." });
+    }
+    const data: any = {
+      name: body.name,
+      description: body.description,
+      domain: body.domain,
+      status: body.status || "brouillon",
+      type: body.type,
+      baseUrl: body.baseUrl,
+      version: body.version || "1.0.0",
+      ownerTechnical: body.ownerTechnical,
+      ownerBusiness: body.ownerBusiness,
+      authType: body.authType || "aucune",
+      docUrl: body.docUrl,
+      environment: body.environment || "prod",
+      exposureLevel: body.exposureLevel || "interne",
+      accessRules: body.accessRules,
+      usageRules: body.usageRules,
+      auditEnabled: body.auditEnabled === true || body.auditEnabled === 'true',
+      sla: body.sla
+    };
+
+    let result;
+    if (body.id) {
+      result = await prisma.api.update({
+        where: { id: parseInt(body.id) },
+        data
+      });
+    } else {
+      result = await prisma.api.create({ data });
+    }
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/interoperability/apis/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.api.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API Routes CRUD
+v2Router.get('/interoperability/api-routes', async (req, res) => {
+  try {
+    const items = await prisma.apiRoute.findMany({
+      include: { api: true, dataset: true, mapping: true }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/interoperability/api-routes', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body.path || !body.apiId || !body.method || !body.outputModel) {
+      return res.status(400).json({ error: "Le chemin, l'API, la méthode et le modèle de sortie sont obligatoires." });
+    }
+    const data: any = {
+      path: body.path,
+      method: body.method,
+      description: body.description,
+      parameters: body.parameters || null,
+      payloadExpected: body.payloadExpected,
+      responseExpected: body.responseExpected,
+      apiId: parseInt(body.apiId),
+      datasetId: body.datasetId ? parseInt(body.datasetId) : null,
+      mappingId: body.mappingId ? parseInt(body.mappingId) : null,
+      outputModel: body.outputModel,
+      status: body.status || "active",
+      requestExample: body.requestExample,
+      responseExample: body.responseExample,
+      requiredRights: body.requiredRights
+    };
+
+    let result;
+    if (body.id) {
+      result = await prisma.apiRoute.update({
+        where: { id: parseInt(body.id) },
+        data
+      });
+    } else {
+      result = await prisma.apiRoute.create({ data });
+    }
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/interoperability/api-routes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.apiRoute.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reference Models CRUD
+v2Router.get('/reference-models', async (req, res) => {
+  try {
+    const items = await prisma.referenceModel.findMany({
+      orderBy: { name: 'asc' }
+    });
+    res.json({ data: items });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.post('/reference-models', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!body.name || !body.type) {
+      return res.status(400).json({ error: "Le nom et le type du référentiel sont obligatoires." });
+    }
+    const data: any = {
+      name: body.name,
+      type: body.type,
+      description: body.description,
+      officialUrl: body.officialUrl,
+      version: body.version,
+      issuingOrganization: body.issuingOrganization,
+      domain: body.domain,
+      status: body.status || "actif",
+      usageInPit: body.usageInPit,
+      pitObjectsConcerned: body.pitObjectsConcerned || null,
+      owner: body.owner
+    };
+
+    let result;
+    if (body.id) {
+      result = await prisma.referenceModel.update({
+        where: { id: parseInt(body.id) },
+        data
+      });
+    } else {
+      result = await prisma.referenceModel.create({ data });
+    }
+    res.status(201).json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+v2Router.delete('/reference-models/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.referenceModel.delete({ where: { id } });
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

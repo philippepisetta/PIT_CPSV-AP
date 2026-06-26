@@ -1128,3 +1128,222 @@ export function useV2DeleteServiceDeliveryMutation() {
     },
   });
 }
+
+// ==========================================
+// --- PIT vNext: NEW INTEROPERABILITY HOOKS ---
+// ==========================================
+
+// Quality Rules
+export function useV2QualityRulesQuery() {
+  return useQuery({
+    queryKey: ["v2-quality-rules"],
+    queryFn: () => fetcher("/api/v2/interoperability/quality-rules"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateQualityRuleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/interoperability/quality-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'enregistrement de la règle qualité.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-quality-rules"] });
+    },
+  });
+}
+
+export function useV2DeleteQualityRuleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/interoperability/quality-rules/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression de la règle qualité.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-quality-rules"] });
+    },
+  });
+}
+
+// Semantic Mappings
+export function useV2SemanticMappingsQuery() {
+  return useQuery({
+    queryKey: ["v2-semantic-mappings"],
+    queryFn: () => fetcher("/api/v2/interoperability/semantic-mappings"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateSemanticMappingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/interoperability/semantic-mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'enregistrement du mapping sémantique.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-semantic-mappings"] });
+    },
+  });
+}
+
+export function useV2DeleteSemanticMappingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/interoperability/semantic-mappings/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression du mapping sémantique.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-semantic-mappings"] });
+    },
+  });
+}
+
+// APIs
+export function useV2ApisQuery() {
+  return useQuery({
+    queryKey: ["v2-apis"],
+    queryFn: () => fetcher("/api/v2/interoperability/apis"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateApiMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/interoperability/apis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'enregistrement de l'API.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-apis"] });
+    },
+  });
+}
+
+export function useV2DeleteApiMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/interoperability/apis/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression de l'API.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-apis"] });
+    },
+  });
+}
+
+// API Routes
+export function useV2ApiRoutesQuery() {
+  return useQuery({
+    queryKey: ["v2-api-routes"],
+    queryFn: () => fetcher("/api/v2/interoperability/api-routes"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateApiRouteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/interoperability/api-routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'enregistrement de la route API.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-api-routes"] });
+    },
+  });
+}
+
+export function useV2DeleteApiRouteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/interoperability/api-routes/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression de la route API.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-api-routes"] });
+    },
+  });
+}
+
+// Reference Models
+export function useV2ReferenceModelsQuery() {
+  return useQuery({
+    queryKey: ["v2-reference-models"],
+    queryFn: () => fetcher("/api/v2/reference-models"),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useV2CreateReferenceModelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch("/api/v2/reference-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Erreur d'enregistrement du modèle de référence.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-reference-models"] });
+    },
+  });
+}
+
+export function useV2DeleteReferenceModelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/v2/reference-models/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erreur de suppression du modèle de référence.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["v2-reference-models"] });
+    },
+  });
+}

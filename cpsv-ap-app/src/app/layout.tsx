@@ -1,3 +1,4 @@
+import React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -30,7 +31,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
         <AppProvider>
           <div className="flex min-h-screen bg-background text-text">
-            <Sidebar />
+            <React.Suspense fallback={<div className="w-64 bg-surface border-r border-muted/20 h-screen sticky top-0" />}>
+              <Sidebar />
+            </React.Suspense>
             <main className="flex-1 flex flex-col overflow-y-auto p-6">
               <Topbar />
               <div className="flex-1 mt-4">{children}</div>

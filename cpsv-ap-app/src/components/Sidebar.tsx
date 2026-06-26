@@ -3,7 +3,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
@@ -70,13 +70,14 @@ const navBlocks: NavBlock[] = [
   },
   {
     title: "Résilience",
-    allowedWorkspaces: ["pilotage"],
+    allowedWorkspaces: ["resilience", "pilotage"],
     items: [
-      { name: "Risques", href: "/resilience?tab=risks", icon: Shield },
-      { name: "Scénarios", href: "/resilience?tab=scenarios", icon: Play },
-      { name: "Impacts", href: "/resilience?tab=impacts", icon: LineChart },
-      { name: "Résilience territoriale", href: "/resilience", icon: Shield },
-      { name: "Démonstrateur Cabinet", href: "/resilience/demonstrator", icon: Play },
+      { name: "Scénarios & Crises", href: "/resilience?tab=scenarios", icon: Play },
+      { name: "Indicateurs OCDE", href: "/resilience?tab=oecd", icon: LineChart },
+      { name: "Chaînes de valeur critiques", href: "/resilience?tab=supply-chains", icon: Network },
+      { name: "Plans de réponse & actions", href: "/resilience?tab=action-plans", icon: ClipboardCheck },
+      { name: "Vulnérabilités territoriales", href: "/resilience?tab=vulnerabilities", icon: Shield },
+      { name: "Démonstrateur Cabinet (Caroline)", href: "/resilience/demonstrator", icon: Play },
     ]
   },
   {
@@ -92,7 +93,7 @@ const navBlocks: NavBlock[] = [
   },
   {
     title: "Intelligence Territoriale",
-    allowedWorkspaces: ["accompaniment", "pilotage"],
+    allowedWorkspaces: ["accompaniment", "pilotage", "resilience"],
     items: [
       { name: "Territoires", href: "/territories", icon: Compass },
       { name: "Filières", href: "/filieres", icon: Layers },
@@ -106,18 +107,19 @@ const navBlocks: NavBlock[] = [
     title: "Données",
     allowedWorkspaces: ["data"],
     items: [
-      { name: "Datasets", href: "/data/marketplace", icon: Database },
-      { name: "Sources", href: "/data", icon: Settings },
-      { name: "Qualité des données", href: "/data/quality", icon: CheckCircle2 },
-      { name: "Mappings & API", href: "/data/api-exports", icon: Zap },
+      { name: "Sources de données", href: "/data?tab=sources", icon: Settings },
+      { name: "Datasets / Data products", href: "/data?tab=datasets", icon: Database },
+      { name: "Qualité des données", href: "/data?tab=quality", icon: CheckCircle2 },
+      { name: "Mappings sémantiques", href: "/data?tab=mappings", icon: Network },
+      { name: "APIs & routes", href: "/data?tab=apis", icon: Zap },
+      { name: "Gouvernance d'accès", href: "/data?tab=governance", icon: Shield },
     ]
   },
   {
     title: "Référentiels",
-    allowedWorkspaces: ["accompaniment", "pilotage", "data"],
+    allowedWorkspaces: ["accompaniment", "pilotage", "data", "resilience"],
     items: [
-      { name: "Référentiels S3 / DIS", href: "/governance/referentiels?tab=s3-dis", icon: Database },
-      { name: "Taxonomies S3", href: "/governance/referentiels?tab=taxonomies-s3", icon: BookOpen },
+      { name: "Modèles / Taxonomies", href: "/governance/referentiels?tab=taxonomies-s3", icon: BookOpen },
       { name: "Référentiels Data Spaces", href: "/governance/referentiels?tab=dataspaces", icon: Network },
       { name: "Standards d'interopérabilité", href: "/governance/referentiels?tab=interop", icon: Share2 },
       { name: "Référentiels sectoriels", href: "/governance/referentiels?tab=sectors", icon: Layers },
@@ -128,7 +130,7 @@ const navBlocks: NavBlock[] = [
   },
   {
     title: "Gouvernance",
-    allowedWorkspaces: ["accompaniment", "pilotage", "data"],
+    allowedWorkspaces: ["accompaniment", "pilotage", "data", "resilience"],
     items: [
       { name: "Audit technique", href: "/governance/audit-technical", icon: Shield },
       { name: "Documentation", href: "/guide", icon: BookOpen },
@@ -138,7 +140,10 @@ const navBlocks: NavBlock[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { activeWorkspace, currentWorkspace } = useWorkspace();
+  
+  const currentTab = searchParams.get("tab");
 
   // Filter blocks based on active workspace
   const visibleBlocks = navBlocks.filter(block => 
@@ -163,7 +168,8 @@ export default function Sidebar() {
             "w-2.5 h-2.5 rounded-full animate-pulse",
             activeWorkspace === "accompaniment" && "bg-teal-500",
             activeWorkspace === "pilotage" && "bg-amber-500",
-            activeWorkspace === "data" && "bg-purple-500"
+            activeWorkspace === "data" && "bg-purple-500",
+            activeWorkspace === "resilience" && "bg-red-500"
           )} />
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-wider text-text">
@@ -200,19 +206,45 @@ export default function Sidebar() {
               </h3>
               <div className="space-y-1">
                 {block.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                  let isActive = false;
+                  try {
+                    const hasTab = item.href.includes("?tab=");
+                    const itemUrl = new URL(item.href, "http://localhost");
+                    const itemPath = itemUrl.pathname;
+                    const itemTab = itemUrl.searchParams.get("tab");
+                    
+                    const normalizedPathname = pathname === "/interoperability" ? "/data" : pathname;
+                    const isPathMatch = normalizedPathname === itemPath;
+                    const isTabMatch = itemTab ? currentTab === itemTab : !currentTab;
+                    
+                    isActive = isPathMatch && isTabMatch;
+                  } catch (e) {
+                    isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                  }
+
+                  let activeClass = "bg-primary text-white shadow-sm font-extrabold";
+                  if (activeWorkspace === "data") {
+                    activeClass = "bg-purple-600 text-white shadow-sm font-extrabold";
+                  } else if (activeWorkspace === "resilience") {
+                    activeClass = "bg-red-600 text-white shadow-sm font-extrabold";
+                  } else if (activeWorkspace === "pilotage") {
+                    activeClass = "bg-amber-500 text-white shadow-sm font-extrabold";
+                  } else if (activeWorkspace === "accompaniment") {
+                    activeClass = "bg-teal-600 text-white shadow-sm font-extrabold";
+                  }
+
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
                       className={cn(
-                        "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs font-bold transition-all duration-200",
+                        "flex items-center space-x-2.5 rounded-lg px-3 py-2 text-xs transition-all duration-200",
                         isActive 
-                          ? "bg-gradient-to-r from-teal-500/10 to-amber-500/5 border-l-2 border-teal-605 text-text shadow-xs" 
-                          : "text-muted hover:bg-glass hover:text-text"
+                          ? activeClass 
+                          : "text-muted hover:bg-glass hover:text-text font-bold"
                       )}
                     >
-                      <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-teal-600 dark:text-teal-400" : "text-muted")} />
+                      <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-muted")} />
                       <span>{item.name}</span>
                     </Link>
                   );

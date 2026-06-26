@@ -1102,6 +1102,49 @@ model Dataset {
   s3Clusters           S3Cluster[]           @relation("ClusterDatasets")
   s3MarketApps         S3MarketApplication[] @relation("MarketDatasets")
   dataSpaces           DataSpace[]           @relation("DatasetToDataSpace")
+
+  // --- NOUVEAUX CHAMPS D'INTEROPÉRABILITÉ ET DATA SPACE ---
+  domain                    String?
+  type                      DatasetType?
+  status                    DatasetStatus?   @default(brouillon)
+  sensitivity               SensitivityLevel? @default(public)
+  producer                  String?
+  dataOwner                 String?
+  dataSteward               String?
+  contactTechnical          String?
+  contactBusiness           String?
+  exposableApi              Boolean   @default(false)
+  exposableCatalog          Boolean   @default(false)
+  dcatApAvailable           Boolean   @default(false)
+  semanticMappingAvailable  Boolean   @default(false)
+  accessRulesDefined        Boolean   @default(false)
+  usageRulesDefined         Boolean   @default(false)
+  license                   String?
+  traceabilityAvailable     Boolean   @default(false)
+  qualityOkayForReuse       Boolean   @default(false)
+  dataSpaceMaturityScore    Float     @default(0.0)
+  authorizedPurpose         String?   @db.Text
+  legalBasis                String?   @db.Text
+  accessRules               String?   @db.Text
+  usageConditions           String?   @db.Text
+  gdprConstraints           String?   @db.Text
+  contractualConstraints    String?   @db.Text
+  sovereigntyConstraints    String?   @db.Text
+  validationHistory         String?   @db.Text
+  format                    String?   @default("JSON")
+  apiEndpoint               String?
+  apiRoute                  String?
+  apiDocumentation          String?
+  lastUpdate                DateTime? @default(now())
+  availability              String?
+  sla                       String?
+
+  // Relations
+  sources                   PitDataSource[]   @relation("DatasetSources")
+  qualityRules              DataQualityRule[]
+  semanticMappings          SemanticMapping[]
+  apiRoutes                 ApiRoute[]
+
   @@map("datasets")
 }
 
@@ -3154,6 +3197,30 @@ model PitDataSource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // --- NOUVEAUX CHAMPS SUPPLÉMENTAIRES ---
+  type                    String? // application métier, base de données, API externe, fichier, catalogue open data, CMS, CRM, référentiel authentique, entrepôt de données, autre
+  environment             String?   @default("production") // production, test, staging, documentation uniquement
+  ownerBusiness           String?
+  ownerTechnical          String?
+  dataOwner               String?
+  contactSupport          String?
+  technology              String?
+  accessMode              String? // API, export fichier, connecteur, manuel, batch, streaming
+  authType                String?
+  documentationUrl        String?
+  availability            String?
+  isPersonalData          Boolean   @default(false)
+  isSensitiveData         Boolean   @default(false)
+  accessProtocolRequired  Boolean   @default(false)
+  conventionAvailable     Boolean   @default(false)
+  usageRestrictions       String?   @db.Text
+  qualityLevel            String?
+
+  // Relations
+  datasets                Dataset[]         @relation("DatasetSources")
+  qualityRules            DataQualityRule[]
+  semanticMappings        SemanticMapping[]
+
   @@map("pit_data_sources")
 }
 
@@ -4298,3 +4365,238 @@ model DataSpace {
 
   @@map("data_spaces")
 }
+
+// ==========================================
+// PIT vNext — DOMAIN 13: NEW INTEROPERABILITY MODELS
+// ==========================================
+
+model DataQualityRule {
+  id              Int              @id @default(autoincrement())
+  name            String
+  description     String?          @db.Text
+  dimension       QualityDimension
+  
+  datasetId       Int?
+  dataset         Dataset?         @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  
+  sourceId        Int?
+  source          PitDataSource?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  
+  attribute       String?
+  controlRule     String?          @db.Text
+  threshold       String?          // ex: "95%"
+  lastResult      String?          // ex: "92%"
+  status          QualityStatus    @default(non_controle)
+  frequency       String?          // ex: "DAILY", "WEEKLY"
+  owner           String?
+  lastCheckedAt   DateTime?
+  correctionPlan  String?          @db.Text
+  priority        String?          // HIGH, MEDIUM, LOW
+  businessImpact  String?          @db.Text
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("data_quality_rules")
+}
+
+model SemanticMapping {
+  id              Int              @id @default(autoincrement())
+  name            String
+  description     String?          @db.Text
+  
+  sourceId        Int?
+  source          PitDataSource?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  
+  datasetId       Int?
+  dataset         Dataset?         @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  
+  targetModel     String           // D4WMO Generic, CPSV-AP, DCAT-AP, NGSI-LD, autre
+  sourceEntity    String?
+  sourceAttribute String?
+  targetEntity    String?
+  targetAttribute String?
+  transformRule   String?          @db.Text
+  normRule        String?          @db.Text
+  taxonomyUsed    String?
+  status          MappingStatus    @default(a_faire)
+  ownerBusiness   String?
+  ownerTechnical  String?
+  validatedAt     DateTime?
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  apiRoutes       ApiRoute[]
+
+  @@map("semantic_mappings")
+}
+
+model Api {
+  id              Int              @id @default(autoincrement())
+  name            String
+  description     String?          @db.Text
+  domain          String?
+  status          ApiStatus        @default(brouillon)
+  type            ApiType
+  baseUrl         String
+  version         String           @default("1.0.0")
+  ownerTechnical  String?
+  ownerBusiness   String?
+  authType        String           @default("aucune") // aucune, API key, OAuth2, JWT, M2M, autre
+  docUrl          String?
+  environment     String           @default("prod") // dev, test, prod
+  exposureLevel   ExposureLevel    @default(interne)
+  accessRules     String?          @db.Text
+  usageRules      String?          @db.Text
+  auditEnabled    Boolean          @default(false)
+  sla             String?
+  
+  routes          ApiRoute[]
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("apis")
+}
+
+model ApiRoute {
+  id              Int              @id @default(autoincrement())
+  method          ApiMethod
+  path            String
+  description     String?          @db.Text
+  parameters      Json?
+  payloadExpected String?          @db.Text
+  responseExpected String?         @db.Text
+  
+  apiId           Int
+  api             Api              @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  
+  datasetId       Int?
+  dataset         Dataset?         @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  
+  mappingId       Int?
+  mapping         SemanticMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+  
+  outputModel     String           // JSON, JSON-LD, DCAT-AP, NGSI-LD, RDF, autre
+  status          String           @default("active")
+  requestExample  String?          @db.Text
+  responseExample String?         @db.Text
+  requiredRights  String?
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("api_routes")
+}
+
+model ReferenceModel {
+  id                  Int      @id @default(autoincrement())
+  type                String   // Taxonomie, Modèle de données / Ontologie, Framework d’évaluation / Maturité, Référentiel de compétences, Vocabulaire contrôlé
+  name                String
+  description         String?  @db.Text
+  officialUrl         String?
+  version             String?
+  issuingOrganization String?
+  domain              String?
+  status              String   @default("actif") // actif, à évaluer, utilisé dans la PIT, obsolète
+  usageInPit          String?  @db.Text
+  pitObjectsConcerned Json?    // Array of objects (datasets, services, etc.)
+  owner               String?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("reference_models")
+}
+
+// ==========================================
+// PIT vNext — ENUMS
+// ==========================================
+
+enum DatasetStatus {
+  brouillon
+  en_analyse
+  valide
+  publie
+  deprecie
+}
+
+enum DatasetType {
+  source_brute
+  dataset_harmonise
+  dataset_enrichi
+  data_product
+  referentiel
+  indicateur
+  flux_evenementiel
+}
+
+enum SensitivityLevel {
+  public
+  interne
+  restreint
+  confidentiel
+  donnees_personnelles
+  donnees_sensibles
+}
+
+enum QualityDimension {
+  completude
+  precision
+  conformite
+  unicite
+  coherence
+  fraicheur
+  tracabilite
+  clarte
+  disponibilite
+}
+
+enum QualityStatus {
+  conforme
+  partiellement_conforme
+  non_conforme
+  non_controle
+}
+
+enum MappingStatus {
+  a_faire
+  en_cours
+  valide
+  publie
+  obsolete
+}
+
+enum ApiStatus {
+  brouillon
+  en_developpement
+  en_test
+  publiee
+  depreciee
+}
+
+enum ApiType {
+  REST
+  GraphQL
+  SPARQL
+  NGSI_LD
+  webhook
+  autre
+}
+
+enum ApiMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+enum ExposureLevel {
+  interne
+  partenaires
+  public
+  data_space
+}
+
